@@ -79,10 +79,7 @@ export function parseHeading(heading?: MarkdownNode | null): ParsedHeading {
 	};
 }
 
-function sliceNodesMarkdown(
-	markdown: string,
-	nodes?: MarkdownNode[],
-): string {
+function sliceNodesMarkdown(markdown: string, nodes?: MarkdownNode[]): string {
 	if (!nodes?.length) return "";
 	const start = nodes[0]?.position?.start?.offset;
 	const end = nodes[nodes.length - 1]?.position?.end?.offset;

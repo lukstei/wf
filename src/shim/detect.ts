@@ -19,7 +19,12 @@ export function detectHarness(
 	}
 
 	// 2. OpenAI Codex markers
-	if (env.PLUGIN_DATA || env.CODEX_SESSION_ID) {
+	if (
+		env.PLUGIN_DATA ||
+		env.CODEX_SESSION_ID ||
+		env.CODEX_THREAD_ID ||
+		payload.hookEventName !== undefined
+	) {
 		return "codex";
 	}
 

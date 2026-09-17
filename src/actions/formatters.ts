@@ -1,11 +1,17 @@
 import type { ExtractWorkflowState } from "../state.ts";
 import type { FlatStep } from "../workflow.ts";
 
+export const OVERRIDE_HEADER =
+	"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]";
+
 export function injectSystemMessage(ephemeralMessage: string): {
 	injectSteps: [{ ephemeralMessage: string }];
 } {
+	const message = ephemeralMessage.startsWith(OVERRIDE_HEADER)
+		? ephemeralMessage
+		: `${OVERRIDE_HEADER}\n\n${ephemeralMessage}`;
 	return {
-		injectSteps: [{ ephemeralMessage }],
+		injectSteps: [{ ephemeralMessage: message }],
 	};
 }
 
@@ -122,7 +128,8 @@ export function formatAdvanceReason(
 		"",
 		"INSTRUCTION:",
 		isCondition
-			? (nextTargetStep.instruction || `Evaluate condition: "${nextTargetStep.condition}"`)
+			? nextTargetStep.instruction ||
+					`Evaluate condition: "${nextTargetStep.condition}"`
 			: (nextTargetStep.instruction ?? ""),
 	);
 

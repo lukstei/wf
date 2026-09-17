@@ -12,70 +12,75 @@ describe("parseCommand.ts", () => {
 			parseCommand("/wf-help"),
 		];
 		expect(commands).toMatchInlineSnapshot(`
-      [
-        {
-          "command": {
-            "args": {
-              "path": "path/to/wf.json",
-            },
-            "name": "run",
-          },
-          "isWfCommand": true,
-        },
-        {
-          "command": {
-            "args": {
-              "path": "path/to/wf.json",
-            },
-            "name": "show",
-          },
-          "helpText": undefined,
-          "isWfCommand": true,
-        },
-        {
-          "command": {
-            "args": {},
-            "name": "show",
-          },
-          "helpText": undefined,
-          "isWfCommand": true,
-        },
-        {
-          "command": {
-            "args": {},
-            "name": "next",
-          },
-          "helpText": undefined,
-          "isWfCommand": true,
-        },
-        {
-          "command": {
-            "args": {},
-            "name": "stop",
-          },
-          "helpText": undefined,
-          "isWfCommand": true,
-        },
-        {
-          "command": {
-            "args": {},
-            "name": "help",
-          },
-          "helpText": "Workflow Runner Commands:
-        /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
-        /wf-show [<workflow-file>] - Visualize workflow and show status / progress
-        /wf-next                   - Execute the next step in paused mode
-        /wf-stop                   - Stop and reset the active workflow
-        /wf-help                   - Show this help reference",
-          "isWfCommand": true,
-        },
-      ]
-    `);
+			[
+			  {
+			    "command": {
+			      "args": {
+			        "path": "path/to/wf.json",
+			      },
+			      "name": "run",
+			    },
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {
+			        "path": "path/to/wf.json",
+			      },
+			      "name": "show",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "show",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "next",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "stop",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "help",
+			    },
+			    "helpText": "Show this message directly to the user:
+
+			Workflow Runner Commands:
+			  /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
+			  /wf-show [<workflow-file>] - Visualize workflow and show status / progress
+			  /wf-next                   - Execute the next step in paused mode
+			  /wf-stop                   - Stop and reset the active workflow
+			  /wf-help                   - Show this help reference",
+			    "isWfCommand": true,
+			  },
+			]
+		`);
 	});
 
 	test("parseCommand rejects non-wf commands and mentions", () => {
 		expect(parseCommand("hello world").isWfCommand).toBe(false);
 		expect(parseCommand("run something").isWfCommand).toBe(false);
+		expect(parseCommand("wf path/to/wf.json").isWfCommand).toBe(false);
+		expect(parseCommand("wf next").isWfCommand).toBe(false);
+		expect(parseCommand("wf-next").isWfCommand).toBe(false);
 		expect(
 			parseCommand("see @[.agents/plugins/wf/skills/wf]").isWfCommand,
 		).toBe(false);
@@ -83,6 +88,136 @@ describe("parseCommand.ts", () => {
 			parseCommand(">We should not break /wf run <file>").isWfCommand,
 		).toBe(false);
 		expect(parseCommand("Check out /wf when you can").isWfCommand).toBe(false);
+	});
+
+	test("parseCommand supports @ and $ prefixes for Codex and other harnesses", () => {
+		const commands = [
+			parseCommand("@wf path/to/wf.json"),
+			parseCommand("$wf path/to/wf.json"),
+			parseCommand("@wf:wf path/to/wf.json"),
+			parseCommand("$wf:wf path/to/wf.json"),
+			parseCommand("@wf: path/to/wf.json"),
+			parseCommand("@wf-next"),
+			parseCommand("$wf-next"),
+			parseCommand("@wf:wf-next"),
+			parseCommand("$wf:wf-next"),
+			parseCommand("@wf-show"),
+			parseCommand("$wf-stop"),
+			parseCommand("@wf-help"),
+		];
+
+		expect(commands).toMatchInlineSnapshot(`
+			[
+			  {
+			    "command": {
+			      "args": {
+			        "path": "path/to/wf.json",
+			      },
+			      "name": "run",
+			    },
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {
+			        "path": "path/to/wf.json",
+			      },
+			      "name": "run",
+			    },
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {
+			        "path": "path/to/wf.json",
+			      },
+			      "name": "run",
+			    },
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {
+			        "path": "path/to/wf.json",
+			      },
+			      "name": "run",
+			    },
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {
+			        "path": "path/to/wf.json",
+			      },
+			      "name": "run",
+			    },
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "next",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "next",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "next",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "next",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "show",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "stop",
+			    },
+			    "helpText": undefined,
+			    "isWfCommand": true,
+			  },
+			  {
+			    "command": {
+			      "args": {},
+			      "name": "help",
+			    },
+			    "helpText": "Show this message directly to the user:
+
+			Workflow Runner Commands:
+			  /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
+			  /wf-show [<workflow-file>] - Visualize workflow and show status / progress
+			  /wf-next                   - Execute the next step in paused mode
+			  /wf-stop                   - Stop and reset the active workflow
+			  /wf-help                   - Show this help reference",
+			    "isWfCommand": true,
+			  },
+			]
+		`);
 	});
 
 	test("parseCommand handles various path formats for /wf", () => {
@@ -121,17 +256,12 @@ describe("parseCommand.ts", () => {
 		});
 	});
 
-	test("parseCommand guides user when using old subcommand syntax or deprecated wf-status", () => {
+	test("parseCommand guides user when using old subcommand syntax", () => {
 		const resRun = parseCommand("/wf run path/to/wf.json");
 		expect(resRun.error).toBe("Use /wf <file> directly without 'run'.");
 
 		const resStatus = parseCommand("/wf status");
 		expect(resStatus.error).toBe("Use /wf-show instead of /wf status.");
-
-		const resWfStatus = parseCommand("/wf-status");
-		expect(resWfStatus.error).toBe(
-			"The /wf-status command has been replaced by /wf-show.",
-		);
 
 		const resNext = parseCommand("/wf next");
 		expect(resNext.error).toBe("Use /wf-next instead of /wf next.");
@@ -141,6 +271,14 @@ describe("parseCommand.ts", () => {
 
 		const resHelp = parseCommand("/wf help");
 		expect(resHelp.error).toBe("Use /wf-help instead of /wf help.");
+	});
+
+	test("parseCommand rejects unknown subcommands", () => {
+		const resUnknown = parseCommand("/wf-foo");
+		expect(resUnknown.error).toBe('Unknown command: "/wf-foo"');
+
+		const resStatus = parseCommand("/wf-status");
+		expect(resStatus.error).toBe('Unknown command: "/wf-status"');
 	});
 
 	test("parseCommand detects missing arguments for /wf", () => {
@@ -171,6 +309,19 @@ describe("parseCommand.ts", () => {
 	test("getHelpText returns usage and command listing", () => {
 		expect(getHelpText("Custom header")).toMatchInlineSnapshot(`
       "[Workflow Error] CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER:  Custom header
+
+      Workflow Runner Commands:
+        /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
+        /wf-show [<workflow-file>] - Visualize workflow and show status / progress
+        /wf-next                   - Execute the next step in paused mode
+        /wf-stop                   - Stop and reset the active workflow
+        /wf-help                   - Show this help reference"
+    `);
+	});
+
+	test("getHelpText returns usage instructions to display directly to user when no error", () => {
+		expect(getHelpText()).toMatchInlineSnapshot(`
+      "Show this message directly to the user:
 
       Workflow Runner Commands:
         /wf <workflow-file>        - Start a workflow from a Markdown or JSON file

@@ -54,7 +54,7 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[WORKFLOW ACTIVE: Sample Automated Workflow]\nStep 1 of 5: Report Current Status\n\nINSTRUCTION:\nState that Workflow Step 1 is starting. Output a single sentence confirming readiness.\n\nRULES:\n1. Execute this specific step now.\n2. Do NOT jump ahead to subsequent steps.\n3. Conclude your response when this step is complete.\n4. Do NOT read or inspect the workflow file (\"sample-wf.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Sample Automated Workflow]\nStep 1 of 5: Report Current Status\n\nINSTRUCTION:\nState that Workflow Step 1 is starting. Output a single sentence confirming readiness.\n\nRULES:\n1. Execute this specific step now.\n2. Do NOT jump ahead to subsequent steps.\n3. Conclude your response when this step is complete.\n4. Do NOT read or inspect the workflow file (\"sample-wf.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
@@ -137,7 +137,7 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[WORKFLOW PAUSED: Sample Automated Workflow]\nStep 2 of 5: Check Day Condition (Condition Evaluation)\nCondition: \"is it friday?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is it friday?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"sample-wf.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW PAUSED: Sample Automated Workflow]\nStep 2 of 5: Check Day Condition (Condition Evaluation)\nCondition: \"is it friday?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is it friday?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"sample-wf.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},

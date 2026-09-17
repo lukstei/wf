@@ -1,5 +1,15 @@
 {
 	"name": "wf",
+	"version": "0.1.2",
 	"description": "Deterministic skill workflow runner for AI agents",
-	"hooks": "./hooks/claude-codex-hooks.json"
+	"skills": "./skills/",
+	"hooks": "./hooks/claude-codex-hooks.json",
+	"interface": {
+		"displayName": "Workflow Runner",
+		"shortDescription": "Deterministic step-by-step workflow runner",
+		"longDescription": "Execute complex workflows step-by-step with state persistence, quality gates, and interactive condition branching.",
+		"developerName": "Lukas Steinbrecher",
+		"category": "Productivity",
+		"capabilities": ["Instructions", "Lifecycle hooks"]
+	}
 }

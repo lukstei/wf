@@ -69,193 +69,197 @@ describe("Gate Semantics", () => {
 		};
 
 		expect(assertions).toMatchInlineSnapshot(`
-      {
-        "advanceResult": {
-          "currentStepIndex": 2,
-          "status": "paused",
-          "stepPending": false,
-          "workflow": {
-            "filePath": "gate.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "Do step 1",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "Step 1",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Review database schema changes before applying.",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Confirm Migration",
-                "type": "gate",
-              },
-              {
-                "index": 2,
-                "instruction": "Apply schema",
-                "level": 0,
-                "nextIndex": 3,
-                "title": "Step 3",
-                "type": "step",
-              },
-            ],
-            "name": "GateTestFlow",
-          },
-        },
-        "nextPreResult": {
-          "response": {
-            "injectSteps": [
-              {
-                "ephemeralMessage": "[WORKFLOW PAUSED: GateTestFlow]
-      Step 3 of 3: Step 3
+			{
+			  "advanceResult": {
+			    "currentStepIndex": 2,
+			    "status": "paused",
+			    "stepPending": false,
+			    "workflow": {
+			      "filePath": "gate.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "Do step 1",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "Step 1",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Review database schema changes before applying.",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Confirm Migration",
+			          "type": "gate",
+			        },
+			        {
+			          "index": 2,
+			          "instruction": "Apply schema",
+			          "level": 0,
+			          "nextIndex": 3,
+			          "title": "Step 3",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "GateTestFlow",
+			    },
+			  },
+			  "nextPreResult": {
+			    "response": {
+			      "injectSteps": [
+			        {
+			          "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
-      INSTRUCTION:
-      Apply schema
+			[WORKFLOW PAUSED: GateTestFlow]
+			Step 3 of 3: Step 3
 
-      RULES:
-      1. Execute this specific step now.
-      2. Do NOT jump ahead to subsequent steps.
-      3. Conclude your response when this step is complete.
-      4. Do NOT read or inspect the workflow file ("gate.json") or SKILL.md — steps are already loaded by the runner.",
-              },
-            ],
-          },
-          "state": {
-            "currentStepIndex": 2,
-            "status": "paused",
-            "stepPending": true,
-            "workflow": {
-              "filePath": "gate.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "Do step 1",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "Step 1",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Review database schema changes before applying.",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Confirm Migration",
-                  "type": "gate",
-                },
-                {
-                  "index": 2,
-                  "instruction": "Apply schema",
-                  "level": 0,
-                  "nextIndex": 3,
-                  "title": "Step 3",
-                  "type": "step",
-                },
-              ],
-              "name": "GateTestFlow",
-            },
-          },
-        },
-        "stepInjectionResult": {
-          "response": {
-            "injectSteps": [
-              {
-                "ephemeralMessage": "[WORKFLOW ACTIVE: GateTestFlow]
-      Step 2 of 3: Confirm Migration
+			INSTRUCTION:
+			Apply schema
 
-      INSTRUCTION:
-      Review database schema changes before applying.
+			RULES:
+			1. Execute this specific step now.
+			2. Do NOT jump ahead to subsequent steps.
+			3. Conclude your response when this step is complete.
+			4. Do NOT read or inspect the workflow file ("gate.json") or SKILL.md — steps are already loaded by the runner.",
+			        },
+			      ],
+			    },
+			    "state": {
+			      "currentStepIndex": 2,
+			      "status": "paused",
+			      "stepPending": true,
+			      "workflow": {
+			        "filePath": "gate.json",
+			        "flatSteps": [
+			          {
+			            "index": 0,
+			            "instruction": "Do step 1",
+			            "level": 0,
+			            "nextIndex": 1,
+			            "title": "Step 1",
+			            "type": "step",
+			          },
+			          {
+			            "index": 1,
+			            "instruction": "Review database schema changes before applying.",
+			            "level": 0,
+			            "nextIndex": 2,
+			            "title": "Confirm Migration",
+			            "type": "gate",
+			          },
+			          {
+			            "index": 2,
+			            "instruction": "Apply schema",
+			            "level": 0,
+			            "nextIndex": 3,
+			            "title": "Step 3",
+			            "type": "step",
+			          },
+			        ],
+			        "name": "GateTestFlow",
+			      },
+			    },
+			  },
+			  "stepInjectionResult": {
+			    "response": {
+			      "injectSteps": [
+			        {
+			          "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
-      NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'.
+			[WORKFLOW ACTIVE: GateTestFlow]
+			Step 2 of 3: Confirm Migration
 
-      RULES:
-      1. Execute this specific step now.
-      2. Do NOT jump ahead to subsequent steps.
-      3. Conclude your response when this step is complete.
-      4. Do NOT read or inspect the workflow file ("gate.json") or SKILL.md — steps are already loaded by the runner.",
-              },
-            ],
-          },
-          "state": {
-            "currentStepIndex": 1,
-            "status": "active",
-            "stepPending": true,
-            "workflow": {
-              "filePath": "gate.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "Do step 1",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "Step 1",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Review database schema changes before applying.",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Confirm Migration",
-                  "type": "gate",
-                },
-                {
-                  "index": 2,
-                  "instruction": "Apply schema",
-                  "level": 0,
-                  "nextIndex": 3,
-                  "title": "Step 3",
-                  "type": "step",
-                },
-              ],
-              "name": "GateTestFlow",
-            },
-          },
-        },
-        "stopResult": {
-          "response": {
-            "decision": "allow",
-          },
-          "state": {
-            "currentStepIndex": 2,
-            "status": "paused",
-            "stepPending": false,
-            "workflow": {
-              "filePath": "gate.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "Do step 1",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "Step 1",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Review database schema changes before applying.",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Confirm Migration",
-                  "type": "gate",
-                },
-                {
-                  "index": 2,
-                  "instruction": "Apply schema",
-                  "level": 0,
-                  "nextIndex": 3,
-                  "title": "Step 3",
-                  "type": "step",
-                },
-              ],
-              "name": "GateTestFlow",
-            },
-          },
-        },
-      }
-    `);
+			INSTRUCTION:
+			Review database schema changes before applying.
+
+			NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'.
+
+			RULES:
+			1. Execute this specific step now.
+			2. Do NOT jump ahead to subsequent steps.
+			3. Conclude your response when this step is complete.
+			4. Do NOT read or inspect the workflow file ("gate.json") or SKILL.md — steps are already loaded by the runner.",
+			        },
+			      ],
+			    },
+			    "state": {
+			      "currentStepIndex": 1,
+			      "status": "active",
+			      "stepPending": true,
+			      "workflow": {
+			        "filePath": "gate.json",
+			        "flatSteps": [
+			          {
+			            "index": 0,
+			            "instruction": "Do step 1",
+			            "level": 0,
+			            "nextIndex": 1,
+			            "title": "Step 1",
+			            "type": "step",
+			          },
+			          {
+			            "index": 1,
+			            "instruction": "Review database schema changes before applying.",
+			            "level": 0,
+			            "nextIndex": 2,
+			            "title": "Confirm Migration",
+			            "type": "gate",
+			          },
+			          {
+			            "index": 2,
+			            "instruction": "Apply schema",
+			            "level": 0,
+			            "nextIndex": 3,
+			            "title": "Step 3",
+			            "type": "step",
+			          },
+			        ],
+			        "name": "GateTestFlow",
+			      },
+			    },
+			  },
+			  "stopResult": {
+			    "response": {
+			      "decision": "allow",
+			    },
+			    "state": {
+			      "currentStepIndex": 2,
+			      "status": "paused",
+			      "stepPending": false,
+			      "workflow": {
+			        "filePath": "gate.json",
+			        "flatSteps": [
+			          {
+			            "index": 0,
+			            "instruction": "Do step 1",
+			            "level": 0,
+			            "nextIndex": 1,
+			            "title": "Step 1",
+			            "type": "step",
+			          },
+			          {
+			            "index": 1,
+			            "instruction": "Review database schema changes before applying.",
+			            "level": 0,
+			            "nextIndex": 2,
+			            "title": "Confirm Migration",
+			            "type": "gate",
+			          },
+			          {
+			            "index": 2,
+			            "instruction": "Apply schema",
+			            "level": 0,
+			            "nextIndex": 3,
+			            "title": "Step 3",
+			            "type": "step",
+			          },
+			        ],
+			        "name": "GateTestFlow",
+			      },
+			    },
+			  },
+			}
+		`);
 	});
 });

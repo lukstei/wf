@@ -143,6 +143,8 @@ export function getHelpText(error?: string): string {
 			`[Workflow Error] CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER:  ${error}`,
 			"",
 		);
+	} else {
+		lines.push("Show this message directly to the user:", "");
 	}
 	lines.push("Workflow Runner Commands:");
 	for (const cmd of COMMAND_DEFS) {
@@ -174,35 +176,27 @@ export function parseCommand(input: string): ParseResult {
 			.trim();
 	}
 
-	// Match slash command at the beginning of the line, matching arguments only on the same line
+	// Match slash, mention, or skill command at the beginning of the line
 	const match = cleanInput.match(
-		/^\/(wf-(?:status|next|stop|help|show)|wf)\b(?:[^\S\r\n]+([^\r\n]*)|$)/,
+		/^([/@$])(wf(?::wf)?)(?:[-:]([a-z0-9_-]+))?[:,-]?(?:[^\S\r\n]+([^\r\n]*)|$)/i,
 	);
 	if (!match) {
 		return { isWfCommand: false };
 	}
 
-	const slashToken = match[1];
-	const rawArgs = (match[2] ?? "").trim();
+	const prefix = match[1];
+	const subcommand = match[3]?.toLowerCase();
+	const rawArgs = (match[4] ?? "").trim();
 
-	// 1. Direct subcommand skills: /wf-next, /wf-stop, /wf-help, /wf-show (and deprecated /wf-status)
-	if (slashToken !== "wf") {
-		if (slashToken === "wf-status") {
-			const msg = "The /wf-status command has been replaced by /wf-show.";
-			return {
-				isWfCommand: true,
-				error: msg,
-				helpText: getHelpText(msg),
-			};
-		}
-
-		const cmdName = slashToken.replace(/^wf-/, "") as CommandName;
+	// 1. Direct subcommand skills: /wf-next, @wf-next, $wf-next, etc.
+	if (subcommand) {
+		const cmdName = subcommand as CommandName;
 		const def = findCommandByName(cmdName);
 		if (!def) {
 			return {
 				isWfCommand: true,
-				error: `Unknown command: "/${slashToken}"`,
-				helpText: getHelpText(`Unknown command: "/${slashToken}"`),
+				error: `Unknown command: "${prefix}wf-${subcommand}"`,
+				helpText: getHelpText(`Unknown command: "${prefix}wf-${subcommand}"`),
 			};
 		}
 
@@ -225,7 +219,7 @@ export function parseCommand(input: string): ParseResult {
 		};
 	}
 
-	// 2. Main command: /wf <workflow-file>
+	// 2. Main command: /wf <workflow-file>, @wf <file>, $wf <file>, etc.
 	if (!rawArgs) {
 		return {
 			isWfCommand: true,
@@ -239,10 +233,10 @@ export function parseCommand(input: string): ParseResult {
 	if (["status", "next", "stop", "help", "run", "show"].includes(firstToken)) {
 		const hint =
 			firstToken === "run"
-				? "Use /wf <file> directly without 'run'."
+				? `Use ${prefix}wf <file> directly without 'run'.`
 				: firstToken === "status"
-					? "Use /wf-show instead of /wf status."
-					: `Use /wf-${firstToken} instead of /wf ${firstToken}.`;
+					? `Use ${prefix}wf-show instead of ${prefix}wf status.`
+					: `Use ${prefix}wf-${firstToken} instead of ${prefix}wf ${firstToken}.`;
 		return {
 			isWfCommand: true,
 			error: hint,

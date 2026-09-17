@@ -115,22 +115,6 @@ describe("handlers/pre.ts", () => {
 		);
 		expect(showNoArgRes.state).toEqual({ ...initial, stepPending: false });
 
-		const deprecatedStatusRes = handlePre(
-			{
-				type: "pre",
-				payload: { conversationId: "c1" },
-				latestMessage: {
-					stepIndex: 2,
-					type: "USER_INPUT",
-					content: "/wf-status",
-				},
-			},
-			initial,
-		);
-		expect(
-			deprecatedStatusRes.response.injectSteps?.[0]?.ephemeralMessage,
-		).toMatch(/The \/wf-status command has been replaced by \/wf-show\./);
-
 		const stopRes = handlePre(
 			{
 				type: "pre",

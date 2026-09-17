@@ -54,6 +54,16 @@ describe("detectHarness", () => {
 			expect(harness).toBe("codex");
 		});
 
+		it("detects Codex when CODEX_THREAD_ID is set", () => {
+			const harness = detectHarness({}, { CODEX_THREAD_ID: "thread-123" });
+			expect(harness).toBe("codex");
+		});
+
+		it("detects Codex from hookEventName in payload", () => {
+			const harness = detectHarness({ hookEventName: "UserPromptSubmit" }, {});
+			expect(harness).toBe("codex");
+		});
+
 		it("detects AGY when AGY_HOOK_ACTIVE is set", () => {
 			const harness = detectHarness({}, { AGY_HOOK_ACTIVE: "1" });
 			expect(harness).toBe("agy");

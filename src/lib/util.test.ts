@@ -2,7 +2,10 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, test } from "vitest";
-import { injectSystemMessage } from "../actions/formatters.ts";
+import {
+	OVERRIDE_HEADER,
+	injectSystemMessage,
+} from "../actions/formatters.ts";
 import { defaultWorkflowResolver, resolveWorkflowPath } from "../resolver.ts";
 import { getLatestMessage } from "./getLatestMessage.ts";
 import { logDebug } from "./logDebug.ts";
@@ -190,7 +193,7 @@ describe("util library functions", () => {
 		expect(res).toEqual({
 			injectSteps: [
 				{
-					ephemeralMessage: "Hello from system",
+					ephemeralMessage: `${OVERRIDE_HEADER}\n\nHello from system`,
 				},
 			],
 		});

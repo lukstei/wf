@@ -35,9 +35,11 @@ describe("actions/show.ts", () => {
 		expect(
 			res.response.injectSteps?.[0]?.ephemeralMessage,
 		).toMatchInlineSnapshot(`
-      "[WORKFLOW STATUS]
-      No workflow is currently loaded. Run /wf <workflow-file> to start a workflow, or /wf-show <workflow-file> to inspect one."
-    `);
+			"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
+
+			[WORKFLOW STATUS]
+			No workflow is currently loaded. Run /wf <workflow-file> to start a workflow, or /wf-show <workflow-file> to inspect one."
+		`);
 	});
 
 	test("show visualizes active workflow with current step highlighted when invoked without argument", () => {
@@ -241,29 +243,31 @@ describe("actions/show.ts", () => {
 		// Injected message contains prompt, mermaid, and plain text
 		const msg = res.response.injectSteps?.[0]?.ephemeralMessage;
 		expect(msg).toMatchInlineSnapshot(`
-      "[WORKFLOW VISUALIZATION: SampleShow]
-      Present the structure of workflow "SampleShow" to the user.
+			"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
-      If your environment supports rendering Mermaid diagrams, visualize it using:
-      \`\`\`mermaid
-      flowchart TD
-          s0["Step 1"]
-          s1{{"<i>is friday</i>"}}
-          s2["hello friday"]
-          s0 --> s1
-          s1 -->|Yes| s2
-      \`\`\`
+			[WORKFLOW VISUALIZATION: SampleShow]
+			Present the structure of workflow "SampleShow" to the user.
 
-      If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
+			If your environment supports rendering Mermaid diagrams, visualize it using:
+			\`\`\`mermaid
+			flowchart TD
+			    s0["Step 1"]
+			    s1{{"<i>is friday</i>"}}
+			    s2["hello friday"]
+			    s0 --> s1
+			    s1 -->|Yes| s2
+			\`\`\`
 
-      - Step: Step 1
-      - If: is friday
-        - Step: hello friday
+			If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
 
-      RULES:
-      1. Do NOT read or inspect the workflow file ("/sample.json") or SKILL.md — steps are already loaded by the runner.
-      2. Do NOT execute any workflow steps. This is strictly an informational visualization."
-    `);
+			- Step: Step 1
+			- If: is friday
+			  - Step: hello friday
+
+			RULES:
+			1. Do NOT read or inspect the workflow file ("/sample.json") or SKILL.md — steps are already loaded by the runner.
+			2. Do NOT execute any workflow steps. This is strictly an informational visualization."
+		`);
 	});
 
 	test("show works on real sample-wf.md", () => {
@@ -283,7 +287,9 @@ describe("actions/show.ts", () => {
 		expect(res.state).toBeNull();
 		const msg = res.response.injectSteps?.[0]?.ephemeralMessage;
 		expect(stripAbsolutePath(msg!)).toMatchInlineSnapshot(`
-			"[WORKFLOW VISUALIZATION: Derive an API client from a recorded session]
+			"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
+
+			[WORKFLOW VISUALIZATION: Derive an API client from a recorded session]
 			Present the structure of workflow "Derive an API client from a recorded session" to the user.
 
 			If your environment supports rendering Mermaid diagrams, visualize it using:

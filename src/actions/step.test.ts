@@ -26,45 +26,47 @@ describe("actions/step.ts", () => {
 
 		const res = step({ type: "pre", payload: { conversationId: "c1" } }, state);
 		expect(res).toMatchInlineSnapshot(`
-      {
-        "response": {
-          "injectSteps": [
-            {
-              "ephemeralMessage": "[WORKFLOW ACTIVE: DeployApp]
-      Step 1 of 1: Build Step (Nesting Level 1)
+			{
+			  "response": {
+			    "injectSteps": [
+			      {
+			        "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
-      INSTRUCTION:
-      Run npm run build
+			[WORKFLOW ACTIVE: DeployApp]
+			Step 1 of 1: Build Step (Nesting Level 1)
 
-      RULES:
-      1. Execute this specific step now.
-      2. Do NOT jump ahead to subsequent steps.
-      3. Conclude your response when this step is complete.
-      4. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
-            },
-          ],
-        },
-        "state": {
-          "currentStepIndex": 0,
-          "status": "active",
-          "workflow": {
-            "filePath": "wf.json",
-            "flatSteps": [
-              {
-                "id": "s1",
-                "index": 0,
-                "instruction": "Run npm run build",
-                "level": 1,
-                "nextIndex": 1,
-                "title": "Build Step",
-                "type": "step",
-              },
-            ],
-            "name": "DeployApp",
-          },
-        },
-      }
-    `);
+			INSTRUCTION:
+			Run npm run build
+
+			RULES:
+			1. Execute this specific step now.
+			2. Do NOT jump ahead to subsequent steps.
+			3. Conclude your response when this step is complete.
+			4. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
+			      },
+			    ],
+			  },
+			  "state": {
+			    "currentStepIndex": 0,
+			    "status": "active",
+			    "workflow": {
+			      "filePath": "wf.json",
+			      "flatSteps": [
+			        {
+			          "id": "s1",
+			          "index": 0,
+			          "instruction": "Run npm run build",
+			          "level": 1,
+			          "nextIndex": 1,
+			          "title": "Build Step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "DeployApp",
+			    },
+			  },
+			}
+		`);
 	});
 
 	test("step injects formatted instruction prompt for root level step", () => {

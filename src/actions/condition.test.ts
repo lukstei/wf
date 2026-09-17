@@ -43,70 +43,72 @@ describe("actions/condition.ts", () => {
 			state,
 		);
 		expect(res).toMatchInlineSnapshot(`
-      {
-        "response": {
-          "injectSteps": [
-            {
-              "ephemeralMessage": "[WORKFLOW ACTIVE: CondFlow]
-      Step 1 of 4: Check Database (Condition Evaluation)
-      Condition: "is db healthy?"
+			{
+			  "response": {
+			    "injectSteps": [
+			      {
+			        "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
-      INSTRUCTION:
-      Evaluate whether the following condition is true or false: "is db healthy?".
-      If needed, use tools to inspect the environment, files, date/time, or git state.
-      At the very end of your response, output strictly either:
-      [DECISION: YES] or [DECISION: NO]
+			[WORKFLOW ACTIVE: CondFlow]
+			Step 1 of 4: Check Database (Condition Evaluation)
+			Condition: "is db healthy?"
 
-      RULES:
-      1. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
-            },
-          ],
-        },
-        "state": {
-          "currentStepIndex": 0,
-          "status": "active",
-          "workflow": {
-            "filePath": "wf.json",
-            "flatSteps": [
-              {
-                "condition": "is db healthy?",
-                "index": 0,
-                "level": 0,
-                "nextIndex": 1,
-                "skipIndex": 2,
-                "title": "Check Database",
-                "type": "condition",
-              },
-              {
-                "index": 1,
-                "instruction": "Run queries",
-                "level": 1,
-                "nextIndex": 3,
-                "title": "Run queries",
-                "type": "step",
-              },
-              {
-                "index": 2,
-                "instruction": "Restart db",
-                "level": 1,
-                "nextIndex": 3,
-                "title": "Restart db",
-                "type": "step",
-              },
-              {
-                "index": 3,
-                "instruction": "Finish",
-                "level": 0,
-                "nextIndex": 4,
-                "title": "Finish",
-                "type": "step",
-              },
-            ],
-            "name": "CondFlow",
-          },
-        },
-      }
-    `);
+			INSTRUCTION:
+			Evaluate whether the following condition is true or false: "is db healthy?".
+			If needed, use tools to inspect the environment, files, date/time, or git state.
+			At the very end of your response, output strictly either:
+			[DECISION: YES] or [DECISION: NO]
+
+			RULES:
+			1. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
+			      },
+			    ],
+			  },
+			  "state": {
+			    "currentStepIndex": 0,
+			    "status": "active",
+			    "workflow": {
+			      "filePath": "wf.json",
+			      "flatSteps": [
+			        {
+			          "condition": "is db healthy?",
+			          "index": 0,
+			          "level": 0,
+			          "nextIndex": 1,
+			          "skipIndex": 2,
+			          "title": "Check Database",
+			          "type": "condition",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Run queries",
+			          "level": 1,
+			          "nextIndex": 3,
+			          "title": "Run queries",
+			          "type": "step",
+			        },
+			        {
+			          "index": 2,
+			          "instruction": "Restart db",
+			          "level": 1,
+			          "nextIndex": 3,
+			          "title": "Restart db",
+			          "type": "step",
+			        },
+			        {
+			          "index": 3,
+			          "instruction": "Finish",
+			          "level": 0,
+			          "nextIndex": 4,
+			          "title": "Finish",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "CondFlow",
+			    },
+			  },
+			}
+		`);
 	});
 
 	test("conditionStop parses YES decision and jumps to yes branch", () => {
@@ -248,7 +250,13 @@ describe("actions/condition.ts", () => {
 				title: "is ready?",
 				condition: "is ready?",
 				yes: {
-					steps: [{ type: "step", title: "Deploy", instruction: "Deploy step instruction" }],
+					steps: [
+						{
+							type: "step",
+							title: "Deploy",
+							instruction: "Deploy step instruction",
+						},
+					],
 				},
 			},
 		]);
