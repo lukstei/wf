@@ -441,7 +441,7 @@ export function saveStateAtomic(conversationId: string, data: Record<string, any
      }
    }
    ```
-3. **Global Machine Install**: Users can clone or symlink the repository into `~/.gemini/config/plugins/wf`.
+3. **Global Machine Install**: Users can install via `agy plugin install https://github.com/your-org/wf` (or symlink the directory into `~/.gemini/config/plugins/wf`).
 
 ### 7.3 Publishing to OpenAI Codex CLI
 1. **Manifest Configuration**: Configure `.codex-plugin/plugin.json` with capabilities and interface definitions.

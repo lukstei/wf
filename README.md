@@ -59,9 +59,9 @@ flowchart TD
 ## Installation
 
 ### Google Antigravity
-Clone into your global or workspace plugin directory:
+Install using the Antigravity CLI:
 ```bash
-git clone https://github.com/lukstei/wf.git ~/.gemini/config/plugins/wf
+agy plugin install https://github.com/lukstei/wf
 ```
 
 ### Claude Code

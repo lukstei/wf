@@ -1,0 +1,16 @@
+{
+	"wf": {
+		"PreInvocation": [
+			{
+				"type": "command",
+				"command": "node ./dist/wf.cjs hook pre"
+			}
+		],
+		"Stop": [
+			{
+				"type": "command",
+				"command": "node ./dist/wf.cjs hook stop"
+			}
+		]
+	}
+}

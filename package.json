@@ -26,7 +26,8 @@
 		".agents",
 		"AGENTS.md",
 		"README.md",
-		"plugin.json"
+		"plugin.json",
+		"hooks.json"
 	],
 	"bin": {
 		"wf": "dist/wf.cjs"
@@ -38,7 +39,10 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:update": "vitest run -u",
-		"verify": "npm run test && npm run typecheck"
+		"verify": "npm run test && npm run typecheck",
+		"release:patch": "npm run verify && npm version patch && git push --follow-tags",
+		"release:minor": "npm run verify && npm version minor && git push --follow-tags",
+		"release:major": "npm run verify && npm version major && git push --follow-tags"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.14",

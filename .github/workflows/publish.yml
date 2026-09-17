@@ -1,20 +1,23 @@
-name: Publish
+name: Release & Publish
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,6 +44,30 @@ jobs:
 
       - name: Verify (test & typecheck)
         run: npm run verify
+
+      - name: Commit and push distribution bundle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f dist .agents/plugins/wf/dist
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): compile distribution bundle [skip ci]"
+            if [ -n "$GITHUB_REF_NAME" ] && [ "$GITHUB_REF_TYPE" = "tag" ]; then
+              git tag -f "$GITHUB_REF_NAME"
+              git push origin "$GITHUB_REF_NAME" --force
+            fi
+            git push origin HEAD:main
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "$GITHUB_REF_NAME" ] && [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+              gh release create "$GITHUB_REF_NAME" --generate-notes --title "$GITHUB_REF_NAME"
+            fi
+          fi
 
       - name: Publish to npm
         run: npm publish --provenance
