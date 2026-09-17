@@ -241,15 +241,14 @@ describe("actions/condition.ts", () => {
 		expect(res.response).toEqual({ decision: "allow" });
 	});
 
-	test("conditionStop injects workflow preamble and branchPreamble into continuation reason", () => {
+	test("conditionStop injects workflow preamble and step instruction into continuation reason", () => {
 		const flat = flattenWorkflow([
 			{
 				type: "condition",
 				title: "is ready?",
 				condition: "is ready?",
 				yes: {
-					preamble: "Deploy branch preamble",
-					steps: [{ type: "step", title: "Deploy", instruction: "Deploy" }],
+					steps: [{ type: "step", title: "Deploy", instruction: "Deploy step instruction" }],
 				},
 			},
 		]);
@@ -280,8 +279,6 @@ describe("actions/condition.ts", () => {
 		const reason = res.response.reason;
 		expect(reason).toContain("CONTEXT:");
 		expect(reason).toContain("Global preamble");
-		expect(reason).toContain("BRANCH CONTEXT:");
-		expect(reason).toContain("Deploy branch preamble");
-		expect(reason).toContain("Deploy");
+		expect(reason).toContain("Deploy step instruction");
 	});
 });

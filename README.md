@@ -13,7 +13,7 @@ When you give an AI coding agent a multi-step plan, it tries to execute the whol
 
 `wf` turns Markdown runbooks into step graphs and feeds them to the agent one step at a time. The agent cannot see or run future steps until the current step passes.
 
-Runs in Google Antigravity, Claude Code, OpenAI Codex, and the terminal.
+Runs in Google Antigravity, Claude Code, and OpenAI Codex.
 
 ```mermaid
 flowchart TD
@@ -31,10 +31,10 @@ flowchart TD
 
 ## Goals
 
-- **Skills as workflows:** Turn existing `SKILL.md` files into executable workflows with minimal changes.
+- **Skills as workflows:** Turn existing `SKILL.md` files and Markdown runbooks into executable workflows with minimal changes.
 - **Minimal syntax:** Plain Markdown headings, conditions, and human gates. No custom DSL.
 - **Agent does the work:** The model inspects code, runs tools, and evaluates conditions. `wf` only enforces step order and human checkpoints.
-- **Zero infrastructure:** Runs as a single, self-contained plugin. No server, database, or background daemon.
+- **Zero infrastructure:** Runs as a self-contained plugin. No server, database, or background daemon.
 
 ## Non-goals
 
@@ -44,35 +44,39 @@ flowchart TD
 
 - **One step at a time:** The agent prompt only contains instructions for the active step. Future steps stay hidden.
 - **Explicit branch decisions:** Conditional steps require `[DECISION: YES]` or `[DECISION: NO]` before the graph advances.
-- **Human gates:** Steps marked `## Gate:` stop execution until you run `/wf-next`.
+- **Human gates:** Steps marked `## Gate:` pause execution until you run `/wf-next`.
 - **Visual status:** Generates Mermaid diagrams showing the current position in the graph.
-- **Single bundle:** Bundled into `dist/hook-shim.cjs` with zero runtime dependencies.
+- **Zero runtime dependencies:** Single bundle in `dist/hook-shim.cjs` invoked directly by agent lifecycle hooks.
 
 ## Supported environments
 
-| Environment | Chat command | Terminal CLI | Lifecycle hooks |
-| :--- | :---: | :---: | :--- |
-| Google Antigravity | `/wf` | `wf` | `PreInvocation`, `Stop` |
-| Claude Code | `/wf` | `wf` | `UserPromptSubmit`, `Stop` |
-| OpenAI Codex | `/wf` | `wf` | `UserPromptSubmit`, `Stop` |
-| Terminal / Scripts | — | `wf` | Standard stdin / stdout / exit codes |
+| Environment | Slash commands | Lifecycle hooks |
+| :--- | :--- | :--- |
+| Google Antigravity | `/wf`, `/wf-show`, `/wf-next`, `/wf-stop`, `/wf-help` | `PreInvocation`, `Stop` |
+| Claude Code | `/wf`, `/wf-show`, `/wf-next`, `/wf-stop`, `/wf-help` | `SessionStart`, `UserPromptSubmit`, `Stop` |
+| OpenAI Codex | `/wf`, `/wf-show`, `/wf-next`, `/wf-stop`, `/wf-help` | `SessionStart`, `UserPromptSubmit`, `Stop` |
 
 ## Installation
 
-CLI:
-```bash
-npm install -g @lukstei/wf
-```
-
-Google Antigravity:
+### Google Antigravity
+Clone into your global or workspace plugin directory:
 ```bash
 git clone https://github.com/lukstei/wf.git ~/.gemini/config/plugins/wf
 ```
 
-Claude Code:
+### Claude Code
+Add the marketplace catalog and install:
 ```bash
 /plugin marketplace add lukstei/wf
 /plugin install wf@wf-marketplace
+```
+
+### OpenAI Codex
+Add the marketplace catalog, install, and trust:
+```bash
+codex plugin marketplace add lukstei/wf
+codex plugin install wf
+codex plugin trust wf
 ```
 
 ## Quickstart
@@ -84,21 +88,20 @@ Claude Code:
 
 Ensure all checks pass before deploying.
 
-## Step 1: Tests
+## 1. Run tests
 Run the test suite:
 `npm run verify`
 
-### If: Did all tests pass?
-Build release artifacts.
+## 2. If: Did all tests pass?
 
-### Else
+### Publish
+Publish packages to npm and create GitHub release.
+
+### No
 Stop and report the failures.
 
 ## Gate: Confirm release
 Check the files in `dist/`. Ready to publish to production?
-
-## Step 2: Publish
-Publish packages to npm and create GitHub release.
 ```
 
 ### 2. Run in chat
@@ -109,43 +112,67 @@ In Antigravity, Claude Code, or Codex:
 /wf deploy.md
 ```
 
-- `/wf <file>`: Start a workflow and inject step 1.
-- `/wf-show`: Print status, current step, and Mermaid chart.
-- `/wf-next`: Continue after a gate.
-- `/wf-stop`: Cancel the active workflow.
-- `/wf-help`: Show command help.
+| Command | Description |
+| :--- | :--- |
+| `/wf <workflow-file>` | Start a workflow and inject step 1. Supports relative paths, `@path`, or `@[path]`. |
+| `/wf-show [<workflow-file>]` | Display workflow status, Mermaid diagram, and current step. Visualizes a file when provided. |
+| `/wf-next` | Advance and execute the next step when a workflow is paused at a gate. |
+| `/wf-stop` | Stop and reset the active or paused workflow. |
+| `/wf-help` | Display usage instructions and supported runner commands. |
 
 ## Syntax
 
+See [docs/SYNTAX.md](docs/SYNTAX.md) for the complete syntax specification, rules, and examples.
+
+### Frontmatter (optional)
+YAML frontmatter at the top of the file configures the workflow name and description:
+```markdown
+---
+name: deploy
+description: Production release workflow
+---
+```
+
+### Workflow Preamble (Context)
+Any text between the H1 title and the first step heading is treated as top-level workflow context. It is injected into every step under `CONTEXT:`:
+```markdown
+# Production Deployment
+
+Ensure DATABASE_URL is pointing to staging replica before running checks.
+All commands must be executed from repository root.
+```
+
 ### Steps (`##`)
-Any H2 heading creates a step:
+Any H2 heading that does not match a keyword (`if`, `gate`) creates a step. Heading numbers or prefixes are supported:
 ```markdown
 ## 1. Run migrations
 Run `./scripts/migrate.sh` and verify all tables migrate cleanly.
 ```
 
-### Context (`### Pre:`)
-Adds setup instructions before the step runs:
-```markdown
-### Pre: Database setup
-Set `DATABASE_URL` to the staging replica.
-```
+### Conditions (`## If:` / `### No`)
+Condition headings create binary branching points evaluated dynamically by the model:
+- **Condition Instruction**: Body text directly beneath `## If:` tells the agent how to evaluate the condition.
+- **YES Branch (0..N steps)**: Child `###` subheadings are executed when the condition evaluates to YES.
+- **NO Branch**: A child heading `### No` (or `### Else`) is executed when the condition evaluates to NO.
 
-### Conditions (`### If:` and `### Else`)
-Forces binary routing. The agent must return `[DECISION: YES]` or `[DECISION: NO]`:
+The agent concludes its evaluation with `[DECISION: YES]` or `[DECISION: NO]`:
+
 ```markdown
-### If: Any migrations pending?
+## 2. If: Any migrations pending?
+Run `npx prisma migrate status` to check the database state.
+
+### Run dry-run
 Run migration dry-run and save output.
 
-### Else
-Skip to verification.
+### No: Skip verification
+Skip to schema verification.
 ```
 
 ### Gates (`## Gate:`)
-Pauses execution for human review:
+Pauses execution for human review. Resumes when you run `/wf-next`:
 ```markdown
 ## Gate: Confirm schema changes
-Review the schema diff above. Run `/wf-next` to continue.
+Review the schema diff above. Run `/wf-next` to continue or `/wf-stop` to abort.
 ```
 
 ## Development

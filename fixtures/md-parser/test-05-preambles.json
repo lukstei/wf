@@ -11,8 +11,8 @@
 			"type": "condition",
 			"title": "need caching?",
 			"condition": "need caching?",
+			"instruction": "Branch preamble for caching.",
 			"yes": {
-				"preamble": "Branch preamble for caching.",
 				"steps": [
 					{
 						"type": "step",

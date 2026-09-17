@@ -15,6 +15,7 @@ interface Branch {
 export type ConditionalStep = BaseStep & {
 	type: "condition";
 	condition: string;
+	instruction?: string;
 	yes: Branch;
 	no?: Branch;
 };
@@ -46,7 +47,6 @@ export interface FlatStep {
 	type: "step" | "condition" | "gate";
 	instruction?: string;
 	condition?: string;
-	branchPreamble?: string;
 	nextIndex: number;
 	skipIndex?: number;
 }
@@ -79,7 +79,6 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 		steps: WorkflowStep[],
 		level: number,
 		exitTarget: () => number,
-		branchPreamble?: string,
 	) {
 		const stepStartIndices: number[] = new Array(steps.length);
 
@@ -91,8 +90,6 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 
 			const afterThisStep = isLast ? exitTarget : () => stepStartIndices[i + 1];
 
-			const preambleForThisStep = i === 0 ? branchPreamble : undefined;
-
 			if (isConditionalStep(step)) {
 				const title = step.title || step.condition || "Condition";
 				const condStep: FlatStep = {
@@ -101,9 +98,7 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 					title,
 					type: "condition",
 					condition: step.condition,
-					...(preambleForThisStep
-						? { branchPreamble: preambleForThisStep }
-						: {}),
+					...(step.instruction ? { instruction: step.instruction } : {}),
 					nextIndex: 0,
 					skipIndex: 0,
 				};
@@ -117,12 +112,12 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 
 				if (yesSteps.length > 0) {
 					yesStartIndex = flat.length;
-					compile(yesSteps, level + 1, afterThisStep, step.yes.preamble);
+					compile(yesSteps, level + 1, afterThisStep);
 				}
 
 				if (noSteps.length > 0) {
 					noStartIndex = flat.length;
-					compile(noSteps, level + 1, afterThisStep, step.no?.preamble);
+					compile(noSteps, level + 1, afterThisStep);
 				}
 
 				fixups.push(() => {
@@ -138,9 +133,6 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 					title,
 					type: "gate",
 					instruction: step.instruction,
-					...(preambleForThisStep
-						? { branchPreamble: preambleForThisStep }
-						: {}),
 					nextIndex: 0,
 				};
 				flat.push(flatStep);
@@ -156,9 +148,6 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 					title,
 					type: "step",
 					instruction: step.instruction,
-					...(preambleForThisStep
-						? { branchPreamble: preambleForThisStep }
-						: {}),
 					nextIndex: 0,
 				};
 				flat.push(flatStep);

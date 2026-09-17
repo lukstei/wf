@@ -21,8 +21,12 @@
 				]
 			},
 			"no": {
-				"preamble": "echo hello monday",
 				"steps": [
+					{
+						"type": "step",
+						"title": "it is friday? no",
+						"instruction": "echo hello monday"
+					},
 					{
 						"type": "step",
 						"title": "report",

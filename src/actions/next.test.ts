@@ -115,7 +115,7 @@ describe("actions/next.ts", () => {
 		expect(res.response.decision).toBe("allow");
 	});
 
-	test("nextStop injects workflow preamble and branchPreamble into reason", () => {
+	test("nextStop injects workflow preamble and step instruction into reason", () => {
 		const flat: FlatStep[] = [
 			{
 				index: 0,
@@ -130,8 +130,7 @@ describe("actions/next.ts", () => {
 				level: 1,
 				title: "Step 2",
 				type: "step",
-				instruction: "Step 2",
-				branchPreamble: "Branch context for step 2",
+				instruction: "Step 2 instruction",
 				nextIndex: 2,
 			},
 		];
@@ -154,8 +153,6 @@ describe("actions/next.ts", () => {
 		const reason = res.response.reason;
 		expect(reason).toContain("CONTEXT:");
 		expect(reason).toContain("Global flow context");
-		expect(reason).toContain("BRANCH CONTEXT:");
-		expect(reason).toContain("Branch context for step 2");
-		expect(reason).toContain("Step 2");
+		expect(reason).toContain("Step 2 instruction");
 	});
 });

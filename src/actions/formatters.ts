@@ -41,15 +41,16 @@ export function formatStepPrompt(
 			lines.push("", "CONTEXT:", state.workflow.preamble);
 		}
 
-		if (currentStep.branchPreamble) {
-			lines.push("", "BRANCH CONTEXT:", currentStep.branchPreamble);
+		lines.push("", "INSTRUCTION:");
+		if (currentStep.instruction) {
+			lines.push(currentStep.instruction);
+		} else {
+			lines.push(
+				`Evaluate whether the following condition is true or false: "${currentStep.condition}".`,
+				"If needed, use tools to inspect the environment, files, date/time, or git state.",
+			);
 		}
-
 		lines.push(
-			"",
-			"INSTRUCTION:",
-			`Evaluate whether the following condition is true or false: "${currentStep.condition}".`,
-			"If needed, use tools to inspect the environment, files, date/time, or git state.",
 			"At the very end of your response, output strictly either:",
 			"[DECISION: YES] or [DECISION: NO]",
 			"",
@@ -68,10 +69,6 @@ export function formatStepPrompt(
 
 	if (state.workflow.preamble) {
 		promptParts.push("", "CONTEXT:", state.workflow.preamble);
-	}
-
-	if (currentStep.branchPreamble) {
-		promptParts.push("", "BRANCH CONTEXT:", currentStep.branchPreamble);
 	}
 
 	promptParts.push("", "INSTRUCTION:", currentStep.instruction || "");
@@ -121,15 +118,11 @@ export function formatAdvanceReason(
 		reasonParts.push("", "CONTEXT:", preamble);
 	}
 
-	if (nextTargetStep.branchPreamble) {
-		reasonParts.push("", "BRANCH CONTEXT:", nextTargetStep.branchPreamble);
-	}
-
 	reasonParts.push(
 		"",
 		"INSTRUCTION:",
 		isCondition
-			? `Evaluate condition: "${nextTargetStep.condition}"`
+			? (nextTargetStep.instruction || `Evaluate condition: "${nextTargetStep.condition}"`)
 			: (nextTargetStep.instruction ?? ""),
 	);
 

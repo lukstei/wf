@@ -11,8 +11,8 @@
 			"type": "condition",
 			"title": "environment is prod?",
 			"condition": "environment is prod?",
+			"instruction": "Prod setup preamble.",
 			"yes": {
-				"preamble": "Prod setup preamble.",
 				"steps": [
 					{
 						"type": "step",
@@ -23,8 +23,8 @@
 						"type": "condition",
 						"title": "database migration required?",
 						"condition": "database migration required?",
+						"instruction": "Migration preamble.",
 						"yes": {
-							"preamble": "Migration preamble.",
 							"steps": [
 								{
 									"type": "step",

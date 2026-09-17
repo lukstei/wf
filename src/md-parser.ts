@@ -28,7 +28,7 @@ function getInnerText(node?: MarkdownNode | null): string {
 		: "";
 }
 
-const KEYWORDS = ["if", "else", "gate"] as const;
+const KEYWORDS = ["if", "else", "no", "gate"] as const;
 type HeadingKeyword = (typeof KEYWORDS)[number];
 
 const KEYWORD_REGEX = new RegExp(
@@ -61,7 +61,9 @@ export function parseHeading(heading?: MarkdownNode | null): ParsedHeading {
 	const keyword = match[1].toLowerCase();
 	const condition = (match[2] ?? "").trim();
 
-	if (keyword === "else") return { type: "else", title: "else", depth };
+	if (keyword === "else" || keyword === "no") {
+		return { type: "else", title: condition || keyword, depth };
+	}
 	if (keyword === "gate") {
 		return {
 			type: "gate",
@@ -94,39 +96,40 @@ interface ParsedStepsResult {
 	steps: WorkflowStep[];
 }
 
-interface ParsedBranchResult {
-	steps: WorkflowStep[];
-	preamble?: string;
-}
-
-function parseBranch(
+function parseBranchSteps(
 	nodes: MarkdownNode[],
-	depth: number,
+	targetDepth: number,
 	markdown: string,
-	fallback: string,
 	defaultTitle: string,
-): ParsedBranchResult {
-	const hasSubHeadings = nodes.some(
+	fallback: string,
+): WorkflowStep[] {
+	if (!nodes.length) return [];
+	const candidateHeadings = nodes.filter(
 		(n) =>
-			n.type === "heading" && typeof n.depth === "number" && n.depth > depth,
+			n.type === "heading" &&
+			typeof n.depth === "number" &&
+			n.depth >= targetDepth,
 	);
-	if (!hasSubHeadings) {
+	if (candidateHeadings.length === 0) {
 		const text = sliceNodesMarkdown(markdown, nodes);
-		return {
-			steps: [
-				{
-					type: "step",
-					title: defaultTitle,
-					instruction: text || fallback,
-				},
-			],
-		};
+		return [
+			{
+				type: "step",
+				title: defaultTitle,
+				instruction: text || fallback,
+			},
+		];
 	}
-	const result = parseSteps(nodes, depth + 1, markdown);
-	return {
-		steps: result.steps,
-		preamble: result.preamble,
-	};
+	const result = parseSteps(nodes, targetDepth, markdown);
+	const steps = [...result.steps];
+	if (result.preamble) {
+		steps.unshift({
+			type: "step",
+			title: defaultTitle,
+			instruction: result.preamble,
+		});
+	}
+	return steps;
 }
 
 function parseSteps(
@@ -179,45 +182,139 @@ function parseSteps(
 
 		if (parsed.type === "if") {
 			const condition = parsed.condition || parsed.title;
-			const yesBranch = parseBranch(
-				sec.bodyNodes,
-				effectiveDepth,
-				markdown,
-				"Execute condition true branch",
-				`${condition} yes`,
-			);
-			let noBranch: ParsedBranchResult | undefined;
 
-			if (
-				i + 1 < sections.length &&
-				parseHeading(sections[i + 1].headingNode).type === "else"
-			) {
-				i++;
-				noBranch = parseBranch(
-					sections[i].bodyNodes,
-					effectiveDepth,
-					markdown,
-					"Execute condition false branch",
-					`${condition} no`,
+			const childHeadings = sec.bodyNodes
+				.map((node, idx) => ({ node, idx }))
+				.filter(
+					(item) =>
+						item.node.type === "heading" &&
+						typeof item.node.depth === "number" &&
+						item.node.depth > effectiveDepth,
+				) as Array<{ node: MarkdownNode & { depth: number }; idx: number }>;
+
+			let conditionInstruction: string | undefined;
+			let yesSteps: WorkflowStep[] = [];
+			let noSteps: WorkflowStep[] | undefined;
+
+			if (childHeadings.length > 0) {
+				const childDepth = Math.min(...childHeadings.map((h) => h.node.depth));
+				const directChildren = childHeadings.filter(
+					(h) => h.node.depth === childDepth,
 				);
+
+				const preNodes = sec.bodyNodes.slice(0, directChildren[0].idx);
+				conditionInstruction =
+					sliceNodesMarkdown(markdown, preNodes) || undefined;
+
+				let balance = 0;
+				let elseChildIdx = -1;
+				for (let j = 0; j < directChildren.length; j++) {
+					const p = parseHeading(directChildren[j].node);
+					if (p.type === "if") {
+						balance++;
+					} else if (p.type === "else") {
+						if (balance === 0) {
+							elseChildIdx = j;
+							break;
+						}
+						balance--;
+					}
+				}
+
+				if (elseChildIdx !== -1) {
+					const yesNodes = sec.bodyNodes.slice(
+						directChildren[0].idx,
+						directChildren[elseChildIdx].idx,
+					);
+					const noNodes = sec.bodyNodes.slice(directChildren[elseChildIdx].idx);
+
+					yesSteps = parseBranchSteps(
+						yesNodes,
+						childDepth,
+						markdown,
+						`${condition} yes`,
+						"Execute condition true branch",
+					);
+					noSteps = parseBranchSteps(
+						noNodes,
+						childDepth,
+						markdown,
+						`${condition} no`,
+						"Execute condition false branch",
+					);
+				} else {
+					const yesNodes = sec.bodyNodes.slice(directChildren[0].idx);
+					yesSteps = parseBranchSteps(
+						yesNodes,
+						childDepth,
+						markdown,
+						`${condition} yes`,
+						"Execute condition true branch",
+					);
+
+					if (
+						i + 1 < sections.length &&
+						parseHeading(sections[i + 1].headingNode).type === "else"
+					) {
+						i++;
+						noSteps = parseBranchSteps(
+							sections[i].bodyNodes,
+							effectiveDepth + 1,
+							markdown,
+							parseHeading(sections[i].headingNode).title || `${condition} no`,
+							"Execute condition false branch",
+						);
+					}
+				}
+			} else {
+				if (
+					i + 1 < sections.length &&
+					parseHeading(sections[i + 1].headingNode).type === "else"
+				) {
+					const text = sliceNodesMarkdown(markdown, sec.bodyNodes);
+					yesSteps = [
+						{
+							type: "step",
+							title: `${condition} yes`,
+							instruction: text || "Execute condition true branch",
+						},
+					];
+					i++;
+					const elseHeading = parseHeading(sections[i].headingNode);
+					noSteps = parseBranchSteps(
+						sections[i].bodyNodes,
+						effectiveDepth + 1,
+						markdown,
+						elseHeading.title &&
+							elseHeading.title !== "else" &&
+							elseHeading.title !== "no"
+							? elseHeading.title
+							: `${condition} no`,
+						"Execute condition false branch",
+					);
+				} else {
+					const text = sliceNodesMarkdown(markdown, sec.bodyNodes);
+					conditionInstruction = text || undefined;
+				}
 			}
 
 			steps.push({
 				type: "condition",
 				title: parsed.title,
 				condition,
-				yes: {
-					...(yesBranch.preamble ? { preamble: yesBranch.preamble } : {}),
-					steps: yesBranch.steps,
-				},
-				...(noBranch
-					? {
-							no: {
-								...(noBranch.preamble ? { preamble: noBranch.preamble } : {}),
-								steps: noBranch.steps,
-							},
-						}
-					: {}),
+				...(conditionInstruction ? { instruction: conditionInstruction } : {}),
+				yes: { steps: yesSteps },
+				...(noSteps ? { no: { steps: noSteps } } : {}),
+			});
+		} else if (parsed.type === "else") {
+			const instruction = sliceNodesMarkdown(markdown, sec.bodyNodes);
+			steps.push({
+				type: "step",
+				title:
+					parsed.title && parsed.title !== "else" && parsed.title !== "no"
+						? parsed.title
+						: "No",
+				instruction: instruction || parsed.title,
 			});
 		} else if (parsed.type === "gate") {
 			const instruction = sliceNodesMarkdown(markdown, sec.bodyNodes);

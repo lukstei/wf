@@ -282,36 +282,39 @@ describe("actions/show.ts", () => {
 		expect(res.state).toBeNull();
 		const msg = res.response.injectSteps?.[0]?.ephemeralMessage;
 		expect(msg).toMatchInlineSnapshot(`
-      "[WORKFLOW VISUALIZATION: Derive an API client from a recorded session]
-      Present the structure of workflow "Derive an API client from a recorded session" to the user.
+			"[WORKFLOW VISUALIZATION: Derive an API client from a recorded session]
+			Present the structure of workflow "Derive an API client from a recorded session" to the user.
 
-      If your environment supports rendering Mermaid diagrams, visualize it using:
-      \`\`\`mermaid
-      flowchart TD
-          s0["record"]
-          s1{{"<i>it is friday?</i>"}}
-          s2["it is friday? yes"]
-          s3["report"]
-          s4["gg"]
-          s0 --> s1
-          s1 -->|Yes| s2
-          s1 -->|No| s3
-          s2 --> s4
-          s3 --> s4
-      \`\`\`
+			If your environment supports rendering Mermaid diagrams, visualize it using:
+			\`\`\`mermaid
+			flowchart TD
+			    s0["record"]
+			    s1{{"<i>it is friday?</i>"}}
+			    s2["it is friday? yes"]
+			    s3["it is friday? no"]
+			    s4["report"]
+			    s5["gg"]
+			    s0 --> s1
+			    s1 -->|Yes| s2
+			    s1 -->|No| s3
+			    s2 --> s5
+			    s3 --> s4
+			    s4 --> s5
+			\`\`\`
 
-      If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
+			If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
 
-      - Step: record
-      - If: it is friday?
-        - Step: it is friday? yes
-      - Else:
-        - Step: report
-      - Step: gg
+			- Step: record
+			- If: it is friday?
+			  - Step: it is friday? yes
+			- Else:
+			  - Step: it is friday? no
+			  - Step: report
+			- Step: gg
 
-      RULES:
-      1. Do NOT read or inspect the workflow file ("/Users/Lukas.Steinbrecher/dev/ai-skills/wf/examples/sample-wf.md") or SKILL.md — steps are already loaded by the runner.
-      2. Do NOT execute any workflow steps. This is strictly an informational visualization."
-    `);
+			RULES:
+			1. Do NOT read or inspect the workflow file ("/Users/Lukas.Steinbrecher/dev/wf/examples/sample-wf.md") or SKILL.md — steps are already loaded by the runner.
+			2. Do NOT execute any workflow steps. This is strictly an informational visualization."
+		`);
 	});
 });

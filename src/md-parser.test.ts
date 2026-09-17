@@ -107,6 +107,148 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 			title: "Step 1: Start",
 			depth: 2,
 		});
+		expect(parseHeading({ depth: 3, value: "No: Skip" })).toEqual({
+			type: "else",
+			title: "Skip",
+			depth: 3,
+		});
+		expect(parseHeading({ depth: 3, value: "No" })).toEqual({
+			type: "else",
+			title: "no",
+			depth: 3,
+		});
+	});
+
+	test("parses condition evaluation instructions and nested ### No branch", () => {
+		const md = `# Test Flow
+
+## 2. If: Any migrations pending?
+Run \`npx prisma migrate status\` to check database state.
+
+### Run dry-run
+Run migration dry-run and save output.
+
+### No: Skip verification
+Skip to schema verification.
+`;
+		const wf = parseWorkflowMarkdown(md);
+		expect(wf.steps).toHaveLength(1);
+		const cond = wf.steps[0];
+		expect(cond).toMatchObject({
+			type: "condition",
+			title: "Any migrations pending?",
+			condition: "Any migrations pending?",
+			instruction: "Run `npx prisma migrate status` to check database state.",
+			yes: {
+				steps: [
+					{
+						type: "step",
+						title: "Run dry-run",
+						instruction: "Run migration dry-run and save output.",
+					},
+				],
+			},
+			no: {
+				steps: [
+					{
+						type: "step",
+						title: "Skip verification",
+						instruction: "Skip to schema verification.",
+					},
+				],
+			},
+		});
+
+		const flat = flattenWorkflow(wf.steps);
+		expect(flat).toHaveLength(3);
+		expect(flat[0]).toMatchObject({
+			type: "condition",
+			instruction: "Run `npx prisma migrate status` to check database state.",
+			nextIndex: 1,
+			skipIndex: 2,
+		});
+		expect(flat[1]).toMatchObject({
+			type: "step",
+			title: "Run dry-run",
+			instruction: "Run migration dry-run and save output.",
+		});
+		expect(flat[2]).toMatchObject({
+			type: "step",
+			title: "Skip verification",
+			instruction: "Skip to schema verification.",
+		});
+	});
+
+	test("parses multi-step YES branch with ### No", () => {
+		const md = `# Multi-step
+
+## If: Ready?
+Check readiness.
+
+### 1. Dry run
+Run dry run.
+
+### 2. Deploy
+Run deploy.
+
+### No
+Skip deployment.
+`;
+		const wf = parseWorkflowMarkdown(md);
+		expect(wf.steps[0]).toMatchObject({
+			type: "condition",
+			condition: "Ready?",
+			instruction: "Check readiness.",
+			yes: {
+				steps: [
+					{ type: "step", title: "1. Dry run", instruction: "Run dry run." },
+					{ type: "step", title: "2. Deploy", instruction: "Run deploy." },
+				],
+			},
+			no: {
+				steps: [{ type: "step", title: "No", instruction: "Skip deployment." }],
+			},
+		});
+	});
+
+	test("parses condition without NO branch (if-only skip)", () => {
+		const md = `# If-Only
+
+## If: Cache enabled?
+Check if cache is enabled.
+
+### Warm cache
+Warm Redis cache.
+
+## Next Step
+Start server.
+`;
+		const wf = parseWorkflowMarkdown(md);
+		expect(wf.steps).toHaveLength(2);
+		expect(wf.steps[0]).toMatchObject({
+			type: "condition",
+			condition: "Cache enabled?",
+			instruction: "Check if cache is enabled.",
+			yes: {
+				steps: [
+					{
+						type: "step",
+						title: "Warm cache",
+						instruction: "Warm Redis cache.",
+					},
+				],
+			},
+		});
+		expect((wf.steps[0] as any).no).toBeUndefined();
+		expect(wf.steps[1]).toMatchObject({
+			type: "step",
+			title: "Next Step",
+			instruction: "Start server.",
+		});
+
+		const flat = flattenWorkflow(wf.steps);
+		expect(flat[0].nextIndex).toBe(1);
+		expect(flat[0].skipIndex).toBe(2);
 	});
 
 	test("full lifecycle execution of sample-wf.md through handle()", () => {
@@ -170,12 +312,10 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 		expect(t2Reason).toContain(
 			"This is a workflow to test the worfklow funcitions.",
 		);
-		expect(t2Reason).toContain("BRANCH CONTEXT:");
 		expect(t2Reason).toContain("echo hello monday");
-		expect(t2Reason).toContain("report how many days until friday");
 		state = t2Stop.state;
 
-		// Turn 3 Stop: Model executes step 3 ("report")
+		// Turn 3 Stop: Model executes step 3 ("it is friday? no" / "echo hello monday")
 		const t3Stop = handle(
 			{
 				type: "stop",
@@ -183,7 +323,7 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 				latestMessage: {
 					stepIndex: 4,
 					type: "PLANNER_RESPONSE",
-					content: "There are 2 days until Friday.",
+					content: "Hello Monday!",
 				},
 			},
 			state,
@@ -195,10 +335,10 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 		expect(t3Reason).toContain(
 			"This is a workflow to test the worfklow funcitions.",
 		);
-		expect(t3Reason).toContain("report end of workflow - have a nice day");
+		expect(t3Reason).toContain("report how many days until friday");
 		state = t3Stop.state;
 
-		// Turn 4 Stop: Model completes step 4 ("gg")
+		// Turn 4 Stop: Model executes step 4 ("report")
 		const t4Stop = handle(
 			{
 				type: "stop",
@@ -206,12 +346,35 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 				latestMessage: {
 					stepIndex: 5,
 					type: "PLANNER_RESPONSE",
+					content: "There are 2 days until Friday.",
+				},
+			},
+			state,
+		);
+		expect(t4Stop.response.decision).toBe("continue");
+		expect(t4Stop.state?.currentStepIndex).toBe(5);
+		const t4Reason = t4Stop.response.reason;
+		expect(t4Reason).toContain("CONTEXT:");
+		expect(t4Reason).toContain(
+			"This is a workflow to test the worfklow funcitions.",
+		);
+		expect(t4Reason).toContain("report end of workflow - have a nice day");
+		state = t4Stop.state;
+
+		// Turn 5 Stop: Model completes step 5 ("gg")
+		const t5Stop = handle(
+			{
+				type: "stop",
+				payload: { conversationId: "test-conv-sample-wf" },
+				latestMessage: {
+					stepIndex: 6,
+					type: "PLANNER_RESPONSE",
 					content: "Workflow finished - have a nice day!",
 				},
 			},
 			state,
 		);
-		expect(t4Stop.state?.status).toBe("finished");
-		expect(t4Stop.response.decision).toBe("allow");
+		expect(t5Stop.state?.status).toBe("finished");
+		expect(t5Stop.response.decision).toBe("allow");
 	});
 });

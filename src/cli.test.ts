@@ -225,51 +225,51 @@ describe("src/cli.ts", () => {
 		await runCli(["stop"], io);
 
 		expect(outputs).toMatchInlineSnapshot(`
-      [
-        "[WORKFLOW STATUS] No workflow is currently running.",
-        "ERROR: No workflow is loaded. Start a workflow with 'wf start <workflow-file>'.",
-        "[WORKFLOW STARTED] "Sample Automated Workflow"
-      Step 1/5: Report Current Status
-      State that Workflow Step 1 is starting. Output a single sentence confirming readiness.",
-        "[WORKFLOW STATUS: ACTIVE]
-      Workflow: Sample Automated Workflow
-      Step: 1 of 5 (Nesting Level 0)
+			[
+			  "[WORKFLOW STATUS] No workflow is currently running.",
+			  "ERROR: No workflow is loaded. Start a workflow with 'wf start <workflow-file>'.",
+			  "[WORKFLOW STARTED] "Sample Automated Workflow"
+			Step 1/5: Report Current Status
+			State that Workflow Step 1 is starting. Output a single sentence confirming readiness.",
+			  "[WORKFLOW STATUS: ACTIVE]
+			Workflow: Sample Automated Workflow
+			Step: 1 of 5 (Nesting Level 0)
 
-      [WORKFLOW VISUALIZATION: Sample Automated Workflow]
-      Present the structure of workflow "Sample Automated Workflow" to the user.
+			[WORKFLOW VISUALIZATION: Sample Automated Workflow]
+			Present the structure of workflow "Sample Automated Workflow" to the user.
 
-      If your environment supports rendering Mermaid diagrams, visualize it using:
-      \`\`\`mermaid
-      flowchart TD
-          s0["▶ Report Current Status"]
-          s1{{"<i>Check Day Condition</i>"}}
-          s2["Report Friday Status"]
-          s3["Report Non-Friday Status"]
-          s4["Verify and Conclude"]
-          s0 --> s1
-          s1 -->|Yes| s2
-          s1 -->|No| s3
-          s2 --> s4
-          s3 --> s4
-          style s0 stroke:#3b82f6,stroke-width:4px
-      \`\`\`
+			If your environment supports rendering Mermaid diagrams, visualize it using:
+			\`\`\`mermaid
+			flowchart TD
+			    s0["▶ Report Current Status"]
+			    s1{{"<i>Check Day Condition</i>"}}
+			    s2["Report Friday Status"]
+			    s3["Report Non-Friday Status"]
+			    s4["Verify and Conclude"]
+			    s0 --> s1
+			    s1 -->|Yes| s2
+			    s1 -->|No| s3
+			    s2 --> s4
+			    s3 --> s4
+			    style s0 stroke:#3b82f6,stroke-width:4px
+			\`\`\`
 
-      If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
+			If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
 
-      ▶ [CURRENT] - Step: Report Current Status
-      - If: Check Day Condition
-        - Step: Report Friday Status
-      - Else:
-        - Step: Report Non-Friday Status
-      - Step: Verify and Conclude
+			▶ [CURRENT] - Step: Report Current Status
+			- If: Check Day Condition
+			  - Step: Report Friday Status
+			- Else:
+			  - Step: Report Non-Friday Status
+			- Step: Verify and Conclude
 
-      RULES:
-      1. Do NOT read or inspect the workflow file ("/Users/Lukas.Steinbrecher/dev/ai-skills/wf/examples/sample-wf.json") or SKILL.md — steps are already loaded by the runner.
-      2. Do NOT execute any workflow steps. This is strictly an informational visualization.",
-        "[STEP 1/5] Report Current Status
-      State that Workflow Step 1 is starting. Output a single sentence confirming readiness.",
-        "[WORKFLOW STOPPED] Workflow "Sample Automated Workflow" has been stopped.",
-      ]
-    `);
+			RULES:
+			1. Do NOT read or inspect the workflow file ("/Users/Lukas.Steinbrecher/dev/wf/examples/sample-wf.json") or SKILL.md — steps are already loaded by the runner.
+			2. Do NOT execute any workflow steps. This is strictly an informational visualization.",
+			  "[STEP 1/5] Report Current Status
+			State that Workflow Step 1 is starting. Output a single sentence confirming readiness.",
+			  "[WORKFLOW STOPPED] Workflow "Sample Automated Workflow" has been stopped.",
+			]
+		`);
 	});
 });
