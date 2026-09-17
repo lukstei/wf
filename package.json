@@ -29,7 +29,7 @@
 		"plugin.json"
 	],
 	"bin": {
-		"wf": "./dist/wf.cjs"
+		"wf": "dist/wf.cjs"
 	},
 	"scripts": {
 		"build": "node esbuild.config.js",
