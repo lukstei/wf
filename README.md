@@ -65,7 +65,13 @@ agy plugin install https://github.com/lukstei/wf
 ```
 
 ### Claude Code
-Add the marketplace catalog and install:
+From your terminal (CLI):
+```bash
+claude plugin marketplace add lukstei/wf
+claude plugin install wf@wf-marketplace
+```
+
+Or inside an active Claude Code session:
 ```bash
 /plugin marketplace add lukstei/wf
 /plugin install wf@wf-marketplace

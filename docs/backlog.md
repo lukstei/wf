@@ -214,6 +214,23 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
   - Update existing test fixtures to adhere to mandatory colon syntax where branching is tested.
   - Add test assertions verifying that keyword words followed by spaces without colons remain standard action steps.
 
+### [ ] 2.11 Claude Code Namespaced Command Normalization (`/wf:wf`, `/wf:wf-*`)
+- **Current State:** The slash command parser (`src/lib/parseCommand.ts`) expects root slash commands matching `/^\/(wf-(?:status|next|stop|help|show)|wf)\b/`. In Claude Code, plugins installed from marketplaces automatically namespace registered skills/commands under the plugin name, resulting in prefixed invocations such as `/wf:wf <file>`, `/wf:wf-show`, `/wf:wf-next`, `/wf:wf-stop`, `/wf:wf-help` (as well as potential short forms like `/wf:show`, `/wf:next`). Currently, `/wf:wf deploy.md` causes the parser to treat `:wf` as the target file path, and `/wf:wf-show` fails to be recognized as a valid `wf` command.
+- **Objective:** Support both native root slash commands (`/wf`, `/wf-show`, `/wf-next`) and Claude Code namespaced commands (`/wf:wf`, `/wf:wf-show`, `/wf:wf-next`, `/wf:show`, `/wf:next`) seamlessly without breaking command routing or file path extraction.
+- **Investigation & Solutions:**
+  1. **Tolerant Inbound Normalization in `parseCommand.ts`:**
+     - Update the command matcher regex in `src/lib/parseCommand.ts` to optionally match and strip the `wf:` plugin namespace prefix:
+       - Match pattern: `^\/(?:wf:)?(wf-(?:show|next|stop|help)|wf)\b`
+       - Also support short namespaced forms: `^\/wf:(show|next|stop|help|run)\b`
+     - Map namespaced variants to canonical internal command names (`run`, `show`, `next`, `stop`, `help`).
+  2. **Claude Code Harness Normalizer (`src/shim/normalizer.ts`):**
+     - Normalize prompt text in the ingress shim layer when Claude Code is detected (`detectHarness() === "claude_code"`), ensuring clean decoupled parsing before dispatch.
+  3. **Help & Documentation Parity:**
+     - Update `/wf-help` / `getHelpText()` and `README.md` to document both standard slash syntax and Claude Code namespaced command forms.
+- **Changes Needed:**
+  - Update `src/lib/parseCommand.ts` regex and routing logic to accept `wf:` prefixed commands.
+  - Add test cases to `src/lib/parseCommand.test.ts` covering `/wf:wf deploy.md`, `/wf:wf-show`, `/wf:wf-next`, `/wf:show`, `/wf:next`, etc.
+
 ---
 
 ## Priority 3: Antigravity 2.0 Integration & Tooling (Polish)

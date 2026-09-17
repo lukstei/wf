@@ -423,10 +423,16 @@ export function saveStateAtomic(conversationId: string, data: Record<string, any
    }
    ```
 3. **User Installation**:
-   ```bash
-   /plugin marketplace add your-org/wf
-   /plugin install wf@wf-marketplace
-   ```
+   - **Terminal (CLI)**:
+     ```bash
+     claude plugin marketplace add your-org/wf
+     claude plugin install wf@wf-marketplace
+     ```
+   - **Interactive Session**:
+     ```bash
+     /plugin marketplace add your-org/wf
+     /plugin install wf@wf-marketplace
+     ```
 
 ### 7.2 Publishing to AGY (Antigravity)
 1. **Workspace Inclusion**: Include `.agents/plugins/wf/` in the repository root. Any developer cloning the repository automatically inherits `wf`.
