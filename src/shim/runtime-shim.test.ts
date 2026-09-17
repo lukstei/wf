@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { saveState } from "../state.ts";
 import { runShim } from "./runtime-shim.ts";
 
 describe("runShim End-to-End Simulation", () => {
@@ -58,5 +59,67 @@ describe("runShim End-to-End Simulation", () => {
 
 		expect(egress.exitCode).toBe(0);
 		expect(egress.stdout).toBe("{}");
+	});
+
+	it("does nothing when harness cannot be detected", async () => {
+		const egress = await runShim("pre", "{}", {});
+		expect(egress.exitCode).toBe(0);
+		expect(egress.stdout).toBeUndefined();
+	});
+
+	it("advances active workflow in Codex stop hook with block decision", async () => {
+		const sessionId = "codex-active-wf-1";
+		saveState(sessionId, {
+			status: "active",
+			workflow: {
+				name: "Sample Workflow",
+				filePath: "sample.md",
+				flatSteps: [
+					{
+						index: 0,
+						level: 1,
+						type: "step",
+						instruction: "Step 1 instruction",
+						nextIndex: 1,
+					},
+					{
+						index: 1,
+						level: 1,
+						type: "step",
+						instruction: "Step 2 instruction",
+						nextIndex: 2,
+					},
+				],
+			},
+			currentStepIndex: 0,
+			stepPending: true,
+		});
+
+		const rawInput = JSON.stringify({
+			hook_event_name: "Stop",
+			session_id: sessionId,
+			cwd: "/test",
+			stop_hook_active: false,
+			last_assistant_message: "Finished step 1",
+		});
+
+		const egress = await runShim("stop", rawInput, {
+			PLUGIN_DATA: "/tmp/codex-data",
+		});
+
+		expect(egress.exitCode).toBe(0);
+		expect(JSON.parse(egress.stdout ?? "{}")).toMatchInlineSnapshot(`
+			{
+			  "decision": "block",
+			  "reason": "Step: Step
+			Step completed.
+			Now starting Step 2 of 2: undefined (Level 1)
+
+			INSTRUCTION:
+			Step 2 instruction
+
+			Continue immediately and execute this step.",
+			}
+		`);
 	});
 });

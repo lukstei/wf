@@ -2,8 +2,33 @@ import * as fs from "node:fs";
 import type { LatestMessage } from "../types.ts";
 import { logDebug } from "./logDebug.ts";
 
+export type TranscriptItemParser = (
+	item: Record<string, unknown>,
+) => LatestMessage | null;
+
+export function defaultTranscriptParser(
+	item: Record<string, unknown>,
+): LatestMessage | null {
+	const isUser = item.type === "USER_INPUT" || item.source === "USER_EXPLICIT";
+	const isModel =
+		(item.type === "PLANNER_RESPONSE" || item.source === "MODEL") &&
+		item.type !== "GENERIC";
+
+	if ((isUser || isModel) && typeof item.content === "string") {
+		return {
+			stepIndex: typeof item.step_index === "number" ? item.step_index : 0,
+			type: isUser ? "USER_INPUT" : "PLANNER_RESPONSE",
+			source: typeof item.source === "string" ? item.source : undefined,
+			content: item.content,
+		};
+	}
+
+	return null;
+}
+
 export function getLatestMessage(
 	transcriptPath?: string,
+	parseItem: TranscriptItemParser = defaultTranscriptParser,
 ): LatestMessage | null {
 	if (!transcriptPath || !fs.existsSync(transcriptPath)) {
 		return null;
@@ -23,20 +48,11 @@ export function getLatestMessage(
 		for (let i = lines.length - 1; i >= 0; i--) {
 			try {
 				const item = JSON.parse(lines[i]);
-				const isUser =
-					item.type === "USER_INPUT" || item.source === "USER_EXPLICIT";
-				const isModel =
-					(item.type === "PLANNER_RESPONSE" || item.source === "MODEL") &&
-					item.type !== "GENERIC";
-
-				if ((isUser || isModel) && typeof item.content === "string") {
-					return {
-						stepIndex:
-							typeof item.step_index === "number" ? item.step_index : 0,
-						type: isUser ? "USER_INPUT" : "PLANNER_RESPONSE",
-						source: item.source,
-						content: item.content,
-					};
+				if (item && typeof item === "object") {
+					const parsed = parseItem(item as Record<string, unknown>);
+					if (parsed) {
+						return parsed;
+					}
 				}
 			} catch {
 				// Continue searching

@@ -2,10 +2,9 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, test } from "vitest";
-import {
-	OVERRIDE_HEADER,
-	injectSystemMessage,
-} from "../actions/formatters.ts";
+import { injectSystemMessage, OVERRIDE_HEADER } from "../actions/formatters.ts";
+import { parseAgyMessage } from "../harnesses/agy.ts";
+import { parseClaudeMessage } from "../harnesses/claude.ts";
 import { defaultWorkflowResolver, resolveWorkflowPath } from "../resolver.ts";
 import { getLatestMessage } from "./getLatestMessage.ts";
 import { logDebug } from "./logDebug.ts";
@@ -67,6 +66,51 @@ describe("util library functions", () => {
 		expect(nextMsg?.stepIndex).toBe(4);
 		expect(nextMsg?.type).toBe("USER_INPUT");
 		expect(nextMsg?.content).toBe("/wf next");
+
+		// Append Claude Code style assistant message
+		fs.appendFileSync(
+			transcriptPath,
+			"\n" +
+				JSON.stringify({
+					role: "assistant",
+					message: {
+						content: [{ type: "text", text: "Task done [DECISION: YES]" }],
+					},
+				}),
+		);
+
+		const claudeMsg = getLatestMessage(transcriptPath, parseClaudeMessage);
+		expect(claudeMsg).toBeDefined();
+		expect(claudeMsg?.type).toBe("PLANNER_RESPONSE");
+		expect(claudeMsg?.content).toBe("Task done [DECISION: YES]");
+
+		// Test pure parser functions directly
+		expect(
+			parseAgyMessage({
+				step_index: 10,
+				source: "MODEL",
+				type: "PLANNER_RESPONSE",
+				content: "AGY pure",
+			}),
+		).toEqual({
+			stepIndex: 10,
+			type: "PLANNER_RESPONSE",
+			source: "MODEL",
+			content: "AGY pure",
+		});
+
+		expect(
+			parseClaudeMessage({
+				role: "assistant",
+				message: {
+					content: [{ type: "text", text: "Claude pure" }],
+				},
+			}),
+		).toEqual({
+			stepIndex: 0,
+			type: "PLANNER_RESPONSE",
+			content: "Claude pure",
+		});
 
 		fs.rmSync(tmpDir, { recursive: true, force: true });
 	});

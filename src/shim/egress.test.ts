@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import type { NormalizedEvent } from "../harnesses/types.ts";
 import { formatEgress } from "./egress.ts";
-import type { NormalizedEvent } from "./normalizer.ts";
 
 function createMockEvent(
 	overrides: Partial<NormalizedEvent> = {},
@@ -13,6 +13,7 @@ function createMockEvent(
 		isStop: false,
 		stopHookActive: false,
 		isInterrupted: false,
+		latestMessage: null,
 		rawPayload: {},
 		...overrides,
 	};
@@ -56,7 +57,7 @@ describe("formatEgress", () => {
 			});
 		});
 
-		it("triggers anti-recursion safeguard when stopHookActive is true in Claude Code", () => {
+		it("continues execution even when stopHookActive is true in Claude Code", () => {
 			const event = createMockEvent({
 				type: "stop",
 				harness: "claude",
@@ -69,7 +70,10 @@ describe("formatEgress", () => {
 			});
 
 			expect(egress.exitCode).toBe(0);
-			expect(egress.stdout).toBe("{}");
+			expect(JSON.parse(egress.stdout ?? "{}")).toEqual({
+				decision: "block",
+				reason: "Execute step 2",
+			});
 		});
 
 		it("formats Codex continue decision", () => {
@@ -85,10 +89,8 @@ describe("formatEgress", () => {
 
 			expect(egress.exitCode).toBe(0);
 			expect(JSON.parse(egress.stdout ?? "{}")).toEqual({
-				hookSpecificOutput: {
-					hookEventName: "Stop",
-					additionalContext: "Execute step 2",
-				},
+				decision: "block",
+				reason: "Execute step 2",
 			});
 		});
 

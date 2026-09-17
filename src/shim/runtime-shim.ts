@@ -1,10 +1,10 @@
-import { getLatestMessage } from "../lib/getLatestMessage.ts";
+import { detectHarness, getHarness } from "../harnesses/index.ts";
 import { logDebug } from "../lib/logDebug.ts";
 import { loadState, saveState } from "../state.ts";
-import type { HookInfo, LatestMessage } from "../types.ts";
+import type { HookInfo } from "../types.ts";
 import { handle } from "../wf.ts";
 import { type EgressOutput, formatEgress } from "./egress.ts";
-import { normalizePayload, parseJsonSafe, readStdin } from "./normalizer.ts";
+import { parseJsonSafe, readStdin } from "./stdin.ts";
 
 export async function runShim(
 	modeArg: string,
@@ -14,30 +14,24 @@ export async function runShim(
 	const input = rawInput !== undefined ? rawInput : await readStdin();
 	const payload = parseJsonSafe(input);
 
-	const event = normalizePayload(payload, modeArg, env);
+	const harnessId = detectHarness(payload, env);
+	if (!harnessId) {
+		return { exitCode: 0 };
+	}
+
+	const adapter = getHarness(harnessId);
+	const event = adapter.normalize(payload, modeArg, env);
+
 	logDebug.conversationId = event.conversationId;
 
-	// Resolve user message context:
-	// AGY passes transcriptPath; Claude Code & Codex pass prompt directly in payload
-	let latestMessage: LatestMessage | null = null;
+	const rawTranscript =
+		event.rawPayload.transcriptPath ?? event.rawPayload.transcript_path;
 	const transcriptPath =
-		typeof event.rawPayload.transcriptPath === "string"
-			? event.rawPayload.transcriptPath
-			: undefined;
+		typeof rawTranscript === "string" ? rawTranscript : undefined;
 	const artifactDirectoryPath =
 		typeof event.rawPayload.artifactDirectoryPath === "string"
 			? event.rawPayload.artifactDirectoryPath
 			: undefined;
-
-	if (transcriptPath) {
-		latestMessage = getLatestMessage(transcriptPath);
-	} else if (event.prompt) {
-		latestMessage = {
-			stepIndex: 0,
-			type: "USER_INPUT",
-			content: event.prompt,
-		};
-	}
 
 	const hookInfo: HookInfo = {
 		type: event.type === "stop" ? "stop" : "pre",
@@ -49,7 +43,7 @@ export async function runShim(
 			terminationReason: event.terminationReason,
 			...event.rawPayload,
 		},
-		latestMessage,
+		latestMessage: event.latestMessage,
 	};
 
 	const state = loadState(event.conversationId);

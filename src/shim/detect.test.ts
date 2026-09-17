@@ -112,9 +112,9 @@ describe("detectHarness", () => {
 			expect(harness).toBe("claude");
 		});
 
-		it("falls back to unknown when no indicators exist", () => {
+		it("returns null when no indicators exist", () => {
 			const harness = detectHarness({}, {});
-			expect(harness).toBe("unknown");
+			expect(harness).toBeNull();
 		});
 	});
 });
