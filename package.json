@@ -29,7 +29,7 @@
 		"plugin.json"
 	],
 	"bin": {
-		"wf": "./dist/hook-shim.cjs"
+		"wf": "./dist/wf.cjs"
 	},
 	"scripts": {
 		"build": "node esbuild.config.js",

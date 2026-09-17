@@ -6,7 +6,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hook-shim.cjs\" hook pre",
+						"command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/wf.cjs\" hook pre",
 						"timeout": 10
 					}
 				]
@@ -17,7 +17,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hook-shim.cjs\" hook pre",
+						"command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/wf.cjs\" hook pre",
 						"timeout": 10
 					}
 				]
@@ -28,7 +28,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/hook-shim.cjs\" hook stop",
+						"command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/wf.cjs\" hook stop",
 						"timeout": 10
 					}
 				]

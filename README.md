@@ -46,7 +46,7 @@ flowchart TD
 - **Explicit branch decisions:** Conditional steps require `[DECISION: YES]` or `[DECISION: NO]` before the graph advances.
 - **Human gates:** Steps marked `## Gate:` pause execution until you run `/wf-next`.
 - **Visual status:** Generates Mermaid diagrams showing the current position in the graph.
-- **Zero runtime dependencies:** Single bundle in `dist/hook-shim.cjs` invoked directly by agent lifecycle hooks.
+- **Zero runtime dependencies:** Single bundle in `dist/wf.cjs` invoked directly by agent lifecycle hooks.
 
 ## Supported environments
 
@@ -180,7 +180,7 @@ Review the schema diff above. Run `/wf-next` to continue or `/wf-stop` to abort.
 ```bash
 npm install
 npm run verify      # runs tests and tsc
-npm run build       # builds dist/hook-shim.cjs
+npm run build       # builds dist/wf.cjs
 npm run test:watch  # test watcher
 ```
 

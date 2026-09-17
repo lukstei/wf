@@ -262,7 +262,7 @@ export async function runCli(
 const isCliEntry =
 	Boolean(process.argv[1]) &&
 	(process.argv[1].endsWith("cli.ts") ||
-		process.argv[1].endsWith("hook-shim.cjs") ||
+		process.argv[1].endsWith("wf.cjs") ||
 		process.argv[1].endsWith("/wf") ||
 		process.argv[1].endsWith("\\wf"));
 

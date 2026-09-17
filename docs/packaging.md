@@ -15,7 +15,7 @@ As AI coding harnesses proliferate—**Google Antigravity (AGY)**, **Anthropic C
 Maintaining separate plugins per harness leads to drift, broken synchronization, and 3x maintenance overhead. The industry-proven solution (exemplified by reference plugins like **Ponytail**) is a **Universal Single-Source Architecture**:
 1. **Shared Knowledge & Rules**: A single set of `skills/` (`SKILL.md`) and behavioral instructions (`AGENTS.md`) shared across all harnesses.
 2. **Dedicated Manifest Zones**: Cleanly partitioned manifest subdirectories (`.claude-plugin/`, `.codex-plugin/`, `.agents/`) that co-exist peacefully without collision.
-3. **Zero-Dependency Bundled Hook Shim**: A single, bundled Node.js script (`dist/hook-shim.cjs`) built via `esbuild` that auto-detects the host harness, normalizes incoming stdin events, calls the core plugin logic, and translates egress decisions to the host's native protocol.
+3. **Zero-Dependency Bundled Hook Shim**: A single, bundled Node.js script (`dist/wf.cjs`) built via `esbuild` that auto-detects the host harness, normalizes incoming stdin events, calls the core plugin logic, and translates egress decisions to the host's native protocol.
 
 ---
 
@@ -106,7 +106,7 @@ ponytail/
 - **The Problem**: Neither Claude Code nor Codex runs `npm install` when installing a plugin from a marketplace. If your hook requires external npm modules (e.g. `mdast-util-from-markdown`), the hook crashes with `MODULE_NOT_FOUND`.
 - **The Solution**: Compile the hook script and all dependencies into a single, self-contained file using `esbuild`:
   ```bash
-  esbuild src/shim/runtime-shim.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist/hook-shim.cjs
+  esbuild src/shim/runtime-shim.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist/wf.cjs
   ```
 
 ---
@@ -155,14 +155,14 @@ my-plugin/
 │   └── index.ts                      # Library export
 │
 ├── dist/                             # [Bundled Zero-Dependency Production Output]
-│   ├── hook-shim.cjs                 # Single self-contained CJS bundle for all hooks
+│   ├── wf.cjs                        # Single self-contained CJS bundle for all hooks
 │   └── cli.cjs                       # CLI helper for npm/npx installations
 │
 ├── scripts/                          # [Validation & CI Tooling]
 │   ├── check-schemas.js              # Validates marketplace.json & plugin.json schemas
 │   └── check-versions.js             # Enforces lockstep versioning across all manifests
 │
-├── esbuild.config.js                 # Bundler config producing dist/hook-shim.cjs
+├── esbuild.config.js                 # Bundler config producing dist/wf.cjs
 ├── package.json                      # NPM package manifest & root config
 ├── plugin.json                       # Portable fallback root manifest
 ├── AGENTS.md                         # Universal root instructions
@@ -451,7 +451,7 @@ export function saveStateAtomic(conversationId: string, data: Record<string, any
    codex plugin install wf
    codex plugin trust wf
    ```
-   *(Note: Codex records a SHA-256 hash of `dist/hook-shim.cjs`; any untrusted edits post-install require explicit user re-trust).*
+   *(Note: Codex records a SHA-256 hash of `dist/wf.cjs`; any untrusted edits post-install require explicit user re-trust).*
 
 ### 7.4 Publishing to NPM Registry
 1. **Build Step**: Bundle the zero-dependency runtime: `npm run build`.
@@ -476,7 +476,7 @@ Currently, `wf` has its code at the repository root and hooks in `.agents/plugin
 ### Recommended Step-by-Step Implementation:
 1. **Build System Setup**:
    - Install `esbuild` as a `devDependency`.
-   - Create `esbuild.config.js` bundling `src/shim/runtime-shim.ts` -> `dist/hook-shim.cjs` (target `node18`, format `cjs`, bundle all dependencies like `mdast-util-from-markdown`).
+   - Create `esbuild.config.js` bundling `src/shim/runtime-shim.ts` -> `dist/wf.cjs` (target `node18`, format `cjs`, bundle all dependencies like `mdast-util-from-markdown`).
 2. **Move Hook Implementations to Universal Shim**:
    - Implement `detect.ts`, `normalizer.ts`, and `egress.ts` under `src/shim/`.
    - Move workflow engine logic into `src/core/wf.ts`.
@@ -484,7 +484,7 @@ Currently, `wf` has its code at the repository root and hooks in `.agents/plugin
    - Create `.claude-plugin/plugin.json` & `.claude-plugin/marketplace.json`.
    - Create `.codex-plugin/plugin.json`.
    - Create `hooks/claude-codex-hooks.json`.
-   - Update `.agents/plugins/wf/hooks.json` to execute `"node ./dist/hook-shim.cjs hook pre"` and `"node ./dist/hook-shim.cjs hook stop"`.
+   - Update `.agents/plugins/wf/hooks.json` to execute `"node ./dist/wf.cjs hook pre"` and `"node ./dist/wf.cjs hook stop"`.
 4. **Version Consistency & Schema CI**:
    - Add `scripts/check-versions.js` and `scripts/check-schemas.js`.
    - Add GitHub Actions workflow for automated testing and releases.

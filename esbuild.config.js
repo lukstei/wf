@@ -7,12 +7,12 @@ await esbuild.build({
 	platform: "node",
 	target: "node18",
 	format: "cjs",
-	outfile: "dist/hook-shim.cjs",
+	outfile: "dist/wf.cjs",
 	banner: { js: "#!/usr/bin/env node" },
 	logLevel: "info",
 });
 
 fs.mkdirSync(".agents/plugins/wf/dist", { recursive: true });
-fs.copyFileSync("dist/hook-shim.cjs", ".agents/plugins/wf/dist/hook-shim.cjs");
+fs.copyFileSync("dist/wf.cjs", ".agents/plugins/wf/dist/wf.cjs");
 fs.cpSync("skills", ".agents/plugins/wf/skills", { recursive: true });
 fs.cpSync("rules", ".agents/plugins/wf/rules", { recursive: true });
