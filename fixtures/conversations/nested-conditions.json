@@ -1,0 +1,312 @@
+{
+	"name": "nested-conditions",
+	"description": "Tests deeply nested conditions with and without else branches, validating NO-skip on condition without else, YES-enter on condition without else, NO-jump on deeply nested condition with else, and jumping out across multiple nesting levels",
+	"workflow": {
+		"name": "Nested Conditions Workflow",
+		"description": "Workflow testing deeply nested conditions with and without else branches",
+		"steps": [
+			{
+				"type": "condition",
+				"title": "Outer Condition with Else",
+				"condition": "is database online?",
+				"yes": {
+					"steps": [
+						{
+							"type": "condition",
+							"title": "Nested Condition without Else (evaluates NO)",
+							"condition": "is database read-only?",
+							"yes": {
+								"steps": [
+									{
+										"type": "step",
+										"title": "Read-Only Warning",
+										"instruction": "Log that the database is in read-only mode."
+									}
+								]
+							}
+						},
+						{
+							"type": "condition",
+							"title": "Nested Condition without Else (evaluates YES)",
+							"condition": "is migration needed?",
+							"yes": {
+								"steps": [
+									{
+										"type": "condition",
+										"title": "Deeply Nested Condition with Else (evaluates NO)",
+										"condition": "is dry-run mode enabled?",
+										"yes": {
+											"steps": [
+												{
+													"type": "step",
+													"title": "Dry Run Migration",
+													"instruction": "Perform a dry-run migration."
+												}
+											]
+										},
+										"no": {
+											"steps": [
+												{
+													"type": "step",
+													"title": "Execute Migration",
+													"instruction": "Run the live database migration."
+												}
+											]
+										}
+									}
+								]
+							}
+						}
+					]
+				},
+				"no": {
+					"steps": [
+						{
+							"type": "step",
+							"title": "Offline Alert",
+							"instruction": "Send alert that database is offline."
+						}
+					]
+				}
+			},
+			{
+				"type": "step",
+				"title": "Finalize",
+				"instruction": "Confirm all workflow tasks have completed successfully."
+			}
+		]
+	},
+	"steps": [
+		{
+			"id": "turn-1-outer-yes",
+			"input": {
+				"step_index": 0,
+				"source": "USER_EXPLICIT",
+				"type": "USER_INPUT",
+				"status": "DONE",
+				"content": "<USER_REQUEST>\n/wf nested-conditions.json\n</USER_REQUEST>"
+			},
+			"expectedPre": {
+				"output": {
+					"injectSteps": [
+						{
+							"ephemeralMessage": "[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 1 of 9: Outer Condition with Else (Condition Evaluation)\nCondition: \"is database online?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is database online?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+						}
+					]
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 0,
+					"iterationCount": 1,
+					"stepPending": true
+				}
+			},
+			"model": {
+				"step_index": 1,
+				"source": "MODEL",
+				"type": "PLANNER_RESPONSE",
+				"status": "DONE",
+				"content": "Checking database status: database is online. [DECISION: YES]",
+				"terminationReason": "NO_TOOL_CALL"
+			},
+			"expectedStop": {
+				"output": {
+					"decision": "continue",
+					"reason": "If: Nested Condition without Else (evaluates NO)\nCondition \"is database online?\" evaluated to YES.\nNow starting Step 2 of 9: Nested Condition without Else (evaluates NO) (Level 1)\n\nINSTRUCTION:\nEvaluate condition: \"is database read-only?\"\n\nContinue immediately and execute this step."
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 1,
+					"iterationCount": 1,
+					"stepPending": true
+				}
+			}
+		},
+		{
+			"id": "turn-2-nested-no-else-eval-no",
+			"expectedPre": {
+				"output": {
+					"injectSteps": [
+						{
+							"ephemeralMessage": "[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 2 of 9: Nested Condition without Else (evaluates NO) (Nesting Level 1) (Condition Evaluation)\nCondition: \"is database read-only?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is database read-only?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+						}
+					]
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 1,
+					"iterationCount": 2,
+					"stepPending": true
+				}
+			},
+			"model": {
+				"step_index": 2,
+				"source": "MODEL",
+				"type": "PLANNER_RESPONSE",
+				"status": "DONE",
+				"content": "Database is in read-write mode, not read-only. [DECISION: NO]",
+				"terminationReason": "NO_TOOL_CALL"
+			},
+			"expectedStop": {
+				"output": {
+					"decision": "continue",
+					"reason": "If: Nested Condition without Else (evaluates YES)\nCondition \"is database read-only?\" evaluated to NO.\nNow starting Step 4 of 9: Nested Condition without Else (evaluates YES) (Level 1)\n\nINSTRUCTION:\nEvaluate condition: \"is migration needed?\"\n\nContinue immediately and execute this step."
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 3,
+					"iterationCount": 2,
+					"stepPending": true
+				}
+			}
+		},
+		{
+			"id": "turn-3-nested-no-else-eval-yes",
+			"expectedPre": {
+				"output": {
+					"injectSteps": [
+						{
+							"ephemeralMessage": "[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 4 of 9: Nested Condition without Else (evaluates YES) (Nesting Level 1) (Condition Evaluation)\nCondition: \"is migration needed?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is migration needed?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+						}
+					]
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 3,
+					"iterationCount": 3,
+					"stepPending": true
+				}
+			},
+			"model": {
+				"step_index": 3,
+				"source": "MODEL",
+				"type": "PLANNER_RESPONSE",
+				"status": "DONE",
+				"content": "Pending schema changes detected, migration is needed. [DECISION: YES]",
+				"terminationReason": "NO_TOOL_CALL"
+			},
+			"expectedStop": {
+				"output": {
+					"decision": "continue",
+					"reason": "If: Deeply Nested Condition with Else (evaluates NO)\nCondition \"is migration needed?\" evaluated to YES.\nNow starting Step 5 of 9: Deeply Nested Condition with Else (evaluates NO) (Level 2)\n\nINSTRUCTION:\nEvaluate condition: \"is dry-run mode enabled?\"\n\nContinue immediately and execute this step."
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 4,
+					"iterationCount": 3,
+					"stepPending": true
+				}
+			}
+		},
+		{
+			"id": "turn-4-deeply-nested-with-else-eval-no",
+			"expectedPre": {
+				"output": {
+					"injectSteps": [
+						{
+							"ephemeralMessage": "[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 5 of 9: Deeply Nested Condition with Else (evaluates NO) (Nesting Level 2) (Condition Evaluation)\nCondition: \"is dry-run mode enabled?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is dry-run mode enabled?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+						}
+					]
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 4,
+					"iterationCount": 4,
+					"stepPending": true
+				}
+			},
+			"model": {
+				"step_index": 4,
+				"source": "MODEL",
+				"type": "PLANNER_RESPONSE",
+				"status": "DONE",
+				"content": "Production run requested, dry-run mode is disabled. [DECISION: NO]",
+				"terminationReason": "NO_TOOL_CALL"
+			},
+			"expectedStop": {
+				"output": {
+					"decision": "continue",
+					"reason": "Step: Execute Migration\nCondition \"is dry-run mode enabled?\" evaluated to NO.\nNow starting Step 7 of 9: Execute Migration (Level 3)\n\nINSTRUCTION:\nRun the live database migration.\n\nContinue immediately and execute this step."
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 6,
+					"iterationCount": 4,
+					"stepPending": true
+				}
+			}
+		},
+		{
+			"id": "turn-5-branch-action-jump-out",
+			"expectedPre": {
+				"output": {
+					"injectSteps": [
+						{
+							"ephemeralMessage": "[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 7 of 9: Execute Migration (Nesting Level 3)\n\nINSTRUCTION:\nRun the live database migration.\n\nRULES:\n1. Execute this specific step now.\n2. Do NOT jump ahead to subsequent steps.\n3. Conclude your response when this step is complete.\n4. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+						}
+					]
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 6,
+					"iterationCount": 5,
+					"stepPending": true
+				}
+			},
+			"model": {
+				"step_index": 5,
+				"source": "MODEL",
+				"type": "PLANNER_RESPONSE",
+				"status": "DONE",
+				"content": "Live database migration executed successfully.",
+				"terminationReason": "NO_TOOL_CALL"
+			},
+			"expectedStop": {
+				"output": {
+					"decision": "continue",
+					"reason": "Step: Finalize\nStep completed.\nNow starting Step 9 of 9: Finalize\n\nINSTRUCTION:\nConfirm all workflow tasks have completed successfully.\n\nContinue immediately and execute this step."
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 8,
+					"iterationCount": 5,
+					"stepPending": true
+				}
+			}
+		},
+		{
+			"id": "turn-6-finalize-completion",
+			"expectedPre": {
+				"output": {
+					"injectSteps": [
+						{
+							"ephemeralMessage": "[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 9 of 9: Finalize\n\nINSTRUCTION:\nConfirm all workflow tasks have completed successfully.\n\nRULES:\n1. Execute this specific step now.\n2. Do NOT jump ahead to subsequent steps.\n3. Conclude your response when this step is complete.\n4. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+						}
+					]
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 8,
+					"iterationCount": 6,
+					"stepPending": true
+				}
+			},
+			"model": {
+				"step_index": 6,
+				"source": "MODEL",
+				"type": "PLANNER_RESPONSE",
+				"status": "DONE",
+				"content": "All tasks have been successfully finalized.",
+				"terminationReason": "NO_TOOL_CALL"
+			},
+			"expectedStop": {
+				"output": {
+					"decision": "allow"
+				},
+				"state": {
+					"status": "finished"
+				}
+			}
+		}
+	]
+}

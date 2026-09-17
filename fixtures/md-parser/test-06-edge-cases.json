@@ -1,0 +1,10 @@
+{
+	"name": "test-06-edge-cases",
+	"steps": [
+		{
+			"type": "step",
+			"title": "Solo Step",
+			"instruction": "This workflow has no H1, only an H2 step."
+		}
+	]
+}

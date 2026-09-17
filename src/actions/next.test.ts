@@ -1,0 +1,161 @@
+import { describe, expect, test } from "vitest";
+import type { WorkflowState } from "../state.ts";
+import {
+	type FlatStep,
+	flattenWorkflow,
+	type WorkflowDef,
+} from "../workflow.ts";
+import { nextPre, nextStop } from "./next.ts";
+
+const sampleDef: WorkflowDef = {
+	name: "Flow",
+	steps: [
+		{ type: "step", title: "Step 1", instruction: "Do 1" },
+		{ type: "step", title: "Step 2", instruction: "Do 2" },
+	],
+};
+
+describe("actions/next.ts", () => {
+	test("nextPre sets paused mode and injects current step", () => {
+		const flat = flattenWorkflow(sampleDef.steps);
+		const state: WorkflowState = {
+			status: "active",
+			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+			currentStepIndex: 0,
+		};
+
+		const res = nextPre(
+			{ type: "pre", payload: { conversationId: "c1" } },
+			state,
+		);
+		expect(res.state?.status).toBe("paused");
+		expect(res.state?.stepPending).toBe(true);
+		expect(res.response.injectSteps).toBeDefined();
+		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
+			/\[WORKFLOW PAUSED: Flow\]/,
+		);
+		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(/Do 1/);
+	});
+
+	test("nextPre handles uninitialized or completed workflows", () => {
+		const uninitRes = nextPre(
+			{ type: "pre", payload: { conversationId: "c1" } },
+			null,
+		);
+		expect(uninitRes.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
+			/No workflow is loaded/,
+		);
+
+		const flat = flattenWorkflow(sampleDef.steps);
+		const completedRes = nextPre(
+			{ type: "pre", payload: { conversationId: "c1" } },
+			{
+				status: "finished",
+				workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+			},
+		);
+		expect(completedRes.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
+			/completed all steps/,
+		);
+		expect(completedRes.state?.status).toBe("finished");
+	});
+
+	test("nextStop advances to next step and signals continue in active mode", () => {
+		const flat = flattenWorkflow(sampleDef.steps);
+		const state: WorkflowState = {
+			status: "active",
+			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+			currentStepIndex: 0,
+			stepPending: true,
+		};
+
+		const res = nextStop(
+			{ type: "stop", payload: { conversationId: "c1" } },
+			state,
+		);
+		expect(res.state?.currentStepIndex).toBe(1);
+		expect(res.state?.status).toBe("active");
+		expect(res.state?.stepPending).toBe(true);
+		expect(res.response.decision).toBe("continue");
+		expect(res.response.reason).toMatch(/Do 2/);
+	});
+
+	test("nextStop yields to user in paused mode", () => {
+		const flat = flattenWorkflow(sampleDef.steps);
+		const state: WorkflowState = {
+			status: "paused",
+			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+			currentStepIndex: 0,
+			stepPending: true,
+		};
+
+		const res = nextStop(
+			{ type: "stop", payload: { conversationId: "c1" } },
+			state,
+		);
+		expect(res.state?.currentStepIndex).toBe(1);
+		expect(res.state?.status).toBe("paused");
+		expect(res.state?.stepPending).toBe(false);
+		expect(res.response.decision).toBe("allow");
+	});
+
+	test("nextStop completes workflow when reaching the end", () => {
+		const flat = flattenWorkflow(sampleDef.steps);
+		const state: WorkflowState = {
+			status: "active",
+			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+			currentStepIndex: 1, // last step
+		};
+
+		const res = nextStop(
+			{ type: "stop", payload: { conversationId: "c1" } },
+			state,
+		);
+		expect(res.state?.status).toBe("finished");
+		expect(res.response.decision).toBe("allow");
+	});
+
+	test("nextStop injects workflow preamble and branchPreamble into reason", () => {
+		const flat: FlatStep[] = [
+			{
+				index: 0,
+				level: 0,
+				title: "Step 1",
+				type: "step",
+				instruction: "Step 1",
+				nextIndex: 1,
+			},
+			{
+				index: 1,
+				level: 1,
+				title: "Step 2",
+				type: "step",
+				instruction: "Step 2",
+				branchPreamble: "Branch context for step 2",
+				nextIndex: 2,
+			},
+		];
+		const state: WorkflowState = {
+			status: "active",
+			workflow: {
+				name: "Flow",
+				filePath: "wf.json",
+				preamble: "Global flow context",
+				flatSteps: flat,
+			},
+			currentStepIndex: 0,
+		};
+
+		const res = nextStop(
+			{ type: "stop", payload: { conversationId: "c1" } },
+			state,
+		);
+		expect(res.state?.currentStepIndex).toBe(1);
+		const reason = res.response.reason;
+		expect(reason).toContain("CONTEXT:");
+		expect(reason).toContain("Global flow context");
+		expect(reason).toContain("BRANCH CONTEXT:");
+		expect(reason).toContain("Branch context for step 2");
+		expect(reason).toContain("Step 2");
+	});
+});

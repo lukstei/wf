@@ -1,0 +1,40 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"name": "Sample Automated Workflow",
+	"description": "A workflow with a conditional branch",
+	"steps": [
+		{
+			"type": "step",
+			"title": "Report Current Status",
+			"instruction": "State that Workflow Step 1 is starting. Output a single sentence confirming readiness."
+		},
+		{
+			"type": "condition",
+			"title": "Check Day Condition",
+			"condition": "is it friday?",
+			"yes": {
+				"steps": [
+					{
+						"type": "step",
+						"title": "Report Friday Status",
+						"instruction": "State that it is friday."
+					}
+				]
+			},
+			"no": {
+				"steps": [
+					{
+						"type": "step",
+						"title": "Report Non-Friday Status",
+						"instruction": "State that it is not friday."
+					}
+				]
+			}
+		},
+		{
+			"type": "step",
+			"title": "Verify and Conclude",
+			"instruction": "Announce that the workflow has successfully completed all steps."
+		}
+	]
+}

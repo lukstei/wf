@@ -1,0 +1,5 @@
+{
+	"name": "wf",
+	"description": "Deterministic skill workflow runner for AI agents",
+	"hooks": "./hooks/claude-codex-hooks.json"
+}

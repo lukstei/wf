@@ -1,0 +1,50 @@
+import * as fs from "node:fs";
+import type { LatestMessage } from "../types.ts";
+import { logDebug } from "./logDebug.ts";
+
+export function getLatestMessage(
+	transcriptPath?: string,
+): LatestMessage | null {
+	if (!transcriptPath || !fs.existsSync(transcriptPath)) {
+		return null;
+	}
+
+	try {
+		const stat = fs.statSync(transcriptPath);
+		const readSize = Math.min(stat.size, 256 * 1024);
+		const buffer = Buffer.alloc(readSize);
+		const fd = fs.openSync(transcriptPath, "r");
+		fs.readSync(fd, buffer, 0, readSize, stat.size - readSize);
+		fs.closeSync(fd);
+
+		const chunk = buffer.toString("utf-8");
+		const lines = chunk.split("\n").filter((l) => l.trim().length > 0);
+
+		for (let i = lines.length - 1; i >= 0; i--) {
+			try {
+				const item = JSON.parse(lines[i]);
+				const isUser =
+					item.type === "USER_INPUT" || item.source === "USER_EXPLICIT";
+				const isModel =
+					(item.type === "PLANNER_RESPONSE" || item.source === "MODEL") &&
+					item.type !== "GENERIC";
+
+				if ((isUser || isModel) && typeof item.content === "string") {
+					return {
+						stepIndex:
+							typeof item.step_index === "number" ? item.step_index : 0,
+						type: isUser ? "USER_INPUT" : "PLANNER_RESPONSE",
+						source: item.source,
+						content: item.content,
+					};
+				}
+			} catch {
+				// Continue searching
+			}
+		}
+	} catch (err) {
+		logDebug("Error reading transcript", err);
+	}
+
+	return null;
+}

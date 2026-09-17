@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+coverage/
+*.log
+.wf/sessions/
+*.tmp.*
+.agents/plugins/wf/dist
+/dist

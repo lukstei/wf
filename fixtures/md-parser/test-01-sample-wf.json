@@ -1,0 +1,40 @@
+{
+	"name": "Derive an API client from a recorded session",
+	"preamble": "This is a workflow to test the worfklow funcitions.",
+	"steps": [
+		{
+			"type": "step",
+			"title": "record",
+			"instruction": "say \"Hello to workflow test\""
+		},
+		{
+			"type": "condition",
+			"title": "it is friday?",
+			"condition": "it is friday?",
+			"yes": {
+				"steps": [
+					{
+						"type": "step",
+						"title": "it is friday? yes",
+						"instruction": "output is friday"
+					}
+				]
+			},
+			"no": {
+				"preamble": "echo hello monday",
+				"steps": [
+					{
+						"type": "step",
+						"title": "report",
+						"instruction": "report how many days until friday"
+					}
+				]
+			}
+		},
+		{
+			"type": "step",
+			"title": "gg",
+			"instruction": "report end of workflow - have a nice day"
+		}
+	]
+}

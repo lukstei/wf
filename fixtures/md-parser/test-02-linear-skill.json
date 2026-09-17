@@ -1,0 +1,22 @@
+{
+	"name": "linear-skill",
+	"description": "A linear skill workflow",
+	"preamble": "Global guidelines for deployment.",
+	"steps": [
+		{
+			"type": "step",
+			"title": "1. Build Artifacts",
+			"instruction": "Run `npm run build` to create dist assets."
+		},
+		{
+			"type": "step",
+			"title": "2. Run Tests",
+			"instruction": "Run `npm test` across the monorepo."
+		},
+		{
+			"type": "step",
+			"title": "3. Deploy",
+			"instruction": "Push dist assets to staging environment."
+		}
+	]
+}

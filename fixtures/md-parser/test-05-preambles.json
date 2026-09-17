@@ -1,0 +1,36 @@
+{
+	"name": "Preamble Workflow",
+	"preamble": "This is the top-level global workflow preamble.\nIt can span multiple lines.",
+	"steps": [
+		{
+			"type": "step",
+			"title": "Setup",
+			"instruction": "Prepare environment."
+		},
+		{
+			"type": "condition",
+			"title": "need caching?",
+			"condition": "need caching?",
+			"yes": {
+				"preamble": "Branch preamble for caching.",
+				"steps": [
+					{
+						"type": "step",
+						"title": "Install Redis",
+						"instruction": "Run redis docker container."
+					},
+					{
+						"type": "step",
+						"title": "Verify Connection",
+						"instruction": "Ping redis on localhost:6379."
+					}
+				]
+			}
+		},
+		{
+			"type": "step",
+			"title": "Cleanup",
+			"instruction": "Tear down environment."
+		}
+	]
+}

@@ -1,0 +1,22 @@
+{
+	"name": "gate-workflow",
+	"description": "Workflow with human-in-the-loop gate",
+	"preamble": "Deployment guidelines.",
+	"steps": [
+		{
+			"type": "step",
+			"title": "1. Build",
+			"instruction": "Run `npm run build`."
+		},
+		{
+			"type": "gate",
+			"title": "Approve production deploy",
+			"instruction": "Please review the deployment artifacts and verify tests before proceeding to production."
+		},
+		{
+			"type": "step",
+			"title": "2. Deploy",
+			"instruction": "Deploy to production."
+		}
+	]
+}

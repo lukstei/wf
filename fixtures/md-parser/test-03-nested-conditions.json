@@ -1,0 +1,74 @@
+{
+	"name": "Deeply Nested Workflow",
+	"preamble": "Root instructions.",
+	"steps": [
+		{
+			"type": "step",
+			"title": "Step 1: Start",
+			"instruction": "Start the process."
+		},
+		{
+			"type": "condition",
+			"title": "environment is prod?",
+			"condition": "environment is prod?",
+			"yes": {
+				"preamble": "Prod setup preamble.",
+				"steps": [
+					{
+						"type": "step",
+						"title": "Step 2a: Check Credentials",
+						"instruction": "Verify AWS STS credentials."
+					},
+					{
+						"type": "condition",
+						"title": "database migration required?",
+						"condition": "database migration required?",
+						"yes": {
+							"preamble": "Migration preamble.",
+							"steps": [
+								{
+									"type": "step",
+									"title": "Step 2b-i: Run Migration",
+									"instruction": "Execute flyway / prisma migration."
+								},
+								{
+									"type": "step",
+									"title": "Step 2b-ii: Verify Migration",
+									"instruction": "Verify database tables."
+								}
+							]
+						},
+						"no": {
+							"steps": [
+								{
+									"type": "step",
+									"title": "Step 2b-alt: Skip Migration",
+									"instruction": "Log migration skipped."
+								}
+							]
+						}
+					},
+					{
+						"type": "step",
+						"title": "Step 2c: Finalize Cloud",
+						"instruction": "Scale up pods."
+					}
+				]
+			},
+			"no": {
+				"steps": [
+					{
+						"type": "step",
+						"title": "Local Step: Docker Compose",
+						"instruction": "Run docker compose up."
+					}
+				]
+			}
+		},
+		{
+			"type": "step",
+			"title": "Step 3: Finish",
+			"instruction": "Announce completion."
+		}
+	]
+}

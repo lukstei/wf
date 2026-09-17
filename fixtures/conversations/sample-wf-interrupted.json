@@ -1,0 +1,153 @@
+{
+	"name": "sample-wf-interrupted",
+	"description": "Conversation with user conversational interruption, pausing, and step-by-step resumption",
+	"workflow": {
+		"name": "Sample Automated Workflow",
+		"description": "A workflow with a conditional branch",
+		"steps": [
+			{
+				"type": "step",
+				"title": "Report Current Status",
+				"instruction": "State that Workflow Step 1 is starting. Output a single sentence confirming readiness."
+			},
+			{
+				"type": "condition",
+				"title": "Check Day Condition",
+				"condition": "is it friday?",
+				"yes": {
+					"steps": [
+						{
+							"type": "step",
+							"title": "Report Friday Status",
+							"instruction": "State that it is friday."
+						}
+					]
+				},
+				"no": {
+					"steps": [
+						{
+							"type": "step",
+							"title": "Report Non-Friday Status",
+							"instruction": "State that it is not friday."
+						}
+					]
+				}
+			},
+			{
+				"type": "step",
+				"title": "Verify and Conclude",
+				"instruction": "Announce that the workflow has successfully completed all steps."
+			}
+		]
+	},
+	"steps": [
+		{
+			"id": "turn-1-start",
+			"input": {
+				"step_index": 0,
+				"source": "USER_EXPLICIT",
+				"type": "USER_INPUT",
+				"status": "DONE",
+				"content": "<USER_REQUEST>\n/wf sample-wf.json\n</USER_REQUEST>"
+			},
+			"expectedPre": {
+				"output": {
+					"injectSteps": [
+						{
+							"ephemeralMessage": "[WORKFLOW ACTIVE: Sample Automated Workflow]\nStep 1 of 5: Report Current Status\n\nINSTRUCTION:\nState that Workflow Step 1 is starting. Output a single sentence confirming readiness.\n\nRULES:\n1. Execute this specific step now.\n2. Do NOT jump ahead to subsequent steps.\n3. Conclude your response when this step is complete.\n4. Do NOT read or inspect the workflow file (\"sample-wf.json\") or SKILL.md — steps are already loaded by the runner."
+						}
+					]
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 0,
+					"iterationCount": 1,
+					"stepPending": true
+				}
+			},
+			"model": {
+				"step_index": 1,
+				"source": "MODEL",
+				"type": "PLANNER_RESPONSE",
+				"status": "DONE",
+				"content": "Step 1 complete.",
+				"terminationReason": "NO_TOOL_CALL"
+			},
+			"expectedStop": {
+				"output": {
+					"decision": "continue",
+					"reason": "If: Check Day Condition\nStep completed.\nNow starting Step 2 of 5: Check Day Condition\n\nINSTRUCTION:\nEvaluate condition: \"is it friday?\"\n\nContinue immediately and execute this step."
+				},
+				"state": {
+					"status": "active",
+					"currentStepIndex": 1,
+					"iterationCount": 1,
+					"stepPending": true
+				}
+			}
+		},
+		{
+			"id": "turn-2-interrupt",
+			"input": {
+				"step_index": 2,
+				"source": "USER_EXPLICIT",
+				"type": "USER_INPUT",
+				"status": "DONE",
+				"content": "<USER_REQUEST>\nWait, can you explain what Friday means?\n</USER_REQUEST>"
+			},
+			"expectedPre": {
+				"output": {},
+				"state": {
+					"status": "paused",
+					"currentStepIndex": 1,
+					"iterationCount": 1,
+					"stepPending": false
+				}
+			},
+			"model": {
+				"step_index": 3,
+				"source": "MODEL",
+				"type": "PLANNER_RESPONSE",
+				"status": "DONE",
+				"content": "Friday is the day before the weekend.",
+				"terminationReason": "model_stop"
+			},
+			"expectedStop": {
+				"output": {
+					"decision": "allow"
+				},
+				"state": {
+					"status": "paused",
+					"currentStepIndex": 1,
+					"iterationCount": 1,
+					"stepPending": false
+				}
+			}
+		},
+		{
+			"id": "turn-3-resume",
+			"input": {
+				"step_index": 4,
+				"source": "USER_EXPLICIT",
+				"type": "USER_INPUT",
+				"status": "DONE",
+				"content": "<USER_REQUEST>\n/wf-next\n</USER_REQUEST>"
+			},
+			"expectedPre": {
+				"output": {
+					"injectSteps": [
+						{
+							"ephemeralMessage": "[WORKFLOW PAUSED: Sample Automated Workflow]\nStep 2 of 5: Check Day Condition (Condition Evaluation)\nCondition: \"is it friday?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is it friday?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"sample-wf.json\") or SKILL.md — steps are already loaded by the runner."
+						}
+					]
+				},
+				"state": {
+					"status": "paused",
+					"currentStepIndex": 1,
+					"iterationCount": 1,
+					"stepPending": true
+				}
+			}
+		}
+	]
+}

@@ -1,0 +1,21 @@
+{
+	"name": "wf",
+	"interface": {
+		"displayName": "Workflow Runner"
+	},
+	"plugins": [
+		{
+			"name": "wf",
+			"source": {
+				"source": "url",
+				"url": "https://github.com/lukstei/wf.git",
+				"ref": "main"
+			},
+			"policy": {
+				"installation": "AVAILABLE",
+				"authentication": "ON_INSTALL"
+			},
+			"category": "Productivity"
+		}
+	]
+}

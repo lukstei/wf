@@ -1,0 +1,52 @@
+{
+	"name": "Syntax Variations",
+	"preamble": "Testing flexible condition headings.",
+	"steps": [
+		{
+			"type": "condition",
+			"title": "is it sunny?",
+			"condition": "is it sunny?",
+			"yes": {
+				"steps": [
+					{
+						"type": "step",
+						"title": "is it sunny? yes",
+						"instruction": "Wear sunglasses"
+					}
+				]
+			},
+			"no": {
+				"steps": [
+					{
+						"type": "step",
+						"title": "is it sunny? no",
+						"instruction": "Take umbrella"
+					}
+				]
+			}
+		},
+		{
+			"type": "condition",
+			"title": "is it windy?",
+			"condition": "is it windy?",
+			"yes": {
+				"steps": [
+					{
+						"type": "step",
+						"title": "is it windy? yes",
+						"instruction": "Wear windbreaker"
+					}
+				]
+			},
+			"no": {
+				"steps": [
+					{
+						"type": "step",
+						"title": "is it windy? no",
+						"instruction": "Wear normal jacket"
+					}
+				]
+			}
+		}
+	]
+}
