@@ -178,6 +178,17 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
   - Reusable core validator in `src/` that can be invoked at compile/load time.
   - Serves as the shared engine for the pre-flight static linter described in **Item 3.2** (`/wf-lint <file>` / `wf lint <file>`).
 
+### [ ] 2.9 Alphanumeric Step Title Prefixes (`1a`, `1b`, `Step 1a:`)
+- **Current State:** Heading parsing (`src/md-parser.ts`) strips leading non-letter characters (`^[^\p{L}]+`) to detect keywords (`if`, `else`, `gate`) after simple numeric prefixes like `1.` or `2.`. When titles use alphanumeric prefixes like `1a`, `1b`, or `Step 1a:` (number followed by letters):
+  - Stripping non-letters stops at the letter (e.g. `1a` becomes `a`), which breaks keyword detection when combined with prefix words (e.g. `Step 1a: If ...`), or leaves stray letters.
+  - Step titles preserve raw prefixes inconsistently depending on whether keywords are present.
+- **Objective:** Support alphanumeric step prefixes such as `1a`, `1b`, `2a`, `2b` (numbers followed by letters), as well as prefixed variants (`Step 1a:`, `Task 1b:`, `1a.`, `1b)`):
+  - Reliably recognize keyword headings (`if`, `else`, `gate`) regardless of whether steps use numeric (`1.`), alphanumeric (`1a.`, `1b:`), or worded prefixes (`Step 1a:`).
+  - Cleanly separate the alphanumeric prefix from the step title/condition for consistent display and indexing.
+- **Changes Needed:**
+  - Enhance prefix pattern matching in `src/md-parser.ts` to recognize alphanumeric sequences (`\d+[a-zA-Z]+`) alongside optional prefix labels (`Step`, `Task`, `Schritt`).
+  - Add test fixtures and unit tests in `src/md-parser.test.ts` covering `1a`, `1b`, `1a. If ...`, `1b. Gate: ...`, and regular steps with alphanumeric numbering.
+
 ---
 
 ## Priority 3: Antigravity 2.0 Integration & Tooling (Polish)
