@@ -23,12 +23,12 @@ These rules govern agent behavior whenever the `wf` plugin or an active workflow
 
 ## 4. Workflow Runner Commands
 
-Users and agents interact with workflows via slash commands:
+Users and agents interact with workflows via slash commands (Claude Code / AGY) or `$` mentions (Codex CLI):
 
-| Command | Description |
-| :--- | :--- |
-| `/wf <workflow-file>` | Start and run a workflow from a Markdown (`.md`) or JSON (`.json`) file. |
-| `/wf-show [<workflow-file>]` | Display workflow status, Mermaid diagram, and current position (or visualize a file). |
-| `/wf-next` | Advance and execute the next step when a workflow is paused. |
-| `/wf-stop` | Abort and reset the currently active or paused workflow. |
-| `/wf-help` | Display usage instructions and supported runner commands. |
+| Command (Claude / AGY) | Command (Codex CLI) | Description |
+| :--- | :--- | :--- |
+| `/wf <workflow-file>` | `$wf:wf <workflow-file>` | Start and run a workflow from a Markdown (`.md`) or JSON (`.json`) file. |
+| `/wf-show [<workflow-file>]` | `$wf:wf-show [<workflow-file>]` | Display workflow status, Mermaid diagram, and current position (or visualize a file). |
+| `/wf-next` | `$wf:wf-next` | Advance and execute the next step when a workflow is paused. |
+| `/wf-stop` | `$wf:wf-stop` | Abort and reset the currently active or paused workflow. |
+| `/wf-help` | `$wf:wf-help` | Display usage instructions and supported runner commands. |

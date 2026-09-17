@@ -50,11 +50,11 @@ flowchart TD
 
 ## Supported environments
 
-| Environment | Slash commands | Lifecycle hooks |
+| Environment | Commands | Lifecycle hooks |
 | :--- | :--- | :--- |
 | Google Antigravity | `/wf`, `/wf-show`, `/wf-next`, `/wf-stop`, `/wf-help` | `PreInvocation`, `Stop` |
 | Claude Code | `/wf`, `/wf-show`, `/wf-next`, `/wf-stop`, `/wf-help` | `SessionStart`, `UserPromptSubmit`, `Stop` |
-| OpenAI Codex | `/wf`, `/wf-show`, `/wf-next`, `/wf-stop`, `/wf-help` | `SessionStart`, `UserPromptSubmit`, `Stop` |
+| OpenAI Codex | `$wf:wf`, `$wf:wf-show`, `$wf:wf-next`, `$wf:wf-stop`, `$wf:wf-help` | `SessionStart`, `UserPromptSubmit`, `Stop` |
 
 ## Installation
 
@@ -112,19 +112,25 @@ Check the files in `dist/`. Ready to publish to production?
 
 ### 2. Run in chat
 
-In Antigravity, Claude Code, or Codex:
+In Antigravity or Claude Code:
 
 ```text
 /wf deploy.md
 ```
 
-| Command | Description |
-| :--- | :--- |
-| `/wf <workflow-file>` | Start a workflow and inject step 1. Supports relative paths, `@path`, or `@[path]`. |
-| `/wf-show [<workflow-file>]` | Display workflow status, Mermaid diagram, and current step. Visualizes a file when provided. |
-| `/wf-next` | Advance and execute the next step when a workflow is paused at a gate. |
-| `/wf-stop` | Stop and reset the active or paused workflow. |
-| `/wf-help` | Display usage instructions and supported runner commands. |
+In OpenAI Codex:
+
+```text
+$wf:wf deploy.md
+```
+
+| Command (Claude Code / AGY) | Command (Codex CLI) | Description |
+| :--- | :--- | :--- |
+| `/wf <workflow-file>` | `$wf:wf <workflow-file>` | Start a workflow and inject step 1. Supports relative paths, `@path`, or `@[path]`. |
+| `/wf-show [<workflow-file>]` | `$wf:wf-show [<workflow-file>]` | Display workflow status, Mermaid diagram, and current step. Visualizes a file when provided. |
+| `/wf-next` | `$wf:wf-next` | Advance and execute the next step when a workflow is paused at a gate. |
+| `/wf-stop` | `$wf:wf-stop` | Stop and reset the active or paused workflow. |
+| `/wf-help` | `$wf:wf-help` | Display usage instructions and supported runner commands. |
 
 ## Syntax
 

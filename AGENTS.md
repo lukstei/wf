@@ -1,13 +1,19 @@
-- Prefer snapshot testing of a list of assertions
+- Prefer snapshot testing instead of a list of assertions
 - Always place workflow state transitions and status mutations in `src/transitions.ts`
 - Run `npm run verify` after each change
 - Keep the code as clean and pure as possible
   - no unecessary condition checking
-  - no over-defensive programming (instead assert, the precondtions of a function if necessary)
+  - no over-defensive programming (instead assert, the preconditions of a function if necessary)
   - no unecessary optional types
   - No unecessary exporting of internal types
   - Especially no unecessary states, always think about how to keep the state minimal
-- Prefer inline types, if the type is not reused
-- Prefer discriminated unions
+  - Prefer inline types, if the type is not reused
+  - Prefer discriminated unions
 - No use of any or unjustified type castings
 - Never change the git state without confirmation
+- Use /no-ai-slop for all texts intended for humans
+- Reference implementations for cross-agent integrations:
+  - Universal packaging & shims: `ponytail` (`~/.gemini/config/plugins/ponytail/`, analyzed in `docs/packaging.md`)
+  - Loop interception (`Stop` hook): `ralph-loop` (`~/.claude/plugins/marketplaces/claude-plugins-official/plugins/ralph-loop/`)
+  - Skill discovery: `superpowers` (`~/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.0/`)
+- Use /find-docs ctx-7 for docs for external libs
