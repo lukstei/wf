@@ -194,6 +194,26 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
   - Enhance prefix pattern matching in `src/md-parser.ts` to recognize alphanumeric sequences (`\d+[a-zA-Z]+`) alongside optional prefix labels (`Step`, `Task`, `Schritt`).
   - Add test fixtures and unit tests in `src/md-parser.test.ts` covering `1a`, `1b`, `1a. If ...`, `1b. Gate: ...`, and regular steps with alphanumeric numbering.
 
+### [ ] 2.10 Mandatory Colon Delimiter for Control Keywords (`If:`, `Else:`, `Gate:`)
+- **Current State:** Heading keyword detection in `src/md-parser.ts` accepts whitespace as a keyword delimiter (`(?:[:\s]+(.*))?`). Consequently, natural language titles beginning with a keyword followed by a space (e.g., `## If is friday`, `## Gate the release`, `## No dependencies needed`) are unintentionally parsed as control-flow constructs (`if`, `gate`, `else`) rather than plain action steps.
+- **Objective:** Require a trailing colon (`:`) immediately following control keywords (`If:`, `Else:`, `Gate:`) to activate control-flow parsing. Any heading lacking a colon must be treated as a standard plain-text action step.
+- **Syntax Rules:**
+  - **Control-flow headings (colon mandatory):**
+    - `## If: is friday` (conditional branch)
+    - `## Else:` or `## Else: fallback actions` (else/fallback branch)
+    - `## Gate: Approve deployment` (human verification gate)
+  - **Standard action steps (no colon):**
+    - `## If is friday` -> Plain step titled `"If is friday"`
+    - `## Gate release candidate` -> Plain step titled `"Gate release candidate"`
+    - `## No dependencies required` -> Plain step titled `"No dependencies required"`
+- **Benefits:**
+  - **Collision Prevention:** Eliminates ambiguity between control structures and natural language headings as the keyword set expands.
+  - **Deterministic Grammar:** Makes workflow parsing predictable and robust across varied heading styles.
+- **Changes Needed:**
+  - Update `KEYWORD_REGEX` in `src/md-parser.ts` to require a colon delimiter after the keyword.
+  - Update existing test fixtures to adhere to mandatory colon syntax where branching is tested.
+  - Add test assertions verifying that keyword words followed by spaces without colons remain standard action steps.
+
 ---
 
 ## Priority 3: Antigravity 2.0 Integration & Tooling (Polish)
