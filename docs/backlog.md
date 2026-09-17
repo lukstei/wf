@@ -63,10 +63,12 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
 
 ### [ ] 2.2 Dynamic Arguments & Variable Interpolation (`/wf <file> [args]`)
 - **Current State:** Workflows are completely static; inputs cannot be parameterized without modifying markdown files before every run.
-- **Objective:** Support arguments on the command line and interpolate them into step instructions and preambles.
+- **Objective:** Support arguments on the command line and interpolate them into step instructions and preambles, or inject unstructured user instructions directly into the workflow context.
 - **Usage:**
   - Named arguments: `/wf deploy.md env=staging tag=v1.2.0`
   - Positional arguments: `/wf review.md 142`
+  - Freeform user instructions: `/wf review-pr.md focus on performance bottlenecks and SQL query safety`
+  - Delimited mode: `/wf deploy.md env=staging -- abort immediately if any error occurs`
 - **Specification:**
   - Support YAML frontmatter declaring expected inputs and defaults:
     ```markdown
@@ -79,6 +81,9 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
     ---
     ```
   - Replace occurrences of `{{env}}` or `$1` across step instructions during workflow compilation.
+  - **Freeform User Instructions Pass-Through (Unparameterized / Passthrough Mode):**
+    - If a workflow defines **no parameters** (`inputs` field is omitted or empty), or if a **special mode / delimiter** is activated (e.g. `-- <user_instructions>` or frontmatter setting `freeform: true`), the entire string after `/wf <file> <user_instructions>` is captured as raw user instructions.
+    - **Injection Behavior:** The captured string is injected into the model context **once at the beginning of the workflow** (appended to the workflow preamble / initial step prompt) under a dedicated section (e.g. `### Additional User Instructions:`), providing flexible runtime steering without requiring upfront parameter definitions.
 
 ### [x] 2.3 Human-in-the-Loop Gates (`Gate:` / Interactive Approval)
 - **Current State:** Implemented. Workflow authors define explicit human verification checkpoints via `## Gate: <title>`.
