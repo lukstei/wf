@@ -132,7 +132,7 @@ describe("actions/run.ts", () => {
 	});
 
 	test("run executes real sample-wf.md workflow with preamble injection", () => {
-		const workspaceRoot = path.resolve(import.meta.dirname, "../../../../..");
+		const workspaceRoot = path.resolve(import.meta.dirname, "../..");
 		const res = run(
 			{
 				type: "pre",

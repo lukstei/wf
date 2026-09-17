@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { getCliHelp, parseCliArgs, runCli } from "./cli.ts";
+import { stripAbsolutePath } from "./test-utils.ts";
 
 describe("src/cli.ts", () => {
 	const testConversationId = "test-cli-suite";
@@ -224,7 +225,7 @@ describe("src/cli.ts", () => {
 		// 6. Stop running workflow
 		await runCli(["stop"], io);
 
-		expect(outputs).toMatchInlineSnapshot(`
+		expect(stripAbsolutePath(outputs)).toMatchInlineSnapshot(`
 			[
 			  "[WORKFLOW STATUS] No workflow is currently running.",
 			  "ERROR: No workflow is loaded. Start a workflow with 'wf start <workflow-file>'.",
@@ -264,7 +265,7 @@ describe("src/cli.ts", () => {
 			- Step: Verify and Conclude
 
 			RULES:
-			1. Do NOT read or inspect the workflow file ("/Users/Lukas.Steinbrecher/dev/wf/examples/sample-wf.json") or SKILL.md — steps are already loaded by the runner.
+			1. Do NOT read or inspect the workflow file ("examples/sample-wf.json") or SKILL.md — steps are already loaded by the runner.
 			2. Do NOT execute any workflow steps. This is strictly an informational visualization.",
 			  "[STEP 1/5] Report Current Status
 			State that Workflow Step 1 is starting. Output a single sentence confirming readiness.",

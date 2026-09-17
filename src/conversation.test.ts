@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { describe, expect, test } from "vitest";
 import { defaultWorkflowResolver } from "./resolver.ts";
 import type { WorkflowState } from "./state.ts";
+import { stripAbsolutePath } from "./test-utils.ts";
 import type { LatestMessage } from "./types.ts";
 import { handle } from "./wf.ts";
 import type { WorkflowDef } from "./workflow.ts";
@@ -60,7 +61,7 @@ function sanitizeOutput(
 ): Record<string, unknown> | undefined {
 	if (!output) return output;
 	const json = JSON.stringify(output);
-	const normalized = json.replaceAll(`${workspaceRoot}/`, "");
+	const normalized = stripAbsolutePath(json, workspaceRoot);
 	return JSON.parse(normalized);
 }
 

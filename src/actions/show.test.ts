@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import { describe, expect, test } from "vitest";
 import type { WorkflowState } from "../state.ts";
+import { stripAbsolutePath } from "../test-utils.ts";
 import type { WorkflowDef } from "../workflow.ts";
 import { show } from "./show.ts";
 
@@ -281,7 +282,7 @@ describe("actions/show.ts", () => {
 
 		expect(res.state).toBeNull();
 		const msg = res.response.injectSteps?.[0]?.ephemeralMessage;
-		expect(msg).toMatchInlineSnapshot(`
+		expect(stripAbsolutePath(msg!)).toMatchInlineSnapshot(`
 			"[WORKFLOW VISUALIZATION: Derive an API client from a recorded session]
 			Present the structure of workflow "Derive an API client from a recorded session" to the user.
 
@@ -313,7 +314,7 @@ describe("actions/show.ts", () => {
 			- Step: gg
 
 			RULES:
-			1. Do NOT read or inspect the workflow file ("/Users/Lukas.Steinbrecher/dev/wf/examples/sample-wf.md") or SKILL.md — steps are already loaded by the runner.
+			1. Do NOT read or inspect the workflow file ("examples/sample-wf.md") or SKILL.md — steps are already loaded by the runner.
 			2. Do NOT execute any workflow steps. This is strictly an informational visualization."
 		`);
 	});
