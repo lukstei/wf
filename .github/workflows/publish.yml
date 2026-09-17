@@ -1,13 +1,20 @@
 name: Release & Publish
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -17,6 +24,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -25,19 +33,15 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: Verify tag matches package.json
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          TAG_VERSION="${TAG#v}"
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
-            echo "Error: Git tag ($TAG) does not match package.json version ($PKG_VERSION)"
-            exit 1
-          fi
-
       - name: Install dependencies
         run: npm ci
+
+      - name: Bump version
+        id: version
+        run: |
+          npm version ${{ inputs.bump }} --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "version=v${NEW_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Build bundle
         run: npm run build
@@ -45,29 +49,23 @@ jobs:
       - name: Verify (test & typecheck)
         run: npm run verify
 
-      - name: Commit and push distribution bundle
+      - name: Commit, tag, and push
+        env:
+          TAG: ${{ steps.version.outputs.version }}
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f dist .agents/plugins/wf/dist
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(release): compile distribution bundle [skip ci]"
-            if [ -n "$GITHUB_REF_NAME" ] && [ "$GITHUB_REF_TYPE" = "tag" ]; then
-              git tag -f "$GITHUB_REF_NAME"
-              git push origin "$GITHUB_REF_NAME" --force
-            fi
-            git push origin HEAD:main
-          fi
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json -f dist .agents/plugins/wf/dist
+          git commit -m "chore(release): ${TAG} [skip ci]"
+          git tag "${TAG}"
+          git push origin main "${TAG}"
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.version }}
         run: |
-          if [ -n "$GITHUB_REF_NAME" ] && [ "$GITHUB_REF_TYPE" = "tag" ]; then
-            if ! gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-              gh release create "$GITHUB_REF_NAME" --generate-notes --title "$GITHUB_REF_NAME"
-            fi
-          fi
+          gh release create "${TAG}" --generate-notes --title "${TAG}"
 
       - name: Publish to npm
         run: npm publish --provenance

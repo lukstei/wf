@@ -40,9 +40,10 @@
 		"test:watch": "vitest",
 		"test:update": "vitest run -u",
 		"verify": "npm run test && npm run typecheck",
-		"release:patch": "npm run verify && npm version patch && git push --follow-tags",
-		"release:minor": "npm run verify && npm version minor && git push --follow-tags",
-		"release:major": "npm run verify && npm version major && git push --follow-tags"
+		"check:clean": "test -z \"$(git status --porcelain)\" || (echo \"Error: Git working directory is not clean\" && exit 1)",
+		"release:patch": "npm run check:clean && npm run verify && gh workflow run publish.yml -f bump=patch && sleep 2 && gh run watch",
+		"release:minor": "npm run check:clean && npm run verify && gh workflow run publish.yml -f bump=minor && sleep 2 && gh run watch",
+		"release:major": "npm run check:clean && npm run verify && gh workflow run publish.yml -f bump=major && sleep 2 && gh run watch"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.14",

@@ -10,3 +10,4 @@
 - Prefer inline types, if the type is not reused
 - Prefer discriminated unions
 - No use of any or unjustified type castings
+- Never change the git state without confirmation
