@@ -35,28 +35,10 @@ __export(cli_exports, {
   runCli: () => runCli
 });
 module.exports = __toCommonJS(cli_exports);
-var path5 = __toESM(require("node:path"), 1);
 var import_node_util = require("node:util");
 
 // src/lib/getLatestMessage.ts
-var fs2 = __toESM(require("node:fs"), 1);
-
-// src/lib/logDebug.ts
 var fs = __toESM(require("node:fs"), 1);
-function logDebug(message, data) {
-  if (process.env.VITEST && !process.env.WF_DEBUG) {
-    return;
-  }
-  const line = `[${(logDebug.conversationId ?? "unknown").split("-")[0]}] ${message} ${data !== void 0 ? JSON.stringify(data, null, 2) : ""}
-`;
-  try {
-    fs.appendFileSync("/tmp/wf-debug.log", line);
-  } catch {
-  }
-}
-logDebug.conversationId = void 0;
-
-// src/lib/getLatestMessage.ts
 function defaultTranscriptParser(item) {
   const isUser = item.type === "USER_INPUT" || item.source === "USER_EXPLICIT";
   const isModel = (item.type === "PLANNER_RESPONSE" || item.source === "MODEL") && item.type !== "GENERIC";
@@ -71,16 +53,16 @@ function defaultTranscriptParser(item) {
   return null;
 }
 function getLatestMessage(transcriptPath, parseItem = defaultTranscriptParser) {
-  if (!transcriptPath || !fs2.existsSync(transcriptPath)) {
+  if (!transcriptPath || !fs.existsSync(transcriptPath)) {
     return null;
   }
   try {
-    const stat = fs2.statSync(transcriptPath);
+    const stat = fs.statSync(transcriptPath);
     const readSize = Math.min(stat.size, 256 * 1024);
     const buffer = Buffer.alloc(readSize);
-    const fd = fs2.openSync(transcriptPath, "r");
-    fs2.readSync(fd, buffer, 0, readSize, stat.size - readSize);
-    fs2.closeSync(fd);
+    const fd = fs.openSync(transcriptPath, "r");
+    fs.readSync(fd, buffer, 0, readSize, stat.size - readSize);
+    fs.closeSync(fd);
     const chunk = buffer.toString("utf-8");
     const lines = chunk.split("\n").filter((l) => l.trim().length > 0);
     for (let i = lines.length - 1; i >= 0; i--) {
@@ -95,26 +77,12 @@ function getLatestMessage(transcriptPath, parseItem = defaultTranscriptParser) {
       } catch {
       }
     }
-  } catch (err) {
-    logDebug("Error reading transcript", err);
+  } catch {
   }
   return null;
 }
 
 // src/harnesses/agy.ts
-function parseAgyMessage(item) {
-  const isUser = item.type === "USER_INPUT" || item.source === "USER_EXPLICIT";
-  const isModel = (item.type === "PLANNER_RESPONSE" || item.source === "MODEL") && item.type !== "GENERIC";
-  if ((isUser || isModel) && typeof item.content === "string") {
-    return {
-      stepIndex: typeof item.step_index === "number" ? item.step_index : 0,
-      type: isUser ? "USER_INPUT" : "PLANNER_RESPONSE",
-      source: typeof item.source === "string" ? item.source : void 0,
-      content: item.content
-    };
-  }
-  return null;
-}
 var agyHarness = {
   id: "agy",
   detect(payload, env) {
@@ -175,7 +143,7 @@ var agyHarness = {
     }
     const rawTranscript = event.rawPayload.transcriptPath ?? event.rawPayload.transcript_path;
     if (typeof rawTranscript === "string") {
-      const msg = getLatestMessage(rawTranscript, parseAgyMessage);
+      const msg = getLatestMessage(rawTranscript, defaultTranscriptParser);
       if (msg) return msg;
     }
     if (event.type === "stop") {
@@ -241,6 +209,9 @@ var agyHarness = {
   },
   resolveConversationId(env) {
     return env.ANTIGRAVITY_CONVERSATION_ID || env.AGY_CONVERSATION_ID || null;
+  },
+  resolveStorageDir(env) {
+    return env.AGY_PLUGIN_DATA || null;
   }
 };
 
@@ -356,6 +327,9 @@ var copilotHarness = {
   },
   resolveConversationId(env) {
     return env.COPILOT_CONVERSATION_ID || env.VSCODE_COPILOT_SESSION_ID || null;
+  },
+  resolveStorageDir(env) {
+    return env.COPILOT_PLUGIN_DATA || null;
   }
 };
 
@@ -489,6 +463,9 @@ var claudeHarness = {
   },
   resolveConversationId(env) {
     return env.CLAUDE_CONVERSATION_ID || env.CLAUDE_SESSION_ID || null;
+  },
+  resolveStorageDir(env) {
+    return env.CLAUDE_PLUGIN_DATA || null;
   }
 };
 
@@ -610,6 +587,9 @@ var codexHarness = {
   },
   resolveConversationId(env) {
     return env.CODEX_CONVERSATION_ID || env.CODEX_SESSION_ID || null;
+  },
+  resolveStorageDir(env) {
+    return env.PLUGIN_DATA || null;
   }
 };
 
@@ -649,6 +629,100 @@ function resolveConversationIdFromHarnesses(env = process.env) {
   }
   return null;
 }
+function resolveStorageDirFromHarnesses(env = process.env) {
+  for (const harness of HARNESSES) {
+    const dir = harness.resolveStorageDir?.(env);
+    if (dir) {
+      return dir;
+    }
+  }
+  return null;
+}
+
+// src/lib/logDebug.ts
+var fs3 = __toESM(require("node:fs"), 1);
+var path2 = __toESM(require("node:path"), 1);
+
+// src/state.ts
+var fs2 = __toESM(require("node:fs"), 1);
+var os = __toESM(require("node:os"), 1);
+var path = __toESM(require("node:path"), 1);
+function getStorageBaseDir(env = process.env) {
+  return resolveStorageDirFromHarnesses(env) || path.join(os.tmpdir(), "wf");
+}
+function getStatePath(conversationId, env) {
+  return path.join(getStorageBaseDir(env), conversationId, "state.json");
+}
+function getWorkflowPath(conversationId, env) {
+  return path.join(getStorageBaseDir(env), conversationId, "workflow.json");
+}
+function getDebugLogPath(conversationId, env) {
+  const base = getStorageBaseDir(env);
+  return conversationId ? path.join(base, conversationId, "debug.log") : path.join(base, "debug.log");
+}
+function loadState(conversationId, env) {
+  try {
+    const file = getStatePath(conversationId, env);
+    if (!fs2.existsSync(file)) return null;
+    const data = JSON.parse(fs2.readFileSync(file, "utf-8"));
+    if (!data || typeof data !== "object" || !data.status) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+function loadWorkflow(conversationId, env) {
+  try {
+    const file = getWorkflowPath(conversationId, env);
+    if (!fs2.existsSync(file)) return null;
+    const data = JSON.parse(fs2.readFileSync(file, "utf-8"));
+    if (!data || typeof data !== "object" || !data.name || !Array.isArray(data.flatSteps)) {
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+function loadActiveWorkflow(conversationId, env) {
+  const state = loadState(conversationId, env);
+  if (!state) return null;
+  const workflow = loadWorkflow(conversationId, env);
+  if (!workflow) return null;
+  return { state, workflow };
+}
+function saveWorkflow(conversationId, workflow, env) {
+  try {
+    const file = getWorkflowPath(conversationId, env);
+    fs2.mkdirSync(path.dirname(file), { recursive: true });
+    fs2.writeFileSync(file, JSON.stringify(workflow, null, 2), "utf-8");
+  } catch {
+  }
+}
+function saveState(conversationId, state, env) {
+  try {
+    const file = getStatePath(conversationId, env);
+    fs2.mkdirSync(path.dirname(file), { recursive: true });
+    fs2.writeFileSync(file, JSON.stringify(state, null, 2), "utf-8");
+  } catch {
+  }
+}
+
+// src/lib/logDebug.ts
+function logDebug(message, data) {
+  if (process.env.VITEST && !process.env.WF_DEBUG) {
+    return;
+  }
+  const line = `[${(logDebug.conversationId ?? "unknown").split("-")[0]}] ${message} ${data !== void 0 ? JSON.stringify(data, null, 2) : ""}
+`;
+  try {
+    const filePath = getDebugLogPath(logDebug.conversationId);
+    fs3.mkdirSync(path2.dirname(filePath), { recursive: true });
+    fs3.appendFileSync(filePath, line);
+  } catch {
+  }
+}
+logDebug.conversationId = void 0;
 
 // src/workflow.ts
 function isConditionalStep(step2) {
@@ -656,6 +730,13 @@ function isConditionalStep(step2) {
 }
 function isGateStep(step2) {
   return step2.type === "gate";
+}
+function compileWorkflow(ast, filePath) {
+  return {
+    ...ast,
+    filePath,
+    flatSteps: flattenWorkflow(ast.steps)
+  };
 }
 function flattenWorkflow(workflowSteps) {
   const flat = [];
@@ -752,11 +833,7 @@ function escapeLabel(text) {
   return text.replace(/"/g, "#quot;").replace(/\r?\n/g, "<br/>");
 }
 function getFlatSteps(workflow) {
-  if ("flatSteps" in workflow && Array.isArray(workflow.flatSteps)) {
-    return workflow.flatSteps;
-  }
-  const steps = "steps" in workflow && Array.isArray(workflow.steps) ? workflow.steps : [];
-  return flattenWorkflow(steps);
+  return "flatSteps" in workflow ? workflow.flatSteps : flattenWorkflow(workflow.steps);
 }
 function visualize(workflow, activeStepIndex) {
   const flatSteps = getFlatSteps(workflow);
@@ -801,23 +878,7 @@ function visualize(workflow, activeStepIndex) {
   return lines.join("\n");
 }
 function visualizePlainText(workflow, activeStepIndex) {
-  const steps = "steps" in workflow && Array.isArray(workflow.steps) ? workflow.steps : [];
-  if (steps.length === 0) {
-    const flatSteps = "flatSteps" in workflow && Array.isArray(workflow.flatSteps) ? workflow.flatSteps : [];
-    if (flatSteps.length === 0) return "";
-    return flatSteps.map((step2) => {
-      const indent = "  ".repeat(step2.level);
-      const isActive = activeStepIndex !== void 0 && step2.index === activeStepIndex;
-      const marker = isActive ? "\u25B6 [CURRENT] " : "";
-      if (step2.type === "condition") {
-        return `${indent}${marker}- If: ${step2.title}`;
-      }
-      if (step2.type === "gate") {
-        return `${indent}${marker}- Gate: ${step2.title} [Approval Required]`;
-      }
-      return `${indent}${marker}- Step: ${step2.title}`;
-    }).join("\n");
-  }
+  if (workflow.steps.length === 0) return "";
   const lines = [];
   let stepIndex = 0;
   function walk(stepList, indent) {
@@ -844,7 +905,7 @@ function visualizePlainText(workflow, activeStepIndex) {
       }
     }
   }
-  walk(steps, "");
+  walk(workflow.steps, "");
   return lines.join("\n");
 }
 function visualizeWorkflowPrompt(name, workflow, filePath, activeStepIndex, statusHeader) {
@@ -876,11 +937,11 @@ function visualizeWorkflowPrompt(name, workflow, filePath, activeStepIndex, stat
 }
 
 // src/resolver.ts
-var fs3 = __toESM(require("node:fs"), 1);
-var path2 = __toESM(require("node:path"), 1);
+var fs4 = __toESM(require("node:fs"), 1);
+var path4 = __toESM(require("node:path"), 1);
 
 // src/lib/markdown/wf.ts
-var path = __toESM(require("node:path"), 1);
+var path3 = __toESM(require("node:path"), 1);
 
 // src/lib/markdown/parsing.ts
 function parse(markdown) {
@@ -1434,7 +1495,7 @@ function parseWorkflowMarkdown(content, filePath) {
     remainingNodes = nodes.slice(h1Idx + 1);
   }
   if (!name && filePath) {
-    name = path.basename(filePath, path.extname(filePath));
+    name = path3.basename(filePath, path3.extname(filePath));
   }
   const parsed = parseSteps(remainingNodes, 2);
   return {
@@ -1462,13 +1523,13 @@ function resolveWorkflowPath(userPath, workspacePaths) {
   }
   function checkCandidate(candidatePath) {
     try {
-      if (fs3.existsSync(candidatePath) && fs3.statSync(candidatePath).isFile()) {
+      if (fs4.existsSync(candidatePath) && fs4.statSync(candidatePath).isFile()) {
         return candidatePath;
       }
-      if (!path2.extname(candidatePath)) {
+      if (!path4.extname(candidatePath)) {
         for (const ext of [".md", ".markdown", ".json"]) {
           const candidate = candidatePath + ext;
-          if (fs3.existsSync(candidate) && fs3.statSync(candidate).isFile()) {
+          if (fs4.existsSync(candidate) && fs4.statSync(candidate).isFile()) {
             return candidate;
           }
         }
@@ -1477,17 +1538,17 @@ function resolveWorkflowPath(userPath, workspacePaths) {
     }
     return null;
   }
-  if (path2.isAbsolute(cleanPath)) {
+  if (path4.isAbsolute(cleanPath)) {
     const found = checkCandidate(cleanPath);
     if (found) return found;
   }
   if (workspacePaths && workspacePaths.length > 0) {
     for (const ws of workspacePaths) {
-      const resolved = checkCandidate(path2.resolve(ws, cleanPath));
+      const resolved = checkCandidate(path4.resolve(ws, cleanPath));
       if (resolved) return resolved;
     }
   }
-  const cwdResolved = checkCandidate(path2.resolve(process.cwd(), cleanPath));
+  const cwdResolved = checkCandidate(path4.resolve(process.cwd(), cleanPath));
   if (cwdResolved) return cwdResolved;
   return null;
 }
@@ -1495,7 +1556,7 @@ function defaultWorkflowResolver(targetPath, workspacePaths) {
   const resolved = resolveWorkflowPath(targetPath, workspacePaths);
   if (!resolved) return null;
   try {
-    const content = fs3.readFileSync(resolved, "utf-8");
+    const content = fs4.readFileSync(resolved, "utf-8");
     if (/\.(md|markdown)$/i.test(resolved)) {
       try {
         const parsed2 = parseWorkflowMarkdown(content, resolved);
@@ -1513,6 +1574,7 @@ function defaultWorkflowResolver(targetPath, workspacePaths) {
       }
     }
     const parsed = JSON.parse(content);
+    parsed.name = parsed.name || path4.basename(resolved, path4.extname(resolved));
     if (!Array.isArray(parsed.steps) || parsed.steps.length === 0) {
       return {
         error: `Workflow file "${targetPath}" does not contain any steps.`
@@ -1522,30 +1584,6 @@ function defaultWorkflowResolver(targetPath, workspacePaths) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { error: `Failed to parse workflow JSON: ${message}` };
-  }
-}
-
-// src/state.ts
-var fs4 = __toESM(require("node:fs"), 1);
-function getStatePath(conversationId) {
-  return `/tmp/wf-state-${conversationId}.json`;
-}
-function loadState(conversationId) {
-  try {
-    const file = getStatePath(conversationId);
-    if (!fs4.existsSync(file)) return null;
-    const data = JSON.parse(fs4.readFileSync(file, "utf-8"));
-    if (!data || typeof data !== "object" || !data.status) return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-function saveState(conversationId, state) {
-  try {
-    const file = getStatePath(conversationId);
-    fs4.writeFileSync(file, JSON.stringify(state, null, 2), "utf-8");
-  } catch {
   }
 }
 
@@ -1563,19 +1601,19 @@ function parseDecision(modelText) {
   const match = modelText.match(/\[DECISION:\s*(YES|NO)\]/i) || modelText.match(/\[(YES|NO)\]/i);
   return match && (match[1] || match[2]).toUpperCase() === "YES" ? "YES" : "NO";
 }
-function formatStepPrompt(state, currentStep, stepNum, totalSteps) {
-  const wfName = state.workflow.name || "Workflow";
+function formatStepPrompt(active, currentStep, stepNum, totalSteps) {
+  const wfName = active.workflow.name;
   const stepTitle = `: ${currentStep.title}`;
   const levelStr = currentStep.level > 0 ? ` (Nesting Level ${currentStep.level})` : "";
-  const fileRef = state.workflow.filePath ? ` ("${state.workflow.filePath}")` : "";
+  const fileRef = active.workflow.filePath ? ` ("${active.workflow.filePath}")` : "";
   if (currentStep.type === "condition") {
     const lines = [
-      `[WORKFLOW ${state.status.toUpperCase()}: ${wfName}]`,
+      `[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
       `Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr} (Condition Evaluation)`,
       `Condition: "${currentStep.condition}"`
     ];
-    if (state.workflow.preamble) {
-      lines.push("", "CONTEXT:", state.workflow.preamble);
+    if (active.workflow.preamble) {
+      lines.push("", "CONTEXT:", active.workflow.preamble);
     }
     lines.push("", "INSTRUCTION:");
     if (currentStep.instruction) {
@@ -1597,11 +1635,11 @@ function formatStepPrompt(state, currentStep, stepNum, totalSteps) {
   }
   const isGate = currentStep.type === "gate";
   const promptParts = [
-    `[WORKFLOW ${state.status.toUpperCase()}: ${wfName}]`,
+    `[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
     `Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr}`
   ];
-  if (state.workflow.preamble) {
-    promptParts.push("", "CONTEXT:", state.workflow.preamble);
+  if (active.workflow.preamble) {
+    promptParts.push("", "CONTEXT:", active.workflow.preamble);
   }
   promptParts.push("", "INSTRUCTION:", currentStep.instruction || "");
   if (isGate) {
@@ -1665,9 +1703,11 @@ function startWorkflow(workflow) {
     );
   }
   return {
-    status: "active",
-    step: 0,
-    iterationCount: 0,
+    state: {
+      status: "active",
+      step: 0,
+      iterationCount: 0
+    },
     workflow
   };
 }
@@ -1690,25 +1730,24 @@ function resumeWorkflow(state) {
     status: "active"
   };
 }
-function advanceStep(state, decision) {
-  if (!state || state.status !== "active") {
+function advanceStep(flatSteps, state, decision) {
+  if (state?.status !== "active") {
     return state;
   }
   const nextIterationCount = state.iterationCount + 1;
-  const maxIterations = state.workflow.flatSteps.length * 5;
+  const maxIterations = flatSteps.length * 5;
   if (nextIterationCount > maxIterations) {
     return {
-      ...state,
       status: "error",
+      step: state.step,
       error: `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
       iterationCount: nextIterationCount
     };
   }
-  const currentStep = state.workflow.flatSteps[state.step];
-  const targetIndex = nextStep(state.workflow.flatSteps, state.step, decision);
-  if (targetIndex >= state.workflow.flatSteps.length) {
+  const currentStep = flatSteps[state.step];
+  const targetIndex = nextStep(flatSteps, state.step, decision);
+  if (targetIndex >= flatSteps.length) {
     return {
-      ...state,
       status: "finished",
       step: targetIndex,
       iterationCount: nextIterationCount
@@ -1716,7 +1755,6 @@ function advanceStep(state, decision) {
   }
   const isGate = currentStep?.type === "gate";
   return {
-    ...state,
     step: targetIndex,
     status: isGate ? "paused" : "active",
     iterationCount: nextIterationCount
@@ -1727,83 +1765,89 @@ function failWorkflow(state, error) {
     return state;
   }
   return {
-    ...state,
     status: "error",
+    step: state.step,
+    iterationCount: state.iterationCount,
     error
   };
 }
-function stopWorkflowState(state) {
+function stopWorkflowState(state, workflowName) {
   if (!state || state.status !== "active" && state.status !== "paused") {
     return { state: null, wasRunning: false };
   }
   return {
     state: {
-      ...state,
-      status: "finished"
+      status: "finished",
+      step: state.step,
+      iterationCount: state.iterationCount
     },
     wasRunning: true,
-    workflowName: state.workflow.name
+    workflowName
   };
 }
 
 // src/actions/step.ts
-function step(_info, state) {
+function step(_info, active) {
   assert(
-    state && (state.status === "active" || state.status === "paused"),
+    active && (active.state.status === "active" || active.state.status === "paused"),
     "Cannot execute step: workflow must be active or paused"
   );
-  const currentStep = state.workflow.flatSteps[state.step];
+  const currentStep = active.workflow.flatSteps[active.state.step];
   assert(currentStep, "Current step does not exist");
-  const stepNum = state.step + 1;
-  const totalSteps = state.workflow.flatSteps.length;
-  const prompt = formatStepPrompt(state, currentStep, stepNum, totalSteps);
+  const stepNum = active.state.step + 1;
+  const totalSteps = active.workflow.flatSteps.length;
+  const prompt = formatStepPrompt(active, currentStep, stepNum, totalSteps);
   logDebug("Injecting step", {
     stepNum,
     totalSteps,
     level: currentStep.level,
-    status: state.status
+    status: active.state.status
   });
   return {
-    state,
+    active,
     response: injectSystemMessage(prompt)
   };
 }
 
 // src/actions/next.ts
-function nextPre(info, state) {
+function nextPre(info, active) {
   assert(
-    state && (state.status === "active" || state.status === "paused"),
+    active && (active.state.status === "active" || active.state.status === "paused"),
     "No workflow is running"
   );
-  const nextState = resumeWorkflow(state);
-  return step(info, nextState);
+  const nextState = resumeWorkflow(active.state);
+  return step(info, { ...active, state: nextState });
 }
-function nextStop(_info, state) {
-  assert(state?.status === "active", "nextStop requires an active workflow");
-  const nextState = advanceStep(state);
+function nextStop(_info, active) {
+  assert(
+    active?.state.status === "active",
+    "nextStop requires an active workflow"
+  );
+  const nextState = advanceStep(active.workflow.flatSteps, active.state);
+  const nextActive = nextState ? { ...active, state: nextState } : null;
   if (nextState?.status === "finished") {
     logDebug("All workflow steps complete", {
-      totalSteps: state.workflow.flatSteps.length
+      totalSteps: active.workflow.flatSteps.length
     });
     return {
-      state: nextState,
+      active: nextActive,
       response: { decision: "allow" }
     };
   }
   if (nextState?.status === "error") {
     logDebug("Workflow terminated on error", { error: nextState.error });
     return {
-      state: nextState,
+      active: nextActive,
       response: { decision: "allow" }
     };
   }
   if (nextState?.status === "active") {
-    const nextTargetStep = nextState.workflow.flatSteps[nextState.step];
+    const nextTargetStep = active.workflow.flatSteps[nextState.step];
     const stepNum = nextState.step + 1;
-    const totalSteps = nextState.workflow.flatSteps.length;
+    const totalSteps = active.workflow.flatSteps.length;
     const reason = formatAdvanceReason(
       nextTargetStep,
-      nextState.workflow.preamble
+      active.workflow.preamble
     );
     logDebug("Advancing to step (auto)", {
       nextNum: stepNum,
@@ -1811,7 +1855,7 @@ function nextStop(_info, state) {
       level: nextTargetStep.level
     });
     return {
-      state: nextState,
+      active: nextActive,
       response: {
         decision: "continue",
         reason
@@ -1822,13 +1866,10 @@ function nextStop(_info, state) {
     nextStep: (nextState?.step ?? 0) + 1
   });
   return {
-    state: nextState,
+    active: nextActive,
     response: { decision: "allow" }
   };
 }
-
-// src/actions/run.ts
-var path3 = __toESM(require("node:path"), 1);
 
 // src/lib/parseCommand.ts
 function parseFilePath(argsStr) {
@@ -2008,11 +2049,11 @@ function parseCommand(input) {
 }
 
 // src/actions/run.ts
-function run(info, state, command) {
+function run(info, active, command) {
   const targetPath = command.args.path ?? "";
   if (!targetPath) {
     return {
-      state,
+      active,
       response: injectSystemMessage(
         getHelpText("Missing workflow file path for /wf.")
       )
@@ -2022,7 +2063,7 @@ function run(info, state, command) {
   const resolved = resolver(targetPath, info.payload.workspacePaths);
   if (!resolved) {
     return {
-      state,
+      active,
       response: injectSystemMessage(
         getHelpText(
           `Workflow file not found: "${targetPath}". Please check the path and try again.`
@@ -2032,14 +2073,14 @@ function run(info, state, command) {
   }
   if ("error" in resolved) {
     return {
-      state,
+      active,
       response: injectSystemMessage(getHelpText(resolved.error))
     };
   }
-  const flatSteps = flattenWorkflow(resolved.workflow.steps);
-  if (flatSteps.length === 0) {
+  const compiled = compileWorkflow(resolved.workflow, resolved.filePath);
+  if (compiled.flatSteps.length === 0) {
     return {
-      state,
+      active,
       response: injectSystemMessage(
         getHelpText(
           `Workflow file "${targetPath}" contains no executable steps.`
@@ -2047,62 +2088,54 @@ function run(info, state, command) {
       )
     };
   }
-  const nextState = startWorkflow({
-    name: resolved.workflow.name || path3.basename(resolved.filePath),
-    description: resolved.workflow.description,
-    ...resolved.workflow.preamble ? { preamble: resolved.workflow.preamble } : {},
-    filePath: resolved.filePath,
-    steps: resolved.workflow.steps,
-    flatSteps
-  });
-  return step(info, nextState);
+  const nextActive = startWorkflow(compiled);
+  return step(info, nextActive);
 }
 
 // src/actions/show.ts
-var path4 = __toESM(require("node:path"), 1);
-function show(info, state, command) {
+function show(info, active, command) {
   const targetPath = command?.args.path?.trim() ?? "";
   if (!targetPath) {
-    if (!state) {
+    if (!active) {
       return {
-        state,
+        active,
         response: injectSystemMessage(
           "[WORKFLOW STATUS]\nNo workflow is currently loaded. Run /wf <workflow-file> to start a workflow, or /wf-show <workflow-file> to inspect one."
         )
       };
     }
-    if (state.status === "finished") {
+    if (active.state.status === "finished") {
       return {
-        state,
+        active,
         response: injectSystemMessage(
           `[WORKFLOW STATUS: FINISHED]
-Workflow "${state.workflow.name}" completed successfully.`
+Workflow "${active.workflow.name}" completed successfully.`
         )
       };
     }
-    if (state.status === "error") {
+    if (active.state.status === "error") {
       return {
-        state,
+        active,
         response: injectSystemMessage(
           `[WORKFLOW STATUS: ERROR]
-Workflow: ${state.workflow.name}
-Error: ${state.error}`
+Workflow: ${active.workflow.name}
+Error: ${active.state.error}`
         )
       };
     }
-    const currentLevel = state.workflow.flatSteps[state.step]?.level ?? 0;
-    const statusHeader2 = `[WORKFLOW STATUS: ${state.status.toUpperCase()}]
-Workflow: ${state.workflow.name}
-Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})`;
+    const currentLevel = active.workflow.flatSteps[active.state.step]?.level ?? 0;
+    const statusHeader2 = `[WORKFLOW STATUS: ${active.state.status.toUpperCase()}]
+Workflow: ${active.workflow.name}
+Step: ${active.state.step + 1} of ${active.workflow.flatSteps.length} (Nesting Level ${currentLevel})`;
     const prompt2 = visualizeWorkflowPrompt(
-      state.workflow.name,
-      state.workflow,
-      state.workflow.filePath,
-      state.step,
+      active.workflow.name,
+      active.workflow,
+      active.workflow.filePath,
+      active.state.step,
       statusHeader2
     );
     return {
-      state,
+      active,
       response: injectSystemMessage(prompt2)
     };
   }
@@ -2110,7 +2143,7 @@ Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${c
   const resolved = resolver(targetPath, info.payload.workspacePaths);
   if (!resolved) {
     return {
-      state,
+      active,
       response: injectSystemMessage(
         getHelpText(
           `Workflow file not found: "${targetPath}". Please check the path and try again.`
@@ -2120,16 +2153,16 @@ Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${c
   }
   if ("error" in resolved) {
     return {
-      state,
+      active,
       response: injectSystemMessage(getHelpText(resolved.error))
     };
   }
-  const isActiveWorkflow = state && (state.status === "active" || state.status === "paused") && state.workflow.filePath === resolved.filePath;
-  const activeStepIndex = isActiveWorkflow ? state.step : void 0;
-  const statusHeader = isActiveWorkflow ? `[WORKFLOW STATUS: ${state.status.toUpperCase()}]
-Workflow: ${state.workflow.name}
-Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${state.workflow.flatSteps[state.step]?.level ?? 0})` : void 0;
-  const wfName = resolved.workflow.name || path4.basename(resolved.filePath);
+  const isActiveWorkflow = active && (active.state.status === "active" || active.state.status === "paused") && active.workflow.filePath === resolved.filePath;
+  const activeStepIndex = isActiveWorkflow ? active.state.step : void 0;
+  const statusHeader = isActiveWorkflow ? `[WORKFLOW STATUS: ${active.state.status.toUpperCase()}]
+Workflow: ${active.workflow.name}
+Step: ${active.state.step + 1} of ${active.workflow.flatSteps.length} (Nesting Level ${active.workflow.flatSteps[active.state.step]?.level ?? 0})` : void 0;
+  const wfName = resolved.workflow.name;
   const prompt = visualizeWorkflowPrompt(
     wfName,
     resolved.workflow,
@@ -2138,24 +2171,30 @@ Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${s
     statusHeader
   );
   return {
-    state,
+    active,
     response: injectSystemMessage(prompt)
   };
 }
 
 // src/actions/stop.ts
-function stopWorkflow(_info, state) {
-  const result = stopWorkflowState(state);
-  if (!result.wasRunning) {
+function stopWorkflow(_info, active) {
+  const result = stopWorkflowState(
+    active?.state ?? null,
+    active?.workflow.name
+  );
+  if (!result.wasRunning || !active || !result.state) {
     return {
-      state: result.state,
+      active,
       response: injectSystemMessage(
         "[WORKFLOW STATUS]\nNo workflow is currently running."
       )
     };
   }
   return {
-    state: result.state,
+    active: {
+      workflow: active.workflow,
+      state: result.state
+    },
     response: injectSystemMessage(
       `[WORKFLOW STOPPED]
 Workflow "${result.workflowName}" has been stopped.`
@@ -2164,181 +2203,180 @@ Workflow "${result.workflowName}" has been stopped.`
 }
 
 // src/handlers/pre.ts
-function handleCommand(info, state, parsedCmd) {
+function handleCommand(info, active, parsedCmd) {
   if (parsedCmd.error) {
     return {
-      state,
+      active,
       response: injectSystemMessage(
         "CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER: " + (parsedCmd.helpText || `[Workflow Error] ${parsedCmd.error}`)
       )
     };
   }
   if (!parsedCmd.command) {
-    return { state, response: {} };
+    return { active, response: {} };
   }
   switch (parsedCmd.command.name) {
     case "help": {
-      const paused = pauseWorkflow(state);
+      const paused = pauseWorkflow(active?.state ?? null);
+      const nextActive = active && paused ? { workflow: active.workflow, state: paused } : active;
       return {
-        state: paused,
+        active: nextActive,
         response: injectSystemMessage(parsedCmd.helpText || getHelpText())
       };
     }
     case "show": {
-      const paused = pauseWorkflow(state);
-      return show(info, paused, parsedCmd.command);
+      const paused = pauseWorkflow(active?.state ?? null);
+      const nextActive = active && paused ? { workflow: active.workflow, state: paused } : active;
+      return show(info, nextActive, parsedCmd.command);
     }
     case "next":
-      return nextPre(info, state);
+      return nextPre(info, active);
     case "stop":
-      return stopWorkflow(info, state);
+      return stopWorkflow(info, active);
     case "run":
-      return run(info, state, parsedCmd.command);
+      return run(info, active, parsedCmd.command);
   }
 }
-function dispatchStep(info, state) {
-  const currentStep = state.workflow.flatSteps[state.step];
+function dispatchStep(info, active) {
+  const currentStep = active.workflow.flatSteps[active.state.step];
   if (!currentStep) {
-    return { state, response: {} };
+    return { active, response: {} };
   }
-  return step(info, state);
+  return step(info, active);
 }
-function handlePre(info, state) {
+function handlePre(info, active) {
   if (info.latestMessage && info.latestMessage.type === "USER_INPUT") {
     const parsedCmd = parseCommand(info.latestMessage.content);
     if (parsedCmd.isWfCommand) {
-      return handleCommand(info, state, parsedCmd);
+      return handleCommand(info, active, parsedCmd);
     }
-    if (state?.status === "active") {
+    if (active?.state.status === "active") {
       logDebug("User message received, pausing workflow", {
         text: info.latestMessage.content.slice(0, 50)
       });
+      const paused = pauseWorkflow(active.state);
       return {
-        state: pauseWorkflow(state),
+        active: paused ? { workflow: active.workflow, state: paused } : active,
         response: {}
       };
     }
-    return { state, response: {} };
+    return { active, response: {} };
   }
-  if (state?.status !== "active") {
-    return { state, response: {} };
+  if (active?.state.status !== "active") {
+    return { active, response: {} };
   }
-  const maxIterations = state.workflow.flatSteps.length * 5;
-  if (state.iterationCount >= maxIterations) {
+  const maxIterations = active.workflow.flatSteps.length * 5;
+  if (active.state.iterationCount >= maxIterations) {
     const errorState = failWorkflow(
-      state,
+      active.state,
       `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`
     );
     return {
-      state: errorState,
+      active: errorState ? { workflow: active.workflow, state: errorState } : active,
       response: injectSystemMessage(
         `[WORKFLOW RUNNER] Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`
       )
     };
   }
-  return dispatchStep(info, state);
+  return dispatchStep(info, active);
 }
 
 // src/actions/condition.ts
-function conditionStop(info, state) {
+function conditionStop(info, active) {
   assert(
-    state?.status === "active",
+    active?.state.status === "active",
     "conditionStop requires an active workflow"
   );
-  const currentStep = state.workflow.flatSteps[state.step];
+  const currentStep = active.workflow.flatSteps[active.state.step];
   assert(
     currentStep?.type === "condition",
     "conditionStop requires current step to be a condition"
   );
-  const totalSteps = state.workflow.flatSteps.length;
+  const totalSteps = active.workflow.flatSteps.length;
   const modelText = info.latestMessage?.content ?? "";
   const decision = parseDecision(modelText);
   logDebug("Condition evaluated (Stop)", {
     condition: currentStep.condition,
     decision
   });
-  const nextState = advanceStep(state, decision);
-  if (nextState?.status === "finished") {
+  const nextState = advanceStep(
+    active.workflow.flatSteps,
+    active.state,
+    decision
+  );
+  assert(nextState, "advanceStep must return next state for active workflow");
+  const nextActive = { ...active, state: nextState };
+  if (nextState.status === "finished") {
     logDebug("All workflow steps complete after condition", { totalSteps });
     return {
-      state: nextState,
+      active: nextActive,
       response: { decision: "allow" }
     };
   }
-  if (nextState?.status === "error") {
+  if (nextState.status === "error") {
     logDebug("Condition workflow terminated on error", {
       error: nextState.error
     });
     return {
-      state: nextState,
+      active: nextActive,
       response: { decision: "allow" }
     };
   }
-  if (nextState?.status === "active") {
-    const nextTargetStep = nextState.workflow.flatSteps[nextState.step];
-    const nextStepNum = nextState.step + 1;
-    const reason = formatAdvanceReason(
-      nextTargetStep,
-      nextState.workflow.preamble
-    );
-    logDebug("Advancing after condition (auto)", {
-      nextNum: nextStepNum,
-      totalSteps,
-      level: nextTargetStep.level
-    });
-    return {
-      state: nextState,
-      response: {
-        decision: "continue",
-        reason
-      }
-    };
-  }
-  logDebug("Condition finished in paused mode, yielding to user", {
-    nextStep: (nextState?.step ?? 0) + 1
+  const nextTargetStep = active.workflow.flatSteps[nextState.step];
+  const nextStepNum = nextState.step + 1;
+  const reason = formatAdvanceReason(nextTargetStep, active.workflow.preamble);
+  logDebug("Advancing after condition (auto)", {
+    nextNum: nextStepNum,
+    totalSteps,
+    level: nextTargetStep.level
   });
   return {
-    state: nextState,
-    response: { decision: "allow" }
+    active: nextActive,
+    response: {
+      decision: "continue",
+      reason
+    }
   };
 }
 
 // src/handlers/stop.ts
-function handleStop(info, state) {
-  if (!state || state.status !== "active") {
-    return { state, response: { decision: "allow" } };
+function handleStop(info, active) {
+  if (active?.state.status !== "active") {
+    return { active, response: { decision: "allow" } };
   }
   if (info.payload.error || info.payload.terminationReason && /error/i.test(info.payload.terminationReason)) {
     const errorMsg = info.payload.error || `Stopped with reason: ${info.payload.terminationReason}`;
     logDebug("Setting error state due to error termination", info.payload);
+    const errorState = failWorkflow(active.state, errorMsg);
     return {
-      state: failWorkflow(state, errorMsg),
+      active: errorState ? { workflow: active.workflow, state: errorState } : active,
       response: { decision: "allow" }
     };
   }
   if (info.payload.terminationReason && /cancel|abort|interrupt/i.test(info.payload.terminationReason)) {
     logDebug("Allowing stop due to interruption", info.payload);
+    const paused = pauseWorkflow(active.state);
     return {
-      state: pauseWorkflow(state),
+      active: paused ? { workflow: active.workflow, state: paused } : active,
       response: { decision: "allow" }
     };
   }
-  const currentStep = state.workflow.flatSteps[state.step];
+  const currentStep = active.workflow.flatSteps[active.state.step];
   if (!currentStep) {
-    return { state, response: { decision: "allow" } };
+    return { active, response: { decision: "allow" } };
   }
   if (currentStep.type === "condition") {
-    return conditionStop(info, state);
+    return conditionStop(info, active);
   }
-  return nextStop(info, state);
+  return nextStop(info, active);
 }
 
 // src/wf.ts
-function handle(info, state) {
+function handle(info, active) {
   if (info.type === "stop") {
-    return handleStop(info, state);
+    return handleStop(info, active);
   } else if (info.type === "pre") {
-    return handlePre(info, state);
+    return handlePre(info, active);
   }
   throw new Error(`Unknown hook type: ${info.type}`);
 }
@@ -2409,113 +2447,222 @@ async function runShim(modeArg, rawInput, env = process.env) {
     },
     latestMessage: event.latestMessage
   };
-  const state = loadState(event.conversationId);
-  const { state: nextState, response } = handle(hookInfo, state);
-  if (nextState !== null && nextState !== state) {
+  const active = loadActiveWorkflow(event.conversationId, env);
+  const { active: nextActive, response } = handle(hookInfo, active);
+  if (nextActive !== null && nextActive !== active) {
     logDebug(`> Handled ${hookInfo.type}`, {
       payload: event.rawPayload,
-      state: { ...state, workflow: void 0 },
-      nextState: { ...nextState, workflow: void 0 },
+      state: active?.state,
+      nextState: nextActive.state,
       response
     });
-    saveState(event.conversationId, nextState);
+    if (!active || active.workflow !== nextActive.workflow) {
+      saveWorkflow(event.conversationId, nextActive.workflow, env);
+    }
+    saveState(event.conversationId, nextActive.state, env);
   }
   return adapter.formatEgress(event, response);
 }
 
-// src/validator.ts
-function validateWorkflow(def) {
-  const errors = [];
-  const warnings = [];
+// src/validator-checks.ts
+function checkWorkflowName(def) {
   if (!def.name || def.name.trim().length === 0) {
-    errors.push({
-      message: 'Workflow must define a non-empty name (via YAML frontmatter "name" or Markdown H1 title).'
-    });
+    return [
+      {
+        id: "workflow-missing-name",
+        description: 'Workflow must define a non-empty name (via YAML frontmatter "name" or Markdown H1 title).',
+        source: { type: "workflow" }
+      }
+    ];
   }
+  return [];
+}
+function checkWorkflowDescription(def) {
   if (!def.description || def.description.trim().length === 0) {
-    warnings.push({
-      message: "Workflow lacks a description in YAML frontmatter."
-    });
+    return [
+      {
+        id: "workflow-missing-description",
+        description: "Workflow lacks a description in YAML frontmatter.",
+        source: { type: "workflow" }
+      }
+    ];
   }
+  return [];
+}
+function checkWorkflowSteps(def) {
   if (!Array.isArray(def.steps) || def.steps.length === 0) {
-    errors.push({
-      message: "Workflow contains no actionable steps."
-    });
-    return { valid: false, errors, warnings };
+    return [
+      {
+        id: "workflow-no-steps",
+        description: "Workflow contains no actionable steps.",
+        source: { type: "workflow" }
+      }
+    ];
+  }
+  return [];
+}
+function checkStepTitle(step2) {
+  const title = step2.title?.trim();
+  if (!title) {
+    return [
+      {
+        id: "step-missing-title",
+        description: "Step title cannot be empty.",
+        source: { type: "step", title: step2.title || "" }
+      }
+    ];
+  }
+  return [];
+}
+function checkActionStepInstruction(step2) {
+  if (step2.type === "step" && (!step2.instruction || step2.instruction.trim().length === 0)) {
+    const title = step2.title?.trim() || "untitled";
+    return [
+      {
+        id: "step-action-empty-instruction",
+        description: `Action step "${title}" has empty instructions.`,
+        source: { type: "step", title }
+      }
+    ];
+  }
+  return [];
+}
+function checkGateStepInstruction(step2) {
+  if (step2.type === "gate" && (!step2.instruction || step2.instruction.trim().length === 0)) {
+    const title = step2.title?.trim() || "untitled";
+    return [
+      {
+        id: "step-gate-empty-instruction",
+        description: `Gate step "${title}" has empty verification instructions.`,
+        source: { type: "step", title }
+      }
+    ];
+  }
+  return [];
+}
+function checkConditionStepExpression(step2) {
+  if (step2.type === "condition") {
+    const condStep = step2;
+    if (!condStep.condition || condStep.condition.trim().length === 0) {
+      const title = step2.title?.trim() || "untitled";
+      return [
+        {
+          id: "step-condition-empty-expression",
+          description: `Condition step "${title}" has an empty condition expression.`,
+          source: { type: "step", title }
+        }
+      ];
+    }
+  }
+  return [];
+}
+function checkConditionStepYes(step2) {
+  if (step2.type === "condition") {
+    const condStep = step2;
+    if (!condStep.yes || !Array.isArray(condStep.yes.steps) || condStep.yes.steps.length === 0) {
+      const title = step2.title?.trim() || "untitled";
+      return [
+        {
+          id: "step-condition-empty-yes",
+          description: `Condition step "${title}" has no YES branch steps.`,
+          source: { type: "step", title }
+        }
+      ];
+    }
+  }
+  return [];
+}
+function checkConditionStepNo(step2) {
+  if (step2.type === "condition") {
+    const condStep = step2;
+    if (condStep.no && (!condStep.no.steps || condStep.no.steps.length === 0) && !condStep.no.preamble) {
+      const title = step2.title?.trim() || "untitled";
+      return [
+        {
+          id: "step-condition-empty-no",
+          description: `Condition step "${title}" defines an empty NO branch.`,
+          source: { type: "step", title }
+        }
+      ];
+    }
+  }
+  return [];
+}
+var WORKFLOW_CHECKS = [
+  checkWorkflowName,
+  checkWorkflowDescription,
+  checkWorkflowSteps
+];
+var STEP_CHECKS = [
+  checkStepTitle,
+  checkActionStepInstruction,
+  checkGateStepInstruction,
+  checkConditionStepExpression,
+  checkConditionStepYes,
+  checkConditionStepNo
+];
+
+// src/validator.ts
+var PROBLEM_SEVERITY = {
+  "workflow-missing-name": "error",
+  "workflow-missing-description": "warning",
+  "workflow-no-steps": "error",
+  "step-missing-title": "error",
+  "step-action-empty-instruction": "error",
+  "step-gate-empty-instruction": "error",
+  "step-condition-empty-expression": "error",
+  "step-condition-empty-yes": "error",
+  "step-condition-empty-no": "warning"
+};
+function validateWorkflow(def) {
+  const problems = [];
+  for (const check of WORKFLOW_CHECKS) {
+    for (const p of check(def)) {
+      problems.push({ ...p, type: PROBLEM_SEVERITY[p.id] });
+    }
   }
   let totalSteps = 0;
   let linearSteps = 0;
   let conditions = 0;
   let gates = 0;
-  function validateStep(step2) {
-    totalSteps++;
-    const title = step2.title?.trim();
-    if (!title) {
-      errors.push({ message: "Step title cannot be empty." });
-    }
-    if (step2.type === "step") {
-      linearSteps++;
-      if (!step2.instruction || step2.instruction.trim().length === 0) {
-        errors.push({
-          stepTitle: title,
-          message: `Action step "${title || "untitled"}" has empty instructions.`
-        });
+  if (Array.isArray(def.steps)) {
+    let validateStep = function(step2) {
+      totalSteps++;
+      if (step2.type === "step") {
+        linearSteps++;
+      } else if (step2.type === "gate") {
+        gates++;
+      } else if (step2.type === "condition") {
+        conditions++;
       }
-      return;
-    }
-    if (step2.type === "gate") {
-      gates++;
-      if (!step2.instruction || step2.instruction.trim().length === 0) {
-        errors.push({
-          stepTitle: title,
-          message: `Gate step "${title || "untitled"}" has empty verification instructions.`
-        });
-      }
-      return;
-    }
-    if (step2.type === "condition") {
-      conditions++;
-      const condStep = step2;
-      if (!condStep.condition || condStep.condition.trim().length === 0) {
-        errors.push({
-          stepTitle: title,
-          message: `Condition step "${title || "untitled"}" has an empty condition expression.`
-        });
-      }
-      if (!condStep.yes || !Array.isArray(condStep.yes.steps) || condStep.yes.steps.length === 0) {
-        errors.push({
-          stepTitle: title,
-          message: `Condition step "${title || "untitled"}" has no YES branch steps.`
-        });
-      } else {
-        for (const child of condStep.yes.steps) {
-          validateStep(child);
+      for (const check of STEP_CHECKS) {
+        for (const p of check(step2)) {
+          problems.push({ ...p, type: PROBLEM_SEVERITY[p.id] });
         }
       }
-      if (condStep.no) {
-        if ((!condStep.no.steps || condStep.no.steps.length === 0) && !condStep.no.preamble) {
-          warnings.push({
-            stepTitle: title,
-            message: `Condition step "${title || "untitled"}" defines an empty NO branch.`
-          });
-        } else if (condStep.no.steps) {
+      if (step2.type === "condition") {
+        const condStep = step2;
+        if (condStep.yes?.steps) {
+          for (const child of condStep.yes.steps) {
+            validateStep(child);
+          }
+        }
+        if (condStep.no?.steps) {
           for (const child of condStep.no.steps) {
             validateStep(child);
           }
         }
       }
+    };
+    for (const step2 of def.steps) {
+      validateStep(step2);
     }
   }
-  for (const step2 of def.steps) {
-    validateStep(step2);
-  }
-  if (errors.length > 0) {
-    return { valid: false, errors, warnings };
-  }
+  const valid = !problems.some((p) => p.type === "error");
   return {
-    valid: true,
+    valid,
     stats: { totalSteps, linearSteps, conditions, gates },
-    warnings
+    problems
   };
 }
 
@@ -2605,17 +2752,19 @@ async function runCli(args = process.argv.slice(2), io = {}) {
       return { exitCode: 1, output: err2 };
     }
     const result = validateWorkflow(resolved.workflow);
+    const errors = result.problems.filter((p) => p.type === "error");
+    const warnings = result.problems.filter((p) => p.type === "warning");
     if (!result.valid) {
       const lines = [
-        `[WORKFLOW INVALID] Validation failed for "${resolved.workflow.name || path5.basename(resolved.filePath)}":`
+        `[WORKFLOW INVALID] Validation failed for "${resolved.workflow.name}":`
       ];
-      for (const e of result.errors) {
-        lines.push(`  - [ERROR] ${e.message}`);
+      for (const e of errors) {
+        lines.push(`  - [ERROR] ${e.description}`);
       }
-      if (result.warnings.length > 0) {
+      if (warnings.length > 0) {
         lines.push("\nWarnings:");
-        for (const w of result.warnings) {
-          lines.push(`  - [WARN] ${w.message}`);
+        for (const w of warnings) {
+          lines.push(`  - [WARN] ${w.description}`);
         }
       }
       const out = lines.join("\n");
@@ -2624,23 +2773,23 @@ async function runCli(args = process.argv.slice(2), io = {}) {
     }
     if (parsed.options.check) {
       const lines = [
-        `[WORKFLOW VALID] "${resolved.workflow.name || path5.basename(resolved.filePath)}" is valid.`,
+        `[WORKFLOW VALID] "${resolved.workflow.name}" is valid.`,
         `Steps: ${result.stats.totalSteps} (${result.stats.linearSteps} linear, ${result.stats.conditions} condition, ${result.stats.gates} gate)`,
         `File: ${resolved.filePath}`
       ];
-      if (result.warnings.length > 0) {
+      if (warnings.length > 0) {
         lines.push("\nWarnings:");
-        for (const w of result.warnings) {
-          lines.push(`  - [WARN] ${w.message}`);
+        for (const w of warnings) {
+          lines.push(`  - [WARN] ${w.description}`);
         }
       }
       const out = lines.join("\n");
       writeOut(out);
       return { exitCode: 0, output: out };
     }
-    if (result.warnings.length > 0) {
-      for (const w of result.warnings) {
-        writeErr(`[WARN] ${w.message}`);
+    if (warnings.length > 0) {
+      for (const w of warnings) {
+        writeErr(`[WARN] ${w.description}`);
       }
     }
     const compiledJson = JSON.stringify(resolved.workflow, null, 2);
@@ -2657,7 +2806,7 @@ async function runCli(args = process.argv.slice(2), io = {}) {
       return { exitCode: 1, output: err2 };
     }
     const prompt = visualizeWorkflowPrompt(
-      resolved.workflow.name || path5.basename(resolved.filePath),
+      resolved.workflow.name,
       resolved.workflow,
       resolved.filePath
     );
@@ -2672,11 +2821,15 @@ async function runCli(args = process.argv.slice(2), io = {}) {
       writeErr(err2);
       return { exitCode: 1, output: err2 };
     }
+    logDebug.conversationId = conversationId;
     if (parsed.command === "stop") {
-      const state = loadState(conversationId);
-      const result = stopWorkflowState(state);
+      const active = loadActiveWorkflow(conversationId, env);
+      const result = stopWorkflowState(
+        active?.state ?? null,
+        active?.workflow.name
+      );
       if (result.state !== null) {
-        saveState(conversationId, result.state);
+        saveState(conversationId, result.state, env);
       }
       const msg = result.wasRunning ? `[WORKFLOW STOPPED] Workflow "${result.workflowName}" has been stopped.` : "[WORKFLOW STATUS] No workflow is currently running.";
       writeOut(msg);
@@ -2696,40 +2849,34 @@ async function runCli(args = process.argv.slice(2), io = {}) {
         writeErr(err2);
         return { exitCode: 1, output: err2 };
       }
-      const flatSteps = flattenWorkflow(resolved.workflow.steps);
-      if (flatSteps.length === 0) {
+      const compiled = compileWorkflow(resolved.workflow, resolved.filePath);
+      if (compiled.flatSteps.length === 0) {
         const err2 = `Workflow file "${filePath}" contains no executable steps.`;
         writeErr(err2);
         return { exitCode: 1, output: err2 };
       }
-      const nextState = startWorkflow({
-        name: resolved.workflow.name || path5.basename(resolved.filePath),
-        description: resolved.workflow.description,
-        ...resolved.workflow.preamble ? { preamble: resolved.workflow.preamble } : {},
-        filePath: resolved.filePath,
-        steps: resolved.workflow.steps,
-        flatSteps
-      });
-      saveState(conversationId, nextState);
-      const firstStep = flatSteps[0];
-      const msg = `[WORKFLOW STARTED] "${nextState.workflow.name}"
-Step 1/${flatSteps.length}: ${firstStep.title}
+      const nextActive = startWorkflow(compiled);
+      saveWorkflow(conversationId, nextActive.workflow, env);
+      saveState(conversationId, nextActive.state, env);
+      const firstStep = compiled.flatSteps[0];
+      const msg = `[WORKFLOW STARTED] "${nextActive.workflow.name}"
+Step 1/${compiled.flatSteps.length}: ${firstStep.title}
 ${firstStep.instruction}`;
       writeOut(msg);
       return { exitCode: 0, output: msg };
     }
     if (parsed.command === "next") {
-      const state = loadState(conversationId);
-      if (!state || state.status !== "active" && state.status !== "paused") {
+      const active = loadActiveWorkflow(conversationId, env);
+      if (!active || active.state.status !== "active" && active.state.status !== "paused") {
         const err2 = "No workflow is loaded. Start a workflow with 'wf start <workflow-file>'.";
         writeErr(err2);
         return { exitCode: 1, output: err2 };
       }
-      const nextState = resumeWorkflow(state);
-      saveState(conversationId, nextState);
-      const currentStep = nextState.workflow.flatSteps[nextState.step];
+      const nextState = resumeWorkflow(active.state);
+      saveState(conversationId, nextState, env);
+      const currentStep = active.workflow.flatSteps[nextState.step];
       const stepNum = nextState.step + 1;
-      const total = nextState.workflow.flatSteps.length;
+      const total = active.workflow.flatSteps.length;
       const title = currentStep?.title || `Step ${stepNum}`;
       const msg = `[STEP ${stepNum}/${total}] ${title}
 ${currentStep?.instruction || ""}`;
@@ -2737,23 +2884,23 @@ ${currentStep?.instruction || ""}`;
       return { exitCode: 0, output: msg };
     }
     if (parsed.command === "show") {
-      const state = loadState(conversationId);
-      if (!state) {
+      const active = loadActiveWorkflow(conversationId, env);
+      if (!active) {
         const msg = "[WORKFLOW STATUS]\nNo workflow is currently loaded.";
         writeOut(msg);
         return { exitCode: 0, output: msg };
       }
-      const currentStep = state.workflow.flatSteps[state.step];
+      const currentStep = active.workflow.flatSteps[active.state.step];
       const currentLevel = currentStep?.level ?? 0;
-      const stepInfo = state.status !== "finished" ? `Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})` : "All steps completed";
-      const statusHeader = `[WORKFLOW STATUS: ${state.status.toUpperCase()}]
-Workflow: ${state.workflow.name}
+      const stepInfo = active.state.status !== "finished" ? `Step: ${active.state.step + 1} of ${active.workflow.flatSteps.length} (Nesting Level ${currentLevel})` : "All steps completed";
+      const statusHeader = `[WORKFLOW STATUS: ${active.state.status.toUpperCase()}]
+Workflow: ${active.workflow.name}
 ${stepInfo}`;
       const prompt = visualizeWorkflowPrompt(
-        state.workflow.name,
-        state.workflow,
-        state.workflow.filePath,
-        state.status === "active" || state.status === "paused" ? state.step : void 0,
+        active.workflow.name,
+        active.workflow,
+        active.workflow.filePath,
+        active.state.status === "active" || active.state.status === "paused" ? active.state.step : void 0,
         statusHeader
       );
       writeOut(prompt);
