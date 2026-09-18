@@ -56,7 +56,7 @@ Inspect the workflow structure before or during execution:
 flowchart TD
     s0{{"<i>Is it past Friday 4:00 PM?</i>"}}
     s1{{"<i>Is the git working directory clean?</i>"}}
-    s2[["🛑 <b>Confirm Slack post</b>"]]
+    s2[["🛑 Confirm Slack post"]]
     s3["Announce on Slack"]
     s4["Dirty working tree"]
     s5["Still on the clock"]
