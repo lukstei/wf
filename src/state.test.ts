@@ -270,7 +270,7 @@ describe("state.ts", () => {
 
 		const sampleState: WorkflowState = {
 			status: "active",
-			currentStepIndex: 1,
+			step: 1,
 			iterationCount: 1,
 			workflow: {
 				name: "TestFlow",

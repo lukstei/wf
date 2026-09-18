@@ -96,8 +96,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 0,
-					"iterationCount": 1
+					"step": 0,
+					"iterationCount": 0
 				}
 			},
 			"model": {
@@ -115,7 +115,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 1,
+					"step": 1,
 					"iterationCount": 1
 				}
 			}
@@ -132,8 +132,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 1,
-					"iterationCount": 2
+					"step": 1,
+					"iterationCount": 1
 				}
 			},
 			"model": {
@@ -151,7 +151,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 3,
+					"step": 3,
 					"iterationCount": 2
 				}
 			}
@@ -168,8 +168,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 3,
-					"iterationCount": 3
+					"step": 3,
+					"iterationCount": 2
 				}
 			},
 			"model": {
@@ -187,7 +187,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 4,
+					"step": 4,
 					"iterationCount": 3
 				}
 			}
@@ -204,8 +204,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 4,
-					"iterationCount": 4
+					"step": 4,
+					"iterationCount": 3
 				}
 			},
 			"model": {
@@ -223,7 +223,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 6,
+					"step": 6,
 					"iterationCount": 4
 				}
 			}
@@ -240,8 +240,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 6,
-					"iterationCount": 5
+					"step": 6,
+					"iterationCount": 4
 				}
 			},
 			"model": {
@@ -259,7 +259,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 8,
+					"step": 8,
 					"iterationCount": 5
 				}
 			}
@@ -276,8 +276,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 8,
-					"iterationCount": 6
+					"step": 8,
+					"iterationCount": 5
 				}
 			},
 			"model": {
@@ -293,7 +293,9 @@
 					"decision": "allow"
 				},
 				"state": {
-					"status": "finished"
+					"status": "finished",
+					"step": 9,
+					"iterationCount": 6
 				}
 			}
 		}

@@ -11,10 +11,7 @@ import {
 	parseCommand,
 } from "../lib/parseCommand.ts";
 import type { ExtractWorkflowState, WorkflowState } from "../state.ts";
-import {
-	pauseWorkflow,
-	prepareStepExecution,
-} from "../transitions.ts";
+import { failWorkflow, pauseWorkflow } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 
 function handleCommand(
@@ -65,7 +62,7 @@ function dispatchStep(
 	info: HookInfo,
 	state: ExtractWorkflowState<"active">,
 ): HandleResult {
-	const currentStep = state.workflow.flatSteps[state.currentStepIndex];
+	const currentStep = state.workflow.flatSteps[state.step];
 	if (!currentStep) {
 		return { state, response: {} };
 	}
@@ -109,15 +106,19 @@ export function handlePre(
 	}
 
 	// Safeguard against runaway loops
-	const stepExec = prepareStepExecution(state);
-	if (stepExec.exceeded) {
+	const maxIterations = state.workflow.flatSteps.length * 5;
+	if (state.iterationCount >= maxIterations) {
+		const errorState = failWorkflow(
+			state,
+			`Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
+		);
 		return {
-			state: stepExec.state,
+			state: errorState,
 			response: injectSystemMessage(
-				`[WORKFLOW RUNNER] Workflow terminated: Exceeded safety iteration limit (${stepExec.maxIterations}).`,
+				`[WORKFLOW RUNNER] Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
 			),
 		};
 	}
 
-	return dispatchStep(info, stepExec.state as ExtractWorkflowState<"active">);
+	return dispatchStep(info, state);
 }

@@ -40,8 +40,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 0,
-					"iterationCount": 1
+					"step": 0,
+					"iterationCount": 0
 				}
 			},
 			"model": {
@@ -56,7 +56,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 1,
+					"step": 1,
 					"iterationCount": 1
 				}
 			}
@@ -74,7 +74,7 @@
 				},
 				"state": {
 					"status": "paused",
-					"currentStepIndex": 2,
+					"step": 2,
 					"iterationCount": 2
 				}
 			}
@@ -96,7 +96,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 2,
+					"step": 2,
 					"iterationCount": 2
 				}
 			},
@@ -110,7 +110,9 @@
 					"decision": "allow"
 				},
 				"state": {
-					"status": "finished"
+					"status": "finished",
+					"step": 3,
+					"iterationCount": 3
 				}
 			}
 		}

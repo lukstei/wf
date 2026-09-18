@@ -6,6 +6,8 @@ describe("actions/step.ts", () => {
 	test("step injects formatted instruction prompt", () => {
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "DeployApp",
 				filePath: "wf.json",
@@ -21,7 +23,6 @@ describe("actions/step.ts", () => {
 					},
 				],
 			},
-			currentStepIndex: 0,
 		};
 
 		const res = step({ type: "pre", payload: { conversationId: "c1" } }, state);
@@ -47,8 +48,9 @@ describe("actions/step.ts", () => {
 			    ],
 			  },
 			  "state": {
-			    "currentStepIndex": 0,
+			    "iterationCount": 0,
 			    "status": "active",
+			    "step": 0,
 			    "workflow": {
 			      "filePath": "wf.json",
 			      "flatSteps": [
@@ -72,6 +74,8 @@ describe("actions/step.ts", () => {
 	test("step injects formatted instruction prompt for root level step", () => {
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "DeployApp",
 				filePath: "wf.json",
@@ -87,7 +91,6 @@ describe("actions/step.ts", () => {
 					},
 				],
 			},
-			currentStepIndex: 0,
 		};
 
 		const res = step({ type: "pre", payload: { conversationId: "c1" } }, state);
@@ -104,6 +107,8 @@ describe("actions/step.ts", () => {
 
 		const finishedState: WorkflowState = {
 			status: "finished",
+			step: 1,
+			iterationCount: 1,
 			workflow: { name: "Done", filePath: "wf.json", flatSteps: [] },
 		};
 		expect(() =>
@@ -114,12 +119,13 @@ describe("actions/step.ts", () => {
 	test("step asserts precondition when currentStep is missing", () => {
 		const state: WorkflowState = {
 			status: "active",
+			step: 5,
+			iterationCount: 0,
 			workflow: {
 				name: "Empty",
 				filePath: "wf.json",
 				flatSteps: [],
 			},
-			currentStepIndex: 5,
 		};
 
 		expect(() =>
@@ -130,6 +136,8 @@ describe("actions/step.ts", () => {
 	test("step formats and injects prompt when currentStep is a condition", () => {
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "CondFlow",
 				filePath: "wf.json",
@@ -144,7 +152,6 @@ describe("actions/step.ts", () => {
 					},
 				],
 			},
-			currentStepIndex: 0,
 		};
 
 		const res = step({ type: "pre", payload: { conversationId: "c1" } }, state);

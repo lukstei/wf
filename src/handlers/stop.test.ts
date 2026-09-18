@@ -32,8 +32,9 @@ describe("handlers/stop.ts", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 0,
 		};
 		const errRes = handleStop(
 			{
@@ -60,8 +61,9 @@ describe("handlers/stop.ts", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "paused",
+			step: 1,
+			iterationCount: 0,
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 1,
 		};
 		const res = handleStop(
 			{
@@ -76,7 +78,7 @@ describe("handlers/stop.ts", () => {
 			state,
 		);
 		expect(res.response.decision).toBe("allow");
-		expect(res.state?.currentStepIndex).toBe(1);
+		expect(res.state?.step).toBe(1);
 		expect(res.state?.status).toBe("paused");
 	});
 
@@ -84,8 +86,9 @@ describe("handlers/stop.ts", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "active",
+			step: 0, // s1 action
+			iterationCount: 0,
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 0, // s1 action
 		};
 		const res = handleStop(
 			{
@@ -94,7 +97,7 @@ describe("handlers/stop.ts", () => {
 			},
 			state,
 		);
-		expect(res.state?.currentStepIndex).toBe(1);
+		expect(res.state?.step).toBe(1);
 		expect(res.response.decision).toBe("continue");
 		expect(res.response.reason).toMatch(
 			/^\[wf\] Executing next step: is ready\?/,
@@ -105,8 +108,9 @@ describe("handlers/stop.ts", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "active",
+			step: 1, // c1 condition
+			iterationCount: 0,
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 1, // c1 condition
 		};
 		const resYes = handleStop(
 			{
@@ -121,7 +125,7 @@ describe("handlers/stop.ts", () => {
 			state,
 		);
 		// YES branch should jump to y1 (index 2)
-		expect(resYes.state?.currentStepIndex).toBe(2);
+		expect(resYes.state?.step).toBe(2);
 		expect(resYes.response.decision).toBe("continue");
 		expect(resYes.response.reason).toContain("Deploy");
 
@@ -138,7 +142,7 @@ describe("handlers/stop.ts", () => {
 			state,
 		);
 		// NO branch should jump to n1 (index 3)
-		expect(resNo.state?.currentStepIndex).toBe(3);
+		expect(resNo.state?.step).toBe(3);
 		expect(resNo.response.decision).toBe("continue");
 		expect(resNo.response.reason).toContain("Fix");
 	});

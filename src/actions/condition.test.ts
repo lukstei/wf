@@ -30,12 +30,13 @@ describe("actions/condition.ts", () => {
 		const flat = flattenWorkflow(condDef.steps);
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "CondFlow",
 				filePath: "wf.json",
 				flatSteps: flat,
 			},
-			currentStepIndex: 0,
 		};
 
 		const res = conditionPre(
@@ -65,8 +66,9 @@ describe("actions/condition.ts", () => {
 			    ],
 			  },
 			  "state": {
-			    "currentStepIndex": 0,
+			    "iterationCount": 0,
 			    "status": "active",
+			    "step": 0,
 			    "workflow": {
 			      "filePath": "wf.json",
 			      "flatSteps": [
@@ -115,12 +117,13 @@ describe("actions/condition.ts", () => {
 		const flat = flattenWorkflow(condDef.steps);
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "CondFlow",
 				filePath: "wf.json",
 				flatSteps: flat,
 			},
-			currentStepIndex: 0,
 		};
 
 		const res = conditionStop(
@@ -137,7 +140,7 @@ describe("actions/condition.ts", () => {
 		);
 
 		expect({
-			nextStepIndex: res.state?.currentStepIndex,
+			nextStepIndex: res.state?.step,
 			response: res.response,
 		}).toMatchInlineSnapshot(`
 			{
@@ -159,12 +162,13 @@ describe("actions/condition.ts", () => {
 		const flat = flattenWorkflow(condDef.steps);
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "CondFlow",
 				filePath: "wf.json",
 				flatSteps: flat,
 			},
-			currentStepIndex: 0,
 		};
 
 		const res = conditionStop(
@@ -181,7 +185,7 @@ describe("actions/condition.ts", () => {
 		);
 
 		expect({
-			nextStepIndex: res.state?.currentStepIndex,
+			nextStepIndex: res.state?.step,
 			response: res.response,
 		}).toMatchInlineSnapshot(`
 			{
@@ -214,12 +218,13 @@ describe("actions/condition.ts", () => {
 		const flat = flattenWorkflow(singleCond.steps);
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "Single",
 				filePath: "wf.json",
 				flatSteps: flat,
 			},
-			currentStepIndex: 0,
 		};
 
 		const res = conditionStop(
@@ -258,13 +263,14 @@ describe("actions/condition.ts", () => {
 		]);
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "Flow",
 				filePath: "wf.json",
 				preamble: "Global preamble",
 				flatSteps: flat,
 			},
-			currentStepIndex: 0,
 		};
 
 		const res = conditionStop(
@@ -279,7 +285,7 @@ describe("actions/condition.ts", () => {
 			},
 			state,
 		);
-		expect(res.state?.currentStepIndex).toBe(1);
+		expect(res.state?.step).toBe(1);
 		const reason = res.response.reason;
 		expect(reason).toContain("CONTEXT:");
 		expect(reason).toContain("Global preamble");
@@ -288,16 +294,14 @@ describe("actions/condition.ts", () => {
 
 	test("conditionStop asserts precondition when state is not active", () => {
 		expect(() =>
-			conditionStop(
-				{ type: "stop", payload: { conversationId: "c1" } },
-				null,
-			),
+			conditionStop({ type: "stop", payload: { conversationId: "c1" } }, null),
 		).toThrow("conditionStop requires an active workflow");
 
 		const pausedState: WorkflowState = {
 			status: "paused",
+			step: 0,
+			iterationCount: 0,
 			workflow: { name: "Paused", filePath: "wf.json", flatSteps: [] },
-			currentStepIndex: 0,
 		};
 		expect(() =>
 			conditionStop(
@@ -310,6 +314,8 @@ describe("actions/condition.ts", () => {
 	test("conditionStop asserts precondition when current step is not a condition", () => {
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "Flow",
 				filePath: "wf.json",
@@ -325,14 +331,10 @@ describe("actions/condition.ts", () => {
 					},
 				],
 			},
-			currentStepIndex: 0,
 		};
 
 		expect(() =>
-			conditionStop(
-				{ type: "stop", payload: { conversationId: "c1" } },
-				state,
-			),
+			conditionStop({ type: "stop", payload: { conversationId: "c1" } }, state),
 		).toThrow("conditionStop requires current step to be a condition");
 	});
 });

@@ -275,7 +275,7 @@ Start server.
 			state,
 		);
 		expect(t1Pre.state?.status).toBe("active");
-		expect(t1Pre.state?.currentStepIndex).toBe(0);
+		expect(t1Pre.state?.step).toBe(0);
 		state = t1Pre.state;
 
 		// Turn 1 Stop: Model completes step 0 ("record")
@@ -292,7 +292,7 @@ Start server.
 			state,
 		);
 		expect(t1Stop.response.decision).toBe("continue");
-		expect(t1Stop.state?.currentStepIndex).toBe(1);
+		expect(t1Stop.state?.step).toBe(1);
 		state = t1Stop.state;
 
 		// Turn 2 Stop: Model evaluates condition as NO
@@ -309,7 +309,7 @@ Start server.
 			state,
 		);
 		expect(t2Stop.response.decision).toBe("continue");
-		expect(t2Stop.state?.currentStepIndex).toBe(3);
+		expect(t2Stop.state?.step).toBe(3);
 		const t2Reason = t2Stop.response.reason;
 		expect(t2Reason).toContain("CONTEXT:");
 		expect(t2Reason).toContain(
@@ -332,7 +332,7 @@ Start server.
 			state,
 		);
 		expect(t3Stop.response.decision).toBe("continue");
-		expect(t3Stop.state?.currentStepIndex).toBe(4);
+		expect(t3Stop.state?.step).toBe(4);
 		const t3Reason = t3Stop.response.reason;
 		expect(t3Reason).toContain("CONTEXT:");
 		expect(t3Reason).toContain(
@@ -355,7 +355,7 @@ Start server.
 			state,
 		);
 		expect(t4Stop.response.decision).toBe("continue");
-		expect(t4Stop.state?.currentStepIndex).toBe(5);
+		expect(t4Stop.state?.step).toBe(5);
 		const t4Reason = t4Stop.response.reason;
 		expect(t4Reason).toContain("CONTEXT:");
 		expect(t4Reason).toContain(

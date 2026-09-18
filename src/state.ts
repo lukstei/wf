@@ -2,20 +2,15 @@ import * as fs from "node:fs";
 import type { WorkflowInfo } from "./workflow.ts";
 
 interface RunningWorkflowState {
-	currentStepIndex: number;
+	step: number;
 	workflow: WorkflowInfo;
-	iterationCount?: number;
+	iterationCount: number;
 }
 
 export type WorkflowState =
 	| ({ status: "active" } & RunningWorkflowState)
 	| ({ status: "paused" } & RunningWorkflowState)
-	| {
-			status: "finished";
-			workflow: WorkflowInfo;
-			currentStepIndex?: number;
-			iterationCount?: number;
-	  }
+	| ({ status: "finished" } & RunningWorkflowState)
 	| ({ status: "error"; error: string } & RunningWorkflowState);
 
 export type ExtractWorkflowState<T extends WorkflowState["status"]> = Extract<

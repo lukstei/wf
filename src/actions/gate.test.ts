@@ -24,12 +24,13 @@ describe("Gate Semantics", () => {
 	test("gate step execution, transition, and approval snapshots", () => {
 		const activeGateState: WorkflowState = {
 			status: "active",
+			step: 1,
+			iterationCount: 0,
 			workflow: {
 				name: "GateTestFlow",
 				filePath: "gate.json",
 				flatSteps: flat,
 			},
-			currentStepIndex: 1,
 		};
 
 		const stepInjectionResult = step(
@@ -46,12 +47,13 @@ describe("Gate Semantics", () => {
 
 		const pausedAfterGateState: WorkflowState = {
 			status: "paused",
+			step: 2,
+			iterationCount: 0,
 			workflow: {
 				name: "GateTestFlow",
 				filePath: "gate.json",
 				flatSteps: flat,
 			},
-			currentStepIndex: 2,
 		};
 
 		const nextPreResult = nextPre(
@@ -69,8 +71,9 @@ describe("Gate Semantics", () => {
 		expect(assertions).toMatchInlineSnapshot(`
 			{
 			  "advanceResult": {
-			    "currentStepIndex": 2,
+			    "iterationCount": 1,
 			    "status": "paused",
+			    "step": 2,
 			    "workflow": {
 			      "filePath": "gate.json",
 			      "flatSteps": [
@@ -123,8 +126,9 @@ describe("Gate Semantics", () => {
 			      ],
 			    },
 			    "state": {
-			      "currentStepIndex": 2,
+			      "iterationCount": 0,
 			      "status": "active",
+			      "step": 2,
 			      "workflow": {
 			        "filePath": "gate.json",
 			        "flatSteps": [
@@ -180,8 +184,9 @@ describe("Gate Semantics", () => {
 			      ],
 			    },
 			    "state": {
-			      "currentStepIndex": 1,
+			      "iterationCount": 0,
 			      "status": "active",
+			      "step": 1,
 			      "workflow": {
 			        "filePath": "gate.json",
 			        "flatSteps": [
@@ -219,8 +224,9 @@ describe("Gate Semantics", () => {
 			      "decision": "allow",
 			    },
 			    "state": {
-			      "currentStepIndex": 2,
+			      "iterationCount": 1,
 			      "status": "paused",
+			      "step": 2,
 			      "workflow": {
 			        "filePath": "gate.json",
 			        "flatSteps": [

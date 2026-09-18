@@ -91,7 +91,8 @@ describe("runShim End-to-End Simulation", () => {
 					},
 				],
 			},
-			currentStepIndex: 0,
+			step: 0,
+			iterationCount: 0,
 		});
 
 		const rawInput = JSON.stringify({

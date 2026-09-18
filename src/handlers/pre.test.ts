@@ -36,7 +36,7 @@ describe("handlers/pre.ts", () => {
 		};
 		const { state: nextState, response } = handlePre(info, null);
 		expect(nextState?.status).toBe("active");
-		expect(nextState?.currentStepIndex).toBe(0);
+		expect(nextState?.step).toBe(0);
 		expect(response.injectSteps).toBeDefined();
 		expect(response.injectSteps?.[0]?.ephemeralMessage).toMatch(
 			/Do the first thing/,
@@ -56,8 +56,9 @@ describe("handlers/pre.ts", () => {
 		};
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 0,
 		};
 		const { state: nextState, response } = handlePre(info, state);
 		expect(nextState?.status).toBe("paused");
@@ -73,8 +74,9 @@ describe("handlers/pre.ts", () => {
 		};
 		const state: WorkflowState = {
 			status: "paused",
+			step: 0,
+			iterationCount: 0,
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 0,
 		};
 		const { state: nextState, response } = handlePre(info, state);
 		expect(nextState?.status).toBe("active");
@@ -87,9 +89,9 @@ describe("handlers/pre.ts", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const initial: WorkflowState = {
 			status: "active",
-			workflow: { name: "Sample", filePath: "/mock.json", flatSteps: flat },
-			currentStepIndex: 0,
+			step: 0,
 			iterationCount: 1,
+			workflow: { name: "Sample", filePath: "/mock.json", flatSteps: flat },
 		};
 		const showNoArgRes = handlePre(
 			{
@@ -176,9 +178,9 @@ describe("handlers/pre.ts", () => {
 		// flat has 4 steps, limit is 4 * 5 = 20
 		const state: WorkflowState = {
 			status: "active",
-			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 0,
+			step: 0,
 			iterationCount: 20, // limit is 20, next iteration will be 21 -> exceeded
+			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
 		};
 
 		const { state: nextState, response } = handlePre(info, state);
@@ -196,13 +198,14 @@ describe("handlers/pre.ts", () => {
 		};
 		const state: WorkflowState = {
 			status: "active",
+			step: 1, // c1 condition
+			iterationCount: 0,
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 1, // c1 condition
 		};
 		const { state: nextState, response } = handlePre(info, state);
 		expect(nextState?.status).toBe("active");
-		expect(nextState?.currentStepIndex).toBe(1);
-		expect(nextState?.iterationCount).toBe(1);
+		expect(nextState?.step).toBe(1);
+		expect(nextState?.iterationCount).toBe(0);
 
 		const msg = response.injectSteps?.[0]?.ephemeralMessage;
 		expect(msg).toMatch(/Condition Evaluation/);

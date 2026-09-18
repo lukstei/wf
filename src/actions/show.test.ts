@@ -45,7 +45,7 @@ describe("actions/show.ts", () => {
 	test("show visualizes active workflow with current step highlighted when invoked without argument", () => {
 		const activeState: WorkflowState = {
 			status: "active",
-			currentStepIndex: 1,
+			step: 1,
 			iterationCount: 2,
 			workflow: {
 				name: "ActiveFlow",
@@ -86,6 +86,8 @@ describe("actions/show.ts", () => {
 	test("show reports finished and error states when invoked without argument", () => {
 		const finishedState: WorkflowState = {
 			status: "finished",
+			step: 1,
+			iterationCount: 1,
 			workflow: {
 				name: "DeployApp",
 				filePath: "wf.json",
@@ -111,6 +113,8 @@ describe("actions/show.ts", () => {
 
 		const errorState: WorkflowState = {
 			status: "error",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "DeployApp",
 				filePath: "wf.json",
@@ -125,7 +129,6 @@ describe("actions/show.ts", () => {
 					},
 				],
 			},
-			currentStepIndex: 0,
 			error: "Boom!",
 		};
 		const errorRes = show(
@@ -143,7 +146,7 @@ describe("actions/show.ts", () => {
 	test("show highlights active step when specified workflow matches active workflow", () => {
 		const activeState: WorkflowState = {
 			status: "active",
-			currentStepIndex: 1,
+			step: 1,
 			iterationCount: 2,
 			workflow: {
 				name: "SampleShow",
@@ -212,7 +215,7 @@ describe("actions/show.ts", () => {
 	test("show injects visualization prompt without modifying state", () => {
 		const activeState: WorkflowState = {
 			status: "active",
-			currentStepIndex: 1,
+			step: 1,
 			iterationCount: 2,
 			workflow: {
 				name: "ExistingFlow",

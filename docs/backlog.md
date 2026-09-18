@@ -100,7 +100,7 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
 - **Current State:** A failure at step 7 of an 8-step workflow forces the workflow into `error` status with no recourse except `/wf-stop` and restarting from step 1.
 - **Objective:** Provide granular recovery controls.
   - `/wf-retry`: Re-injects the current step instruction without advancing the step index.
-  - `/wf-jump <stepNum>`: Directly modifies `currentStepIndex`, allowing the user to skip broken steps or re-run a previous milestone.
+  - `/wf-jump <stepNum>`: Directly modifies `step`, allowing the user to skip broken steps or re-run a previous milestone.
 
 ### [ ] 2.5 Agent & Terminal CLI Mode (`wf next`, `wf show --mermaid`)
 - **Current State:** Workflows are controlled exclusively through chat slash commands (`/wf`, `/wf-next`, `/wf-show`, `/wf-stop`). AI agents (Antigravity, Claude Code, Codex, or subagents) cannot trigger slash commands directly because slash commands are strictly user-facing chat inputs intercepted at `PreInvocation`/`UserPromptSubmit`. Consequently, an agent cannot advance workflow steps, inspect the active step, or query the workflow diagram autonomously via tool execution.

@@ -102,8 +102,8 @@ describe("actions/run.ts", () => {
 			{ name: "run", args: { path: "sample.json" } },
 		);
 		expect(res.state?.status).toBe("active");
-		expect(res.state?.currentStepIndex).toBe(0);
-		expect(res.state?.iterationCount).toBe(1);
+		expect(res.state?.step).toBe(0);
+		expect(res.state?.iterationCount).toBe(0);
 		expect(res.state?.workflow.name).toBe("SampleRun");
 		expect(res.response.injectSteps).toBeDefined();
 		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
@@ -122,8 +122,8 @@ describe("actions/run.ts", () => {
 			{ name: "run", args: { path: "cond.json" } },
 		);
 		expect(res.state?.status).toBe("active");
-		expect(res.state?.currentStepIndex).toBe(0);
-		expect(res.state?.iterationCount).toBe(1);
+		expect(res.state?.step).toBe(0);
+		expect(res.state?.iterationCount).toBe(0);
 		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
 			/Condition Evaluation/,
 		);
@@ -143,7 +143,7 @@ describe("actions/run.ts", () => {
 			{ name: "run", args: { path: "examples/sample-wf.md" } },
 		);
 		expect(res.state?.status).toBe("active");
-		expect(res.state?.currentStepIndex).toBe(0);
+		expect(res.state?.step).toBe(0);
 		expect(res.state?.workflow.name).toBe(
 			"Derive an API client from a recorded session",
 		);

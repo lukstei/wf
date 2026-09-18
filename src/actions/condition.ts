@@ -3,10 +3,7 @@ import { logDebug } from "../lib/logDebug.ts";
 import type { WorkflowState } from "../state.ts";
 import { advanceStep } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
-import {
-	formatAdvanceReason,
-	parseDecision,
-} from "./formatters.ts";
+import { formatAdvanceReason, parseDecision } from "./formatters.ts";
 import { step } from "./step.ts";
 
 /**
@@ -28,7 +25,7 @@ export function conditionStop(
 		"conditionStop requires an active workflow",
 	);
 
-	const currentStep = state.workflow.flatSteps[state.currentStepIndex];
+	const currentStep = state.workflow.flatSteps[state.step];
 	assert(
 		currentStep?.type === "condition",
 		"conditionStop requires current step to be a condition",
@@ -52,10 +49,19 @@ export function conditionStop(
 		};
 	}
 
+	if (nextState?.status === "error") {
+		logDebug("Condition workflow terminated on error", {
+			error: nextState.error,
+		});
+		return {
+			state: nextState,
+			response: { decision: "allow" },
+		};
+	}
+
 	if (nextState?.status === "active") {
-		const nextTargetStep =
-			nextState.workflow.flatSteps[nextState.currentStepIndex];
-		const nextStepNum = nextState.currentStepIndex + 1;
+		const nextTargetStep = nextState.workflow.flatSteps[nextState.step];
+		const nextStepNum = nextState.step + 1;
 		const reason = formatAdvanceReason(
 			nextTargetStep,
 			nextState.workflow.preamble,
@@ -78,7 +84,7 @@ export function conditionStop(
 
 	// Paused mode: yield to user
 	logDebug("Condition finished in paused mode, yielding to user", {
-		nextStep: (nextState?.currentStepIndex ?? 0) + 1,
+		nextStep: (nextState?.step ?? 0) + 1,
 	});
 	return {
 		state: nextState,

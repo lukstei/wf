@@ -271,9 +271,8 @@ export async function runCli(
 
 			const nextState = resumeWorkflow(state);
 			saveState(conversationId, nextState);
-			const currentStep =
-				nextState.workflow.flatSteps[nextState.currentStepIndex];
-			const stepNum = nextState.currentStepIndex + 1;
+			const currentStep = nextState.workflow.flatSteps[nextState.step];
+			const stepNum = nextState.step + 1;
 			const total = nextState.workflow.flatSteps.length;
 			const title = currentStep?.title || `Step ${stepNum}`;
 			const msg = `[STEP ${stepNum}/${total}] ${title}\n${currentStep?.instruction || ""}`;
@@ -288,12 +287,11 @@ export async function runCli(
 				writeOut(msg);
 				return { exitCode: 0, output: msg };
 			}
-			const currentStepIndex = state.currentStepIndex ?? 0;
-			const currentStep = state.workflow.flatSteps[currentStepIndex];
+			const currentStep = state.workflow.flatSteps[state.step];
 			const currentLevel = currentStep?.level ?? 0;
 			const stepInfo =
-				state.currentStepIndex !== undefined
-					? `Step: ${state.currentStepIndex + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})`
+				state.status !== "finished"
+					? `Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})`
 					: "All steps completed";
 			const statusHeader = `[WORKFLOW STATUS: ${state.status.toUpperCase()}]\nWorkflow: ${state.workflow.name}\n${stepInfo}`;
 			const prompt = visualizeWorkflowPrompt(
@@ -301,7 +299,7 @@ export async function runCli(
 				state.workflow,
 				state.workflow.filePath,
 				state.status === "active" || state.status === "paused"
-					? state.currentStepIndex
+					? state.step
 					: undefined,
 				statusHeader,
 			);

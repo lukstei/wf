@@ -46,14 +46,13 @@ export function show(
 		}
 
 		// Active or paused state: show diagram with active step highlighted + status header
-		const currentLevel =
-			state.workflow.flatSteps[state.currentStepIndex]?.level ?? 0;
-		const statusHeader = `[WORKFLOW STATUS: ${state.status.toUpperCase()}]\nWorkflow: ${state.workflow.name}\nStep: ${state.currentStepIndex + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})`;
+		const currentLevel = state.workflow.flatSteps[state.step]?.level ?? 0;
+		const statusHeader = `[WORKFLOW STATUS: ${state.status.toUpperCase()}]\nWorkflow: ${state.workflow.name}\nStep: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})`;
 		const prompt = visualizeWorkflowPrompt(
 			state.workflow.name,
 			state.workflow,
 			state.workflow.filePath,
-			state.currentStepIndex,
+			state.step,
 			statusHeader,
 		);
 
@@ -90,9 +89,9 @@ export function show(
 		(state.status === "active" || state.status === "paused") &&
 		state.workflow.filePath === resolved.filePath;
 
-	const activeStepIndex = isActiveWorkflow ? state.currentStepIndex : undefined;
+	const activeStepIndex = isActiveWorkflow ? state.step : undefined;
 	const statusHeader = isActiveWorkflow
-		? `[WORKFLOW STATUS: ${state.status.toUpperCase()}]\nWorkflow: ${state.workflow.name}\nStep: ${state.currentStepIndex + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${state.workflow.flatSteps[state.currentStepIndex]?.level ?? 0})`
+		? `[WORKFLOW STATUS: ${state.status.toUpperCase()}]\nWorkflow: ${state.workflow.name}\nStep: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${state.workflow.flatSteps[state.step]?.level ?? 0})`
 		: undefined;
 
 	const wfName = resolved.workflow.name || path.basename(resolved.filePath);

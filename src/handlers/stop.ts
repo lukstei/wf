@@ -46,7 +46,7 @@ export function handleStop(
 		};
 	}
 
-	const currentStep = state.workflow.flatSteps[state.currentStepIndex];
+	const currentStep = state.workflow.flatSteps[state.step];
 	if (!currentStep) {
 		return { state: state, response: { decision: "allow" } };
 	}

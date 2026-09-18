@@ -60,8 +60,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 0,
-					"iterationCount": 1
+					"step": 0,
+					"iterationCount": 0
 				}
 			},
 			"model": {
@@ -79,7 +79,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 1,
+					"step": 1,
 					"iterationCount": 1
 				}
 			}
@@ -96,8 +96,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 1,
-					"iterationCount": 2
+					"step": 1,
+					"iterationCount": 1
 				}
 			},
 			"model": {
@@ -115,7 +115,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 2,
+					"step": 2,
 					"iterationCount": 2
 				}
 			}
@@ -132,8 +132,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 2,
-					"iterationCount": 3
+					"step": 2,
+					"iterationCount": 2
 				}
 			},
 			"model": {
@@ -151,7 +151,7 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 4,
+					"step": 4,
 					"iterationCount": 3
 				}
 			}
@@ -168,8 +168,8 @@
 				},
 				"state": {
 					"status": "active",
-					"currentStepIndex": 4,
-					"iterationCount": 4
+					"step": 4,
+					"iterationCount": 3
 				}
 			},
 			"model": {
@@ -185,7 +185,9 @@
 					"decision": "allow"
 				},
 				"state": {
-					"status": "finished"
+					"status": "finished",
+					"step": 5,
+					"iterationCount": 4
 				}
 			}
 		}

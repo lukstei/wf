@@ -20,8 +20,9 @@ describe("actions/next.ts", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "paused",
+			step: 0,
+			iterationCount: 0,
 			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 0,
 		};
 
 		const res = nextPre(
@@ -47,6 +48,8 @@ describe("actions/next.ts", () => {
 				{ type: "pre", payload: { conversationId: "c1" } },
 				{
 					status: "finished",
+					step: 2,
+					iterationCount: 2,
 					workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
 				},
 			),
@@ -57,15 +60,16 @@ describe("actions/next.ts", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 0,
 		};
 
 		const res = nextStop(
 			{ type: "stop", payload: { conversationId: "c1" } },
 			state,
 		);
-		expect(res.state?.currentStepIndex).toBe(1);
+		expect(res.state?.step).toBe(1);
 		expect(res.state?.status).toBe("active");
 		expect(res.response.decision).toBe("continue");
 		expect(res.response.reason).toMatch(/Do 2/);
@@ -79,8 +83,9 @@ describe("actions/next.ts", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "paused",
+			step: 0,
+			iterationCount: 0,
 			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 0,
 		};
 
 		expect(() =>
@@ -92,8 +97,9 @@ describe("actions/next.ts", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "active",
+			step: 1, // last step
+			iterationCount: 0,
 			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
-			currentStepIndex: 1, // last step
 		};
 
 		const res = nextStop(
@@ -125,20 +131,21 @@ describe("actions/next.ts", () => {
 		];
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: {
 				name: "Flow",
 				filePath: "wf.json",
 				preamble: "Global flow context",
 				flatSteps: flat,
 			},
-			currentStepIndex: 0,
 		};
 
 		const res = nextStop(
 			{ type: "stop", payload: { conversationId: "c1" } },
 			state,
 		);
-		expect(res.state?.currentStepIndex).toBe(1);
+		expect(res.state?.step).toBe(1);
 		const reason = res.response.reason;
 		expect(reason).toContain("CONTEXT:");
 		expect(reason).toContain("Global flow context");

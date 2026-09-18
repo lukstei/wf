@@ -4,7 +4,7 @@ import { nextStep, type WorkflowInfo } from "./workflow.ts";
 
 /**
  * Initializes and starts a workflow in active mode.
- * Sets the execution pointer to step 0 with iterationCount 1.
+ * Sets the execution pointer to step 0 with iterationCount 0.
  */
 export function startWorkflow(
 	workflow: WorkflowInfo,
@@ -17,8 +17,8 @@ export function startWorkflow(
 
 	return {
 		status: "active",
-		currentStepIndex: 0,
-		iterationCount: 1,
+		step: 0,
+		iterationCount: 0,
 		workflow,
 	};
 }
@@ -60,7 +60,9 @@ export function resumeWorkflow(
 }
 
 /**
- * Pure transition advancing an active workflow to its next step.
+ * Pure transition advancing an active workflow to its next step upon step completion.
+ * Increments iterationCount to track completed step executions.
+ * If iteration count exceeds limit (steps * 5), transitions to "error" state.
  * Computes the target step index using nextStep().
  * If the target index reaches or exceeds the total step count, transitions to "finished".
  * If the completed step was a gate, transitions status to "paused".
@@ -74,17 +76,27 @@ export function advanceStep(
 		return state;
 	}
 
-	const currentStep = state.workflow.flatSteps[state.currentStepIndex];
-	const targetIndex = nextStep(
-		state.workflow.flatSteps,
-		state.currentStepIndex,
-		decision,
-	);
+	const nextIterationCount = state.iterationCount + 1;
+	const maxIterations = state.workflow.flatSteps.length * 5;
+
+	if (nextIterationCount > maxIterations) {
+		return {
+			...state,
+			status: "error",
+			error: `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
+			iterationCount: nextIterationCount,
+		};
+	}
+
+	const currentStep = state.workflow.flatSteps[state.step];
+	const targetIndex = nextStep(state.workflow.flatSteps, state.step, decision);
 
 	if (targetIndex >= state.workflow.flatSteps.length) {
 		return {
+			...state,
 			status: "finished",
-			workflow: state.workflow,
+			step: targetIndex,
+			iterationCount: nextIterationCount,
 		};
 	}
 
@@ -92,47 +104,9 @@ export function advanceStep(
 
 	return {
 		...state,
-		currentStepIndex: targetIndex,
+		step: targetIndex,
 		status: isGate ? "paused" : "active",
-	};
-}
-
-export interface StepExecutionResult {
-	state: WorkflowState;
-	exceeded: boolean;
-	maxIterations: number;
-}
-
-/**
- * Checks runaway loop iteration limits and prepares the next step dispatch for an active workflow.
- * If iteration count exceeds limit (steps * 5), transitions to "error" state.
- * Otherwise increments iterationCount.
- */
-export function prepareStepExecution(
-	state: ExtractWorkflowState<"active">,
-): StepExecutionResult {
-	const maxIterations = state.workflow.flatSteps.length * 5;
-	const nextIterationCount = (state.iterationCount ?? 0) + 1;
-
-	if (nextIterationCount > maxIterations) {
-		return {
-			exceeded: true,
-			maxIterations,
-			state: {
-				...state,
-				status: "error",
-				error: `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
-			},
-		};
-	}
-
-	return {
-		exceeded: false,
-		maxIterations,
-		state: {
-			...state,
-			iterationCount: nextIterationCount,
-		},
+		iterationCount: nextIterationCount,
 	};
 }
 
@@ -174,8 +148,8 @@ export function stopWorkflowState(
 
 	return {
 		state: {
+			...state,
 			status: "finished",
-			workflow: state.workflow,
 		},
 		wasRunning: true,
 		workflowName: state.workflow.name,

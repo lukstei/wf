@@ -17,10 +17,10 @@ export function step(
 		"Cannot execute step: workflow must be active or paused",
 	);
 
-	const currentStep = state.workflow.flatSteps[state.currentStepIndex];
+	const currentStep = state.workflow.flatSteps[state.step];
 	assert(currentStep, "Current step does not exist");
 
-	const stepNum = state.currentStepIndex + 1;
+	const stepNum = state.step + 1;
 	const totalSteps = state.workflow.flatSteps.length;
 	const prompt = formatStepPrompt(state, currentStep, stepNum, totalSteps);
 

@@ -12,8 +12,9 @@ describe("actions/stop.ts", () => {
 	test("stopWorkflow resets active workflow state", () => {
 		const state: WorkflowState = {
 			status: "active",
+			step: 0,
+			iterationCount: 0,
 			workflow: { name: "Test WF", filePath: "wf.json", flatSteps: [] },
-			currentStepIndex: 0,
 		};
 
 		const res = stopWorkflow(info, state);
@@ -26,8 +27,9 @@ describe("actions/stop.ts", () => {
 	test("stopWorkflow resets paused workflow state", () => {
 		const state: WorkflowState = {
 			status: "paused",
+			step: 1,
+			iterationCount: 1,
 			workflow: { name: "Paused WF", filePath: "wf.json", flatSteps: [] },
-			currentStepIndex: 1,
 		};
 
 		const res = stopWorkflow(info, state);
