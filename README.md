@@ -13,80 +13,7 @@ When you give an AI coding agent a multi-step plan, it tries to execute the whol
 
 `wf` turns Markdown runbooks into step graphs and feeds them to the agent one step at a time. The agent cannot see or run future steps until the current step passes.
 
-Runs in Google Antigravity, Claude Code, and OpenAI Codex.
-
-```mermaid
-flowchart TD
-    A["Markdown runbook (.md)"] --> B["wf compiler"]
-    B --> C["Inject active step"]
-    C --> D["Agent executes step"]
-    D --> E{"Step type"}
-    E -->|"Linear"| F["Advance to next step"]
-    E -->|"Gate"| G["Pause for human approval"]
-    E -->|"Condition"| H["Branch on YES / NO"]
-    F --> C
-    G --> C
-    H --> C
-```
-
-## Goals
-
-- **Skills as workflows:** Turn existing `SKILL.md` files and Markdown runbooks into executable workflows with minimal changes.
-- **Minimal syntax:** Plain Markdown headings, conditions, and human gates. No custom DSL.
-- **Agent does the work:** The model inspects code, runs tools, and evaluates conditions. `wf` only enforces step order and human checkpoints.
-- **Zero infrastructure:** Runs as a self-contained plugin. No server, database, or background daemon.
-
-## Non-goals
-
-- **Full-blown workflow engine:** No heavy orchestration frameworks, distributed graph runners, or complex runtime dependencies.
-
-## How it works
-
-- **One step at a time:** The agent prompt only contains instructions for the active step. Future steps stay hidden.
-- **Explicit branch decisions:** Conditional steps require `[DECISION: YES]` or `[DECISION: NO]` before the graph advances.
-- **Human gates:** Steps marked `## Gate:` pause execution until you run `/wf-next`.
-- **Visual status:** Generates Mermaid diagrams showing the current position in the graph.
-- **Zero runtime dependencies:** Single bundle in `dist/wf.cjs` invoked directly by agent lifecycle hooks.
-
-## Supported environments
-
-| Environment | Commands | Lifecycle hooks |
-| :--- | :--- | :--- |
-| Google Antigravity | `/wf`, `/wf-show`, `/wf-next`, `/wf-stop`, `/wf-help` | `PreInvocation`, `Stop` |
-| Claude Code | `/wf`, `/wf-show`, `/wf-next`, `/wf-stop`, `/wf-help` | `SessionStart`, `UserPromptSubmit`, `Stop` |
-| OpenAI Codex | `$wf:wf`, `$wf:wf-show`, `$wf:wf-next`, `$wf:wf-stop`, `$wf:wf-help` | `SessionStart`, `UserPromptSubmit`, `Stop` |
-
-## Installation
-
-### Google Antigravity
-Install using the Antigravity CLI:
-```bash
-agy plugin install https://github.com/lukstei/wf
-```
-
-### Claude Code
-From your terminal (CLI):
-```bash
-claude plugin marketplace add lukstei/wf
-claude plugin install wf@wf-marketplace
-```
-
-Or inside an active Claude Code session:
-```bash
-/plugin marketplace add lukstei/wf
-/plugin install wf@wf-marketplace
-```
-
-### OpenAI Codex
-Add the marketplace catalog, install, and trust:
-```bash
-codex plugin marketplace add lukstei/wf
-codex plugin install wf
-codex plugin trust wf
-```
-
-> [!NOTE]
-> Codex currently displays hook feedback and step continuation prompts in the transcript/TUI ([openai/codex#21696](https://github.com/openai/codex/issues/21696)). `wf` emits `suppressOutput: true`, which will automatically hide these messages once upstream support is enabled.
+Works in Google Antigravity, Claude Code, and OpenAI Codex.
 
 ## Quickstart
 
@@ -115,80 +42,88 @@ Check the files in `dist/`. Ready to publish to production?
 
 ### 2. Run in chat
 
-In Antigravity or Claude Code:
+| Environment | Command |
+| :--- | :--- |
+| Google Antigravity / Claude Code | `/wf deploy.md` |
+| OpenAI Codex | `$wf:wf deploy.md` |
 
-```text
-/wf deploy.md
+## How it works
+
+- **One step at a time:** The agent prompt only contains instructions for the active step. Future steps stay hidden.
+- **Agent does the work, runner enforces the path:** The agent inspects code, runs tools, and evaluates conditions. `wf` strictly controls step transitions, context injection, and gates.
+- **Explicit branch decisions:** Conditional steps require `[DECISION: YES]` or `[DECISION: NO]` before the graph advances.
+- **Human approval gates:** Steps marked `## Gate:` pause execution until you confirm with `/wf-next`.
+- **Zero infrastructure:** Runs entirely local as an in-process plugin. No server, database, or background daemon.
+
+## Installation
+
+### Google Antigravity
+```bash
+agy plugin install https://github.com/lukstei/wf
 ```
 
-In OpenAI Codex:
-
-```text
-$wf:wf deploy.md
+### Claude Code
+From your terminal:
+```bash
+claude plugin marketplace add lukstei/wf
+claude plugin install wf@wf-marketplace
 ```
 
-| Command (Claude Code / AGY) | Command (Codex CLI) | Description |
+Or inside an active session:
+```bash
+/plugin marketplace add lukstei/wf
+/plugin install wf@wf-marketplace
+```
+
+### OpenAI Codex
+```bash
+codex plugin marketplace add lukstei/wf
+codex plugin install wf
+codex plugin trust wf
+```
+
+> [!NOTE]
+> Codex currently displays hook feedback in the transcript ([openai/codex#21696](https://github.com/openai/codex/issues/21696)). `wf` emits `suppressOutput: true`, which will hide these messages once upstream support is enabled.
+
+## Commands
+
+| Command (Claude / AGY) | Command (Codex CLI) | Description |
 | :--- | :--- | :--- |
-| `/wf <workflow-file>` | `$wf:wf <workflow-file>` | Start a workflow and inject step 1. Supports relative paths, `@path`, or `@[path]`. |
-| `/wf-show [<workflow-file>]` | `$wf:wf-show [<workflow-file>]` | Display workflow status, Mermaid diagram, and current step. Visualizes a file when provided. |
-| `/wf-next` | `$wf:wf-next` | Advance and execute the next step when a workflow is paused at a gate. |
-| `/wf-stop` | `$wf:wf-stop` | Stop and reset the active or paused workflow. |
+| `/wf <file>` | `$wf:wf <file>` | Start a workflow and inject step 1. Supports relative paths, `@path`, or `@[path]`. |
+| `/wf-show [<file>]` | `$wf:wf-show [<file>]` | Display workflow status and Mermaid diagram. Visualizes a file when provided. |
+| `/wf-next` | `$wf:wf-next` | Advance to the next step when paused at a gate. |
+| `/wf-stop` | `$wf:wf-stop` | Abort and reset the active workflow. |
 | `/wf-help` | `$wf:wf-help` | Display usage instructions and supported runner commands. |
 
-## Syntax
+## Syntax at a glance
 
-See [docs/SYNTAX.md](docs/SYNTAX.md) for the complete syntax specification, rules, and examples.
+See [docs/SYNTAX.md](docs/SYNTAX.md) for the complete specification.
 
-### Frontmatter (optional)
-YAML frontmatter at the top of the file configures the workflow name and description:
-```markdown
----
-name: deploy
-description: Production release workflow
----
-```
+- `# Title`: Workflow title. Any text before the first `##` is global preamble context injected into every step.
+- `## Step name`: Linear step. Body text becomes step instructions.
+- `## If: Condition`: Branch point. Child `###` subheadings form the YES branch; `### No` forms the NO branch. Agent decides with `[DECISION: YES]` or `[DECISION: NO]`.
+- `## Gate: Name`: Human checkpoint. Execution halts until `/wf-next`.
 
-### Workflow Preamble (Context)
-Any text between the H1 title and the first step heading is treated as top-level workflow context. It is injected into every step under `CONTEXT:`:
-```markdown
-# Production Deployment
+## FAQ
 
-Ensure DATABASE_URL is pointing to staging replica before running checks.
-All commands must be executed from repository root.
-```
+### What does "deterministic workflow runner" mean?
 
-### Steps (`##`)
-Any H2 heading that does not match a keyword (`if`, `gate`) creates a step. Heading numbers or prefixes are supported:
-```markdown
-## 1. Run migrations
-Run `./scripts/migrate.sh` and verify all tables migrate cleanly.
-```
+Deterministic means the **execution boundary and graph traversal are strictly controlled in code**, while the **task logic and condition evaluation remain with the agent**.
 
-### Conditions (`## If:` / `### No`)
-Condition headings create binary branching points evaluated dynamically by the model:
-- **Condition Instruction**: Body text directly beneath `## If:` tells the agent how to evaluate the condition.
-- **YES Branch (0..N steps)**: Child `###` subheadings are executed when the condition evaluates to YES.
-- **NO Branch**: A child heading `### No` (or `### Else`) is executed when the condition evaluates to NO.
+- **Deterministic by the runner:** Step sequence, active step visibility, human gates, and transition states are deterministic. The agent cannot skip ahead, hallucinate upcoming steps, or bypass review points because future steps are physically absent from its prompt.
+- **Evaluated by the agent:** The agent retains full flexibility inside each step to read files, run terminal commands, write code, and evaluate conditions. When evaluating a condition, the agent inspects the system state and returns `[DECISION: YES]` or `[DECISION: NO]`.
 
-The agent concludes its evaluation with `[DECISION: YES]` or `[DECISION: NO]`:
+### How is this different from giving the agent a markdown checklist in the prompt?
 
-```markdown
-## 2. If: Any migrations pending?
-Run `npx prisma migrate status` to check the database state.
+When an agent receives a 10-step checklist in a single prompt, it tries to execute as much as possible at once. It frequently skips tests, hallucinates that future steps already succeeded, or ignores instructions to stop for human review. `wf` reveals only step $N$. Step $N+1$ does not exist in the agent's context until step $N$ completes.
 
-### Run dry-run
-Run migration dry-run and save output.
+### Does `wf` require external services or API keys?
 
-### No: Skip verification
-Skip to schema verification.
-```
+No. `wf` is a single bundled script (`dist/wf.cjs`) invoked directly by agent lifecycle hooks. It stores lightweight state in your project directory and requires no backend, database, or external network calls.
 
-### Gates (`## Gate:`)
-Pauses execution for human review. Resumes when you run `/wf-next`:
-```markdown
-## Gate: Confirm schema changes
-Review the schema diff above. Run `/wf-next` to continue or `/wf-stop` to abort.
-```
+### Can existing `SKILL.md` runbooks be used?
+
+Yes. Any standard Markdown document with `##` headings works immediately. You can also run the built-in `wf-convert` skill to convert procedural instructions into deterministic step graphs.
 
 ## Development
 
@@ -202,3 +137,4 @@ npm run test:watch  # test watcher
 ## License
 
 [MIT](LICENSE) © 2026 Lukas Steinbrecher
+
