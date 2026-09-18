@@ -111,14 +111,13 @@ describe("runShim End-to-End Simulation", () => {
 		expect(JSON.parse(egress.stdout ?? "{}")).toMatchInlineSnapshot(`
 			{
 			  "decision": "block",
-			  "reason": "Step: Step
-			Step completed.
-			Now starting Step 2 of 2: undefined (Level 1)
+			  "reason": "[wf] Executing next step: Step 2 (Level 1)
 
 			INSTRUCTION:
 			Step 2 instruction
 
 			Continue immediately and execute this step.",
+			  "suppressOutput": true,
 			}
 		`);
 	});

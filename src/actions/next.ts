@@ -82,10 +82,7 @@ export function nextStop(
 		const stepNum = nextState.currentStepIndex + 1;
 		const totalSteps = nextState.workflow.flatSteps.length;
 		const reason = formatAdvanceReason(
-			"Step completed.",
 			nextTargetStep,
-			nextState.currentStepIndex,
-			totalSteps,
 			nextState.workflow.preamble,
 		);
 

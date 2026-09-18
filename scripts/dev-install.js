@@ -17,6 +17,13 @@ if (!fs.existsSync(targetDir)) {
 	process.exit(1);
 }
 
+const subdirs = fs
+	.readdirSync(targetDir, { withFileTypes: true })
+	.filter((d) => d.isDirectory() && /^\d+\./.test(d.name))
+	.map((d) => path.join(targetDir, d.name));
+
+const targetDirs = subdirs.length > 0 ? subdirs : [targetDir];
+
 const files = [
 	"dist",
 	"hooks",
@@ -32,11 +39,12 @@ const files = [
 	"package.json",
 ];
 
-for (const item of files) {
-	if (fs.existsSync(item)) {
-		const dest = path.join(targetDir, item);
-		fs.cpSync(item, dest, { recursive: true, force: true });
+for (const destDir of targetDirs) {
+	for (const item of files) {
+		if (fs.existsSync(item)) {
+			const dest = path.join(destDir, item);
+			fs.cpSync(item, dest, { recursive: true, force: true });
+		}
 	}
+	console.log(`✓ Synced wf plugin to: ${destDir}`);
 }
-
-console.log(`✓ Synced wf plugin to: ${targetDir}`);

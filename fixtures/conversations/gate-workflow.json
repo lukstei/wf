@@ -53,7 +53,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "Gate: Approve Release\nStep completed.\nNow starting Step 2 of 3: Approve Release\n\nINSTRUCTION:\nVerify the build before proceeding.\n\nNOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'."
+					"reason": "[wf] Executing next step: Approve Release\n\nINSTRUCTION:\nVerify the build before proceeding.\n\nNOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'."
 				},
 				"state": {
 					"status": "active",

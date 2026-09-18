@@ -120,6 +120,7 @@ export const codexHarness: HarnessAdapter = {
 					stdout: JSON.stringify({
 						decision: "block",
 						reason: response.reason,
+						suppressOutput: true,
 					}),
 				};
 			}
@@ -146,6 +147,7 @@ export const codexHarness: HarnessAdapter = {
 						hookEventName,
 						additionalContext: text,
 					},
+					suppressOutput: true,
 				}),
 			};
 		}

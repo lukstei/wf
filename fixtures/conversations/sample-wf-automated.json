@@ -76,7 +76,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "If: Check Day Condition\nStep completed.\nNow starting Step 2 of 5: Check Day Condition\n\nINSTRUCTION:\nEvaluate condition: \"is it friday?\"\n\nContinue immediately and execute this step."
+					"reason": "[wf] Executing next step: Check Day Condition\n\nEvaluate condition: \"is it friday?\"\n\nContinue immediately and execute this step."
 				},
 				"state": {
 					"status": "active",
@@ -114,7 +114,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "Step: Report Non-Friday Status\nCondition \"is it friday?\" evaluated to NO.\nNow starting Step 4 of 5: Report Non-Friday Status (Level 1)\n\nINSTRUCTION:\nState that it is not friday.\n\nContinue immediately and execute this step."
+					"reason": "[wf] Executing next step: Report Non-Friday Status (Level 1)\n\nINSTRUCTION:\nState that it is not friday.\n\nContinue immediately and execute this step."
 				},
 				"state": {
 					"status": "active",
@@ -152,7 +152,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "Step: Verify and Conclude\nStep completed.\nNow starting Step 5 of 5: Verify and Conclude\n\nINSTRUCTION:\nAnnounce that the workflow has successfully completed all steps.\n\nContinue immediately and execute this step."
+					"reason": "[wf] Executing next step: Verify and Conclude\n\nINSTRUCTION:\nAnnounce that the workflow has successfully completed all steps.\n\nContinue immediately and execute this step."
 				},
 				"state": {
 					"status": "active",

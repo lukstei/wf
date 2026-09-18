@@ -210,6 +210,7 @@ describe("codexHarness", () => {
 				{
 				  "decision": "block",
 				  "reason": "Execute step 2",
+				  "suppressOutput": true,
 				}
 			`);
 		});
@@ -228,6 +229,7 @@ describe("codexHarness", () => {
 			expect(JSON.parse(egress.stdout ?? "{}")).toEqual({
 				decision: "block",
 				reason: "Execute step 2",
+				suppressOutput: true,
 			});
 		});
 
@@ -250,6 +252,7 @@ describe("codexHarness", () => {
 				    "additionalContext": "Instruction for step 1",
 				    "hookEventName": "UserPromptSubmit",
 				  },
+				  "suppressOutput": true,
 				  "systemMessage": "[WORKFLOW]",
 				}
 			`);

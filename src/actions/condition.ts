@@ -80,12 +80,8 @@ export function conditionStop(
 		const nextTargetStep =
 			nextState.workflow.flatSteps[nextState.currentStepIndex];
 		const nextStepNum = nextState.currentStepIndex + 1;
-		const summary = `Condition "${currentStep.condition}" evaluated to ${decision}.`;
 		const reason = formatAdvanceReason(
-			summary,
 			nextTargetStep,
-			nextState.currentStepIndex,
-			totalSteps,
 			nextState.workflow.preamble,
 		);
 

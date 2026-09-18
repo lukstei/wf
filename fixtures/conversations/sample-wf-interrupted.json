@@ -76,7 +76,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "If: Check Day Condition\nStep completed.\nNow starting Step 2 of 5: Check Day Condition\n\nINSTRUCTION:\nEvaluate condition: \"is it friday?\"\n\nContinue immediately and execute this step."
+					"reason": "[wf] Executing next step: Check Day Condition\n\nEvaluate condition: \"is it friday?\"\n\nContinue immediately and execute this step."
 				},
 				"state": {
 					"status": "active",

@@ -98,7 +98,9 @@ describe("handlers/stop.ts", () => {
 		);
 		expect(res.state?.currentStepIndex).toBe(1);
 		expect(res.response.decision).toBe("continue");
-		expect(res.response.reason).toMatch(/^If: is ready\?/);
+		expect(res.response.reason).toMatch(
+			/^\[wf\] Executing next step: is ready\?/,
+		);
 	});
 
 	test("handleStop dispatches condition steps to conditionStop", () => {

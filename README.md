@@ -85,6 +85,9 @@ codex plugin install wf
 codex plugin trust wf
 ```
 
+> [!NOTE]
+> Codex currently displays hook feedback and step continuation prompts in the transcript/TUI ([openai/codex#21696](https://github.com/openai/codex/issues/21696)). `wf` emits `suppressOutput: true`, which will automatically hide these messages once upstream support is enabled.
+
 ## Quickstart
 
 ### 1. Write a workflow (`deploy.md`)

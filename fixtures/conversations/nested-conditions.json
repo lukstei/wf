@@ -112,7 +112,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "If: Nested Condition without Else (evaluates NO)\nCondition \"is database online?\" evaluated to YES.\nNow starting Step 2 of 9: Nested Condition without Else (evaluates NO) (Level 1)\n\nINSTRUCTION:\nEvaluate condition: \"is database read-only?\"\n\nContinue immediately and execute this step."
+					"reason": "[wf] Executing next step: Nested Condition without Else (evaluates NO) (Level 1)\n\nEvaluate condition: \"is database read-only?\"\n\nContinue immediately and execute this step."
 				},
 				"state": {
 					"status": "active",
@@ -150,7 +150,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "If: Nested Condition without Else (evaluates YES)\nCondition \"is database read-only?\" evaluated to NO.\nNow starting Step 4 of 9: Nested Condition without Else (evaluates YES) (Level 1)\n\nINSTRUCTION:\nEvaluate condition: \"is migration needed?\"\n\nContinue immediately and execute this step."
+					"reason": "[wf] Executing next step: Nested Condition without Else (evaluates YES) (Level 1)\n\nEvaluate condition: \"is migration needed?\"\n\nContinue immediately and execute this step."
 				},
 				"state": {
 					"status": "active",
@@ -188,7 +188,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "If: Deeply Nested Condition with Else (evaluates NO)\nCondition \"is migration needed?\" evaluated to YES.\nNow starting Step 5 of 9: Deeply Nested Condition with Else (evaluates NO) (Level 2)\n\nINSTRUCTION:\nEvaluate condition: \"is dry-run mode enabled?\"\n\nContinue immediately and execute this step."
+					"reason": "[wf] Executing next step: Deeply Nested Condition with Else (evaluates NO) (Level 2)\n\nEvaluate condition: \"is dry-run mode enabled?\"\n\nContinue immediately and execute this step."
 				},
 				"state": {
 					"status": "active",
@@ -226,7 +226,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "Step: Execute Migration\nCondition \"is dry-run mode enabled?\" evaluated to NO.\nNow starting Step 7 of 9: Execute Migration (Level 3)\n\nINSTRUCTION:\nRun the live database migration.\n\nContinue immediately and execute this step."
+					"reason": "[wf] Executing next step: Execute Migration (Level 3)\n\nINSTRUCTION:\nRun the live database migration.\n\nContinue immediately and execute this step."
 				},
 				"state": {
 					"status": "active",
@@ -264,7 +264,7 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "Step: Finalize\nStep completed.\nNow starting Step 9 of 9: Finalize\n\nINSTRUCTION:\nConfirm all workflow tasks have completed successfully.\n\nContinue immediately and execute this step."
+					"reason": "[wf] Executing next step: Finalize\n\nINSTRUCTION:\nConfirm all workflow tasks have completed successfully.\n\nContinue immediately and execute this step."
 				},
 				"state": {
 					"status": "active",

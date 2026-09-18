@@ -140,21 +140,19 @@ describe("actions/condition.ts", () => {
 			nextStepIndex: res.state?.currentStepIndex,
 			response: res.response,
 		}).toMatchInlineSnapshot(`
-      {
-        "nextStepIndex": 1,
-        "response": {
-          "decision": "continue",
-          "reason": "Step: Run queries
-      Condition "is db healthy?" evaluated to YES.
-      Now starting Step 2 of 4: Run queries (Level 1)
+			{
+			  "nextStepIndex": 1,
+			  "response": {
+			    "decision": "continue",
+			    "reason": "[wf] Executing next step: Run queries (Level 1)
 
-      INSTRUCTION:
-      Run queries
+			INSTRUCTION:
+			Run queries
 
-      Continue immediately and execute this step.",
-        },
-      }
-    `);
+			Continue immediately and execute this step.",
+			  },
+			}
+		`);
 	});
 
 	test("conditionStop parses NO decision and jumps to no branch", () => {
@@ -186,21 +184,19 @@ describe("actions/condition.ts", () => {
 			nextStepIndex: res.state?.currentStepIndex,
 			response: res.response,
 		}).toMatchInlineSnapshot(`
-      {
-        "nextStepIndex": 2,
-        "response": {
-          "decision": "continue",
-          "reason": "Step: Restart db
-      Condition "is db healthy?" evaluated to NO.
-      Now starting Step 3 of 4: Restart db (Level 1)
+			{
+			  "nextStepIndex": 2,
+			  "response": {
+			    "decision": "continue",
+			    "reason": "[wf] Executing next step: Restart db (Level 1)
 
-      INSTRUCTION:
-      Restart db
+			INSTRUCTION:
+			Restart db
 
-      Continue immediately and execute this step.",
-        },
-      }
-    `);
+			Continue immediately and execute this step.",
+			  },
+			}
+		`);
 	});
 
 	test("conditionStop completes workflow if branch leads past end of steps", () => {

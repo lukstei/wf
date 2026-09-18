@@ -99,39 +99,30 @@ export function formatStepPrompt(
 }
 
 export function formatAdvanceReason(
-	summary: string,
-	nextTargetStep: FlatStep,
-	nextStepIndex: number,
-	totalSteps: number,
+	step: FlatStep,
 	preamble?: string,
 ): string {
-	const nextStepNum = nextStepIndex + 1;
-	const isCondition = nextTargetStep.type === "condition";
-	const isGate = nextTargetStep.type === "gate";
-	const prefix = isCondition ? "If" : isGate ? "Gate" : "Step";
-	const label = nextTargetStep.title || prefix;
-	const title = `: ${nextTargetStep.title}`;
-	const levelStr =
-		nextTargetStep.level > 0 ? ` (Level ${nextTargetStep.level})` : "";
+	const isCondition = step.type === "condition";
+	const isGate = step.type === "gate";
+	const title = step.title || `Step ${step.index + 1}`;
+	const levelStr = step.level > 0 ? ` (Level ${step.level})` : "";
 
-	const reasonParts = [
-		`${prefix}: ${label}`,
-		summary,
-		`Now starting Step ${nextStepNum} of ${totalSteps}${title}${levelStr}`,
+	const reasonParts: string[] = [
+		`[wf] Executing next step: ${title}${levelStr}`,
 	];
 
 	if (preamble) {
 		reasonParts.push("", "CONTEXT:", preamble);
 	}
 
-	reasonParts.push(
-		"",
-		"INSTRUCTION:",
-		isCondition
-			? nextTargetStep.instruction ||
-					`Evaluate condition: "${nextTargetStep.condition}"`
-			: (nextTargetStep.instruction ?? ""),
-	);
+	if (isCondition) {
+		reasonParts.push(
+			"",
+			step.instruction || `Evaluate condition: "${step.condition}"`,
+		);
+	} else {
+		reasonParts.push("", "INSTRUCTION:", step.instruction ?? "");
+	}
 
 	if (isGate) {
 		reasonParts.push(
@@ -142,5 +133,5 @@ export function formatAdvanceReason(
 		reasonParts.push("", "Continue immediately and execute this step.");
 	}
 
-	return reasonParts.filter((part) => part !== undefined).join("\n");
+	return reasonParts.join("\n");
 }
