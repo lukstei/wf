@@ -1,12 +1,15 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, test } from "vitest";
-import { parseHeading, parseWorkflowMarkdown } from "./md-parser.ts";
-import type { WorkflowState } from "./state.ts";
-import { handle } from "./wf.ts";
-import { flattenWorkflow } from "./workflow.ts";
+import type { WorkflowState } from "../../state.ts";
+import { handle } from "../../wf.ts";
+import { flattenWorkflow } from "../../workflow.ts";
+import { parseHeading, parseWorkflowMarkdown } from "./wf.ts";
 
-const fixturesDir = path.resolve(import.meta.dirname, "../fixtures/md-parser");
+const fixturesDir = path.resolve(
+	import.meta.dirname,
+	"../../../fixtures/md-parser",
+);
 
 describe("Markdown Workflow Parser (Fixtures)", () => {
 	const files = fs
@@ -73,46 +76,46 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 	});
 
 	test("parses heading variations with prefix stripping and first-word fallback", () => {
-		expect(parseHeading({ depth: 2, value: "If: Green" })).toEqual({
+		expect(parseHeading("If: Green")).toEqual({
 			type: "if",
 			condition: "Green",
 			title: "Green",
 			depth: 2,
 		});
-		expect(parseHeading({ depth: 2, value: "If Green" })).toEqual({
+		expect(parseHeading("If Green")).toEqual({
 			type: "if",
 			condition: "Green",
 			title: "Green",
 			depth: 2,
 		});
-		expect(parseHeading({ depth: 2, value: "Step 1: If" })).toEqual({
+		expect(parseHeading("Step 1: If")).toEqual({
 			type: "if",
 			condition: "",
 			title: "if",
 			depth: 2,
 		});
-		expect(parseHeading({ depth: 2, value: "Schritt 2 If: Green" })).toEqual({
+		expect(parseHeading("Schritt 2 If: Green")).toEqual({
 			type: "if",
 			condition: "Green",
 			title: "Green",
 			depth: 2,
 		});
-		expect(parseHeading({ depth: 2, value: "Schritt 3: Else" })).toEqual({
+		expect(parseHeading("Schritt 3: Else")).toEqual({
 			type: "else",
 			title: "else",
 			depth: 2,
 		});
-		expect(parseHeading({ depth: 2, value: "Step 1: Start" })).toEqual({
+		expect(parseHeading("Step 1: Start")).toEqual({
 			type: "step",
 			title: "Step 1: Start",
 			depth: 2,
 		});
-		expect(parseHeading({ depth: 3, value: "No: Skip" })).toEqual({
+		expect(parseHeading("No: Skip", 3)).toEqual({
 			type: "else",
 			title: "Skip",
 			depth: 3,
 		});
-		expect(parseHeading({ depth: 3, value: "No" })).toEqual({
+		expect(parseHeading("No", 3)).toEqual({
 			type: "else",
 			title: "no",
 			depth: 3,
@@ -252,7 +255,7 @@ Start server.
 	});
 
 	test("full lifecycle execution of sample-wf.md through handle()", () => {
-		const workspaceRoot = path.resolve(import.meta.dirname, "../../../..");
+		const workspaceRoot = path.resolve(import.meta.dirname, "../../..");
 		let state: WorkflowState | null = null;
 
 		// Turn 1: User runs /wf examples/sample-wf.md

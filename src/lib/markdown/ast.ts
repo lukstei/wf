@@ -7,6 +7,10 @@ type MarkdownNodeMap = {
 	text: {
 		content: string;
 	};
+	heading: {
+		depth: number;
+		children: MarkdownNode[];
+	};
 	bold: {
 		children: MarkdownNode;
 	};

@@ -1,6 +1,7 @@
 import * as path from "node:path";
-import { fromMarkdown } from "mdast-util-from-markdown";
-import type { WorkflowDef, WorkflowStep } from "./workflow.ts";
+import type { WorkflowDef, WorkflowStep } from "../../workflow.ts";
+import type { MarkdownNode } from "./ast.ts";
+import { parse } from "./parsing.ts";
 
 export interface ParsedHeading {
 	type: "if" | "else" | "gate" | "step";
@@ -9,27 +10,18 @@ export interface ParsedHeading {
 	depth: number;
 }
 
-interface MarkdownNode {
-	type?: string;
-	value?: string;
-	depth?: number;
-	children?: MarkdownNode[];
-	position?: {
-		start?: { offset?: number };
-		end?: { offset?: number };
-	};
-}
-
-function getInnerText(node?: MarkdownNode | null): string {
+function getInnerText(node?: MarkdownNode): string {
 	if (!node) return "";
-	if (typeof node.value === "string") return node.value;
-	return Array.isArray(node.children)
-		? node.children.map((child) => getInnerText(child)).join("")
-		: "";
+	if ("content" in node) return node.content;
+	if ("children" in node) {
+		return Array.isArray(node.children)
+			? node.children.map(getInnerText).join("")
+			: getInnerText(node.children);
+	}
+	return "";
 }
 
 const KEYWORDS = ["if", "else", "no", "gate"] as const;
-type HeadingKeyword = (typeof KEYWORDS)[number];
 
 const KEYWORD_REGEX = new RegExp(
 	`^(${KEYWORDS.join("|")})(?:[:\\s]+(.*))?$`,
@@ -44,9 +36,19 @@ function removeFirstWord(str: string): string {
 	return str.replace(/^\S+/, "");
 }
 
-export function parseHeading(heading?: MarkdownNode | null): ParsedHeading {
-	const depth = heading?.depth ?? 2;
-	const text = getInnerText(heading).trim();
+export function parseHeading(
+	heading: MarkdownNode | string,
+	depth = 2,
+): ParsedHeading {
+	const effectiveDepth =
+		typeof heading === "string"
+			? depth
+			: "depth" in heading
+				? heading.depth
+				: depth;
+	const text = (
+		typeof heading === "string" ? heading : getInnerText(heading)
+	).trim();
 
 	let candidate = stripLeading(text);
 	let match = candidate.match(KEYWORD_REGEX);
@@ -56,36 +58,35 @@ export function parseHeading(heading?: MarkdownNode | null): ParsedHeading {
 		match = candidate.match(KEYWORD_REGEX);
 	}
 
-	if (!match) return { type: "step", title: text, depth };
+	if (!match) return { type: "step", title: text, depth: effectiveDepth };
 
 	const keyword = match[1].toLowerCase();
 	const condition = (match[2] ?? "").trim();
 
 	if (keyword === "else" || keyword === "no") {
-		return { type: "else", title: condition || keyword, depth };
+		return { type: "else", title: condition || keyword, depth: effectiveDepth };
 	}
 	if (keyword === "gate") {
 		return {
 			type: "gate",
 			title: condition || keyword,
-			depth,
+			depth: effectiveDepth,
 		};
 	}
 	return {
 		type: "if",
 		condition,
 		title: condition || keyword,
-		depth,
+		depth: effectiveDepth,
 	};
 }
 
-function sliceNodesMarkdown(markdown: string, nodes?: MarkdownNode[]): string {
+function sliceNodesMarkdown(nodes?: MarkdownNode[]): string {
 	if (!nodes?.length) return "";
-	const start = nodes[0]?.position?.start?.offset;
-	const end = nodes[nodes.length - 1]?.position?.end?.offset;
-	return typeof start === "number" && typeof end === "number"
-		? markdown.slice(start, end).trim()
-		: "";
+	return nodes
+		.map((n) => n.source)
+		.join("\n\n")
+		.trim();
 }
 
 interface ParsedStepsResult {
@@ -96,7 +97,6 @@ interface ParsedStepsResult {
 function parseBranchSteps(
 	nodes: MarkdownNode[],
 	targetDepth: number,
-	markdown: string,
 	defaultTitle: string,
 	fallback: string,
 ): WorkflowStep[] {
@@ -108,7 +108,7 @@ function parseBranchSteps(
 			n.depth >= targetDepth,
 	);
 	if (candidateHeadings.length === 0) {
-		const text = sliceNodesMarkdown(markdown, nodes);
+		const text = sliceNodesMarkdown(nodes);
 		return [
 			{
 				type: "step",
@@ -117,7 +117,7 @@ function parseBranchSteps(
 			},
 		];
 	}
-	const result = parseSteps(nodes, targetDepth, markdown);
+	const result = parseSteps(nodes, targetDepth);
 	const steps = [...result.steps];
 	if (result.preamble) {
 		steps.unshift({
@@ -132,7 +132,6 @@ function parseBranchSteps(
 function parseSteps(
 	nodes: MarkdownNode[],
 	targetDepth: number,
-	markdown: string,
 ): ParsedStepsResult {
 	if (!nodes?.length) return { steps: [] };
 
@@ -146,7 +145,7 @@ function parseSteps(
 		) as Array<{ node: MarkdownNode & { depth: number }; idx: number }>;
 
 	if (candidateHeadings.length === 0) {
-		return { preamble: sliceNodesMarkdown(markdown, nodes), steps: [] };
+		return { preamble: sliceNodesMarkdown(nodes), steps: [] };
 	}
 
 	const effectiveDepth = Math.min(
@@ -158,9 +157,7 @@ function parseSteps(
 
 	const preambleNodes = nodes.slice(0, headingsAtDepth[0].idx);
 	const preamble =
-		preambleNodes.length > 0
-			? sliceNodesMarkdown(markdown, preambleNodes)
-			: undefined;
+		preambleNodes.length > 0 ? sliceNodesMarkdown(preambleNodes) : undefined;
 
 	const sections = headingsAtDepth.map((cur, i) => ({
 		headingNode: cur.node,
@@ -200,8 +197,7 @@ function parseSteps(
 				);
 
 				const preNodes = sec.bodyNodes.slice(0, directChildren[0].idx);
-				conditionInstruction =
-					sliceNodesMarkdown(markdown, preNodes) || undefined;
+				conditionInstruction = sliceNodesMarkdown(preNodes) || undefined;
 
 				let balance = 0;
 				let elseChildIdx = -1;
@@ -228,14 +224,12 @@ function parseSteps(
 					yesSteps = parseBranchSteps(
 						yesNodes,
 						childDepth,
-						markdown,
 						`${condition} yes`,
 						"Execute condition true branch",
 					);
 					noSteps = parseBranchSteps(
 						noNodes,
 						childDepth,
-						markdown,
 						`${condition} no`,
 						"Execute condition false branch",
 					);
@@ -244,7 +238,6 @@ function parseSteps(
 					yesSteps = parseBranchSteps(
 						yesNodes,
 						childDepth,
-						markdown,
 						`${condition} yes`,
 						"Execute condition true branch",
 					);
@@ -257,7 +250,6 @@ function parseSteps(
 						noSteps = parseBranchSteps(
 							sections[i].bodyNodes,
 							effectiveDepth + 1,
-							markdown,
 							parseHeading(sections[i].headingNode).title || `${condition} no`,
 							"Execute condition false branch",
 						);
@@ -268,7 +260,7 @@ function parseSteps(
 					i + 1 < sections.length &&
 					parseHeading(sections[i + 1].headingNode).type === "else"
 				) {
-					const text = sliceNodesMarkdown(markdown, sec.bodyNodes);
+					const text = sliceNodesMarkdown(sec.bodyNodes);
 					yesSteps = [
 						{
 							type: "step",
@@ -281,7 +273,6 @@ function parseSteps(
 					noSteps = parseBranchSteps(
 						sections[i].bodyNodes,
 						effectiveDepth + 1,
-						markdown,
 						elseHeading.title &&
 							elseHeading.title !== "else" &&
 							elseHeading.title !== "no"
@@ -290,7 +281,7 @@ function parseSteps(
 						"Execute condition false branch",
 					);
 				} else {
-					const text = sliceNodesMarkdown(markdown, sec.bodyNodes);
+					const text = sliceNodesMarkdown(sec.bodyNodes);
 					conditionInstruction = text || undefined;
 				}
 			}
@@ -304,7 +295,7 @@ function parseSteps(
 				...(noSteps ? { no: { steps: noSteps } } : {}),
 			});
 		} else if (parsed.type === "else") {
-			const instruction = sliceNodesMarkdown(markdown, sec.bodyNodes);
+			const instruction = sliceNodesMarkdown(sec.bodyNodes);
 			steps.push({
 				type: "step",
 				title:
@@ -314,14 +305,14 @@ function parseSteps(
 				instruction: instruction || parsed.title,
 			});
 		} else if (parsed.type === "gate") {
-			const instruction = sliceNodesMarkdown(markdown, sec.bodyNodes);
+			const instruction = sliceNodesMarkdown(sec.bodyNodes);
 			steps.push({
 				type: "gate",
 				title: parsed.title,
 				instruction: instruction || parsed.title,
 			});
 		} else {
-			const instruction = sliceNodesMarkdown(markdown, sec.bodyNodes);
+			const instruction = sliceNodesMarkdown(sec.bodyNodes);
 			steps.push({
 				type: "step",
 				title: parsed.title,
@@ -360,7 +351,8 @@ export function parseWorkflowMarkdown(
 	filePath?: string,
 ): WorkflowDef {
 	const { frontmatter, content: mdContent } = parseFrontmatter(content);
-	const nodes = (fromMarkdown(mdContent).children || []) as MarkdownNode[];
+	const ast = parse(mdContent);
+	const nodes = ast.type === "fragment" ? ast.children : [ast];
 
 	let name = frontmatter?.name;
 	let remainingNodes = nodes;
@@ -375,7 +367,7 @@ export function parseWorkflowMarkdown(
 		name = path.basename(filePath, path.extname(filePath));
 	}
 
-	const parsed = parseSteps(remainingNodes, 2, mdContent);
+	const parsed = parseSteps(remainingNodes, 2);
 	return {
 		name: name || "Workflow",
 		...(frontmatter?.description

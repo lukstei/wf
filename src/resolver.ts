@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { parseWorkflowMarkdown } from "./md-parser.ts";
+import { parseWorkflowMarkdown } from "./lib/markdown/wf.ts";
 import type { WorkflowDef } from "./workflow.ts";
 
 export function resolveWorkflowPath(

@@ -1,5 +1,7 @@
-import type { MarkdownNode } from "../src/ast";
-import { parse, unescape } from "../src/parsing";
+import { describe, expect, it } from "vitest";
+import type { MarkdownNode } from "./ast";
+// biome-ignore lint/suspicious/noShadowRestrictedNames: upstream test
+import { parse, unescape } from "./parsing";
 
 describe("A Markdown parser function", () => {
 	type ParsingScenario = {
