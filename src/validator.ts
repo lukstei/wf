@@ -10,7 +10,6 @@ export * from "./validator-checks.ts";
 
 export const PROBLEM_SEVERITY: Record<ProblemId, "warning" | "error"> = {
 	"workflow-missing-name": "error",
-	"workflow-missing-description": "warning",
 	"workflow-no-steps": "error",
 	"step-missing-title": "error",
 	"step-action-empty-instruction": "error",

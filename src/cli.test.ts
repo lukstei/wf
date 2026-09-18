@@ -275,10 +275,7 @@ describe("src/cli.ts", () => {
 			  "ERROR: Missing required argument: <workflow-file>",
 			  "ERROR: Workflow file not found: "nonexistent-file.md".",
 			  "ERROR: [WORKFLOW INVALID] Validation failed for "test-invalid-wf":
-			  - [ERROR] Condition step "Condition without branches" has no YES branch steps.
-
-			Warnings:
-			  - [WARN] Workflow lacks a description in YAML frontmatter.",
+			  - [ERROR] Condition step "Condition without branches" has no YES branch steps.",
 			]
 		`);
 	});
@@ -414,8 +411,24 @@ describe("src/cli.ts", () => {
 	});
 
 	it("runCli handles compile with warnings with and without --check", async () => {
-		const tempFile = "/tmp/test-warn-wf.md";
-		fs.writeFileSync(tempFile, "## Step 1\nInstruction 1\n");
+		const tempFile = "/tmp/test-warn-wf.json";
+		fs.writeFileSync(
+			tempFile,
+			JSON.stringify({
+				name: "test-warn-wf",
+				steps: [
+					{
+						type: "condition",
+						title: "Check",
+						condition: "Is active?",
+						yes: {
+							steps: [{ type: "step", title: "Yes", instruction: "Do yes" }],
+						},
+						no: { steps: [] },
+					},
+				],
+			}),
+		);
 		const outputs: string[] = [];
 		const io = {
 			stdout: (m: string) => outputs.push(m),
@@ -433,19 +446,31 @@ describe("src/cli.ts", () => {
 			expect(stripAbsolutePath(outputs)).toMatchInlineSnapshot(`
 				[
 				  "[WORKFLOW VALID] "test-warn-wf" is valid.
-				Steps: 1 (1 linear, 0 condition, 0 gate)
-				File: /tmp/test-warn-wf.md
+				Steps: 2 (1 linear, 1 condition, 0 gate)
+				File: /tmp/test-warn-wf.json
 
 				Warnings:
-				  - [WARN] Workflow lacks a description in YAML frontmatter.",
-				  "ERROR: [WARN] Workflow lacks a description in YAML frontmatter.",
+				  - [WARN] Condition step "Check" defines an empty NO branch.",
+				  "ERROR: [WARN] Condition step "Check" defines an empty NO branch.",
 				  "{
 				  "name": "test-warn-wf",
 				  "steps": [
 				    {
-				      "type": "step",
-				      "title": "Step 1",
-				      "instruction": "Instruction 1"
+				      "type": "condition",
+				      "title": "Check",
+				      "condition": "Is active?",
+				      "yes": {
+				        "steps": [
+				          {
+				            "type": "step",
+				            "title": "Yes",
+				            "instruction": "Do yes"
+				          }
+				        ]
+				      },
+				      "no": {
+				        "steps": []
+				      }
 				    }
 				  ]
 				}",

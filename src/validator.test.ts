@@ -111,18 +111,7 @@ describe("validateWorkflow", () => {
 					},
 				],
 			}),
-			// 6. Missing description warning
-			validateWorkflow({
-				name: "No Description",
-				steps: [
-					{
-						type: "step",
-						title: "Step 1",
-						instruction: "Run job",
-					},
-				],
-			}),
-			// 7. Empty NO branch warning
+			// 6. Empty NO branch warning
 			validateWorkflow({
 				name: "Empty Else",
 				description: "Has description",
@@ -144,7 +133,7 @@ describe("validateWorkflow", () => {
 					},
 				],
 			}),
-			// 8. Step with missing title
+			// 7. Step with missing title
 			validateWorkflow({
 				name: "Missing Title",
 				description: "Has description",
@@ -170,14 +159,6 @@ describe("validateWorkflow", () => {
 			        },
 			        "type": "error",
 			      },
-			      {
-			        "description": "Workflow lacks a description in YAML frontmatter.",
-			        "id": "workflow-missing-description",
-			        "source": {
-			          "type": "workflow",
-			        },
-			        "type": "warning",
-			      },
 			    ],
 			    "stats": {
 			      "conditions": 0,
@@ -189,14 +170,6 @@ describe("validateWorkflow", () => {
 			  },
 			  {
 			    "problems": [
-			      {
-			        "description": "Workflow lacks a description in YAML frontmatter.",
-			        "id": "workflow-missing-description",
-			        "source": {
-			          "type": "workflow",
-			        },
-			        "type": "warning",
-			      },
 			      {
 			        "description": "Workflow contains no actionable steps.",
 			        "id": "workflow-no-steps",
@@ -217,14 +190,6 @@ describe("validateWorkflow", () => {
 			  {
 			    "problems": [
 			      {
-			        "description": "Workflow lacks a description in YAML frontmatter.",
-			        "id": "workflow-missing-description",
-			        "source": {
-			          "type": "workflow",
-			        },
-			        "type": "warning",
-			      },
-			      {
 			        "description": "Action step "Empty Step" has empty instructions.",
 			        "id": "step-action-empty-instruction",
 			        "source": {
@@ -244,14 +209,6 @@ describe("validateWorkflow", () => {
 			  },
 			  {
 			    "problems": [
-			      {
-			        "description": "Workflow lacks a description in YAML frontmatter.",
-			        "id": "workflow-missing-description",
-			        "source": {
-			          "type": "workflow",
-			        },
-			        "type": "warning",
-			      },
 			      {
 			        "description": "Condition step "Empty Condition" has an empty condition expression.",
 			        "id": "step-condition-empty-expression",
@@ -282,14 +239,6 @@ describe("validateWorkflow", () => {
 			  {
 			    "problems": [
 			      {
-			        "description": "Workflow lacks a description in YAML frontmatter.",
-			        "id": "workflow-missing-description",
-			        "source": {
-			          "type": "workflow",
-			        },
-			        "type": "warning",
-			      },
-			      {
 			        "description": "Gate step "Gate Check" has empty verification instructions.",
 			        "id": "step-gate-empty-instruction",
 			        "source": {
@@ -306,25 +255,6 @@ describe("validateWorkflow", () => {
 			      "totalSteps": 1,
 			    },
 			    "valid": false,
-			  },
-			  {
-			    "problems": [
-			      {
-			        "description": "Workflow lacks a description in YAML frontmatter.",
-			        "id": "workflow-missing-description",
-			        "source": {
-			          "type": "workflow",
-			        },
-			        "type": "warning",
-			      },
-			    ],
-			    "stats": {
-			      "conditions": 0,
-			      "gates": 0,
-			      "linearSteps": 1,
-			      "totalSteps": 1,
-			    },
-			    "valid": true,
 			  },
 			  {
 			    "problems": [

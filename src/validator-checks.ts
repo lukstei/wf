@@ -2,7 +2,6 @@ import type { ConditionalStep, WorkflowAst, WorkflowStep } from "./workflow.ts";
 
 export type ProblemId =
 	| "workflow-missing-name"
-	| "workflow-missing-description"
 	| "workflow-no-steps"
 	| "step-missing-title"
 	| "step-action-empty-instruction"
@@ -28,19 +27,6 @@ export function checkWorkflowName(def: WorkflowAst): CheckProblem[] {
 				id: "workflow-missing-name",
 				description:
 					'Workflow must define a non-empty name (via YAML frontmatter "name" or Markdown H1 title).',
-				source: { type: "workflow" },
-			},
-		];
-	}
-	return [];
-}
-
-export function checkWorkflowDescription(def: WorkflowAst): CheckProblem[] {
-	if (!def.description || def.description.trim().length === 0) {
-		return [
-			{
-				id: "workflow-missing-description",
-				description: "Workflow lacks a description in YAML frontmatter.",
 				source: { type: "workflow" },
 			},
 		];
@@ -170,11 +156,7 @@ export function checkConditionStepNo(step: WorkflowStep): CheckProblem[] {
 	return [];
 }
 
-export const WORKFLOW_CHECKS = [
-	checkWorkflowName,
-	checkWorkflowDescription,
-	checkWorkflowSteps,
-];
+export const WORKFLOW_CHECKS = [checkWorkflowName, checkWorkflowSteps];
 
 export const STEP_CHECKS = [
 	checkStepTitle,
