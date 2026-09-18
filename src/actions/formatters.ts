@@ -98,10 +98,7 @@ export function formatStepPrompt(
 	return promptParts.join("\n");
 }
 
-export function formatAdvanceReason(
-	step: FlatStep,
-	preamble?: string,
-): string {
+export function formatAdvanceReason(step: FlatStep, preamble?: string): string {
 	const isCondition = step.type === "condition";
 	const isGate = step.type === "gate";
 	const title = step.title || `Step ${step.index + 1}`;
