@@ -1,9 +1,8 @@
 import {
-	STEP_CHECKS,
-	WORKFLOW_CHECKS,
-	type CheckProblem,
 	type ProblemId,
 	type ProblemSource,
+	STEP_CHECKS,
+	WORKFLOW_CHECKS,
 } from "./validator-checks.ts";
 import type { ConditionalStep, WorkflowAst, WorkflowStep } from "./workflow.ts";
 

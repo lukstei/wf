@@ -40,6 +40,7 @@ describe("util library functions", () => {
 				type: "PLANNER_RESPONSE",
 				content: "Decision [DECISION: YES]",
 			}),
+			"{ corrupted line",
 		];
 
 		fs.writeFileSync(transcriptPath, lines.join("\n"), "utf-8");
@@ -112,6 +113,20 @@ describe("util library functions", () => {
 			type: "PLANNER_RESPONSE",
 			content: "Claude pure",
 		});
+
+		expect(
+			parseClaudeMessage({
+				role: "user",
+				content: "Claude user message",
+			}),
+		).toEqual({
+			stepIndex: 0,
+			type: "USER_INPUT",
+			content: "Claude user message",
+		});
+
+		expect(parseClaudeMessage({ role: "system" })).toBeNull();
+		expect(parseAgyMessage({ role: "system" })).toBeNull();
 
 		fs.rmSync(tmpDir, { recursive: true, force: true });
 	});

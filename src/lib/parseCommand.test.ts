@@ -339,4 +339,66 @@ describe("parseCommand.ts", () => {
         /wf-help                   - Show this help reference"
     `);
 	});
+
+	test("parseCommand rejects unexpected arguments for parameterless commands", () => {
+		const cases = [
+			parseCommand("/wf-next unexpected_arg"),
+			parseCommand("/wf-stop unexpected_arg"),
+			parseCommand("/wf-help unexpected_arg"),
+			parseCommand("/wf   "),
+		];
+
+		expect(cases).toMatchInlineSnapshot(`
+			[
+			  {
+			    "error": "'next' command does not accept arguments: "unexpected_arg"",
+			    "helpText": "[Workflow Error] CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER:  'next' command does not accept arguments: "unexpected_arg"
+
+			Workflow Runner Commands:
+			  /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
+			  /wf-show [<workflow-file>] - Visualize workflow and show status / progress
+			  /wf-next                   - Execute the next step in paused mode
+			  /wf-stop                   - Stop and reset the active workflow
+			  /wf-help                   - Show this help reference",
+			    "isWfCommand": true,
+			  },
+			  {
+			    "error": "'stop' command does not accept arguments: "unexpected_arg"",
+			    "helpText": "[Workflow Error] CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER:  'stop' command does not accept arguments: "unexpected_arg"
+
+			Workflow Runner Commands:
+			  /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
+			  /wf-show [<workflow-file>] - Visualize workflow and show status / progress
+			  /wf-next                   - Execute the next step in paused mode
+			  /wf-stop                   - Stop and reset the active workflow
+			  /wf-help                   - Show this help reference",
+			    "isWfCommand": true,
+			  },
+			  {
+			    "error": "'help' command does not accept arguments: "unexpected_arg"",
+			    "helpText": "[Workflow Error] CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER:  'help' command does not accept arguments: "unexpected_arg"
+
+			Workflow Runner Commands:
+			  /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
+			  /wf-show [<workflow-file>] - Visualize workflow and show status / progress
+			  /wf-next                   - Execute the next step in paused mode
+			  /wf-stop                   - Stop and reset the active workflow
+			  /wf-help                   - Show this help reference",
+			    "isWfCommand": true,
+			  },
+			  {
+			    "error": "Missing required argument: <workflow-file>",
+			    "helpText": "[Workflow Error] CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER:  Missing required argument: <workflow-file>
+
+			Workflow Runner Commands:
+			  /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
+			  /wf-show [<workflow-file>] - Visualize workflow and show status / progress
+			  /wf-next                   - Execute the next step in paused mode
+			  /wf-stop                   - Stop and reset the active workflow
+			  /wf-help                   - Show this help reference",
+			    "isWfCommand": true,
+			  },
+			]
+		`);
+	});
 });

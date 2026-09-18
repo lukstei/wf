@@ -16,11 +16,19 @@ describe("actions/stop.ts", () => {
 				step: 0,
 				iterationCount: 0,
 			},
-			workflow: { name: "Test WF", filePath: "wf.json", steps: [], flatSteps: [] },
+			workflow: {
+				name: "Test WF",
+				filePath: "wf.json",
+				steps: [],
+				flatSteps: [],
+			},
 		};
 
 		const res = stopWorkflow(info, active);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [
@@ -48,11 +56,19 @@ describe("actions/stop.ts", () => {
 				step: 1,
 				iterationCount: 1,
 			},
-			workflow: { name: "Paused WF", filePath: "wf.json", steps: [], flatSteps: [] },
+			workflow: {
+				name: "Paused WF",
+				filePath: "wf.json",
+				steps: [],
+				flatSteps: [],
+			},
 		};
 
 		const res = stopWorkflow(info, active);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [
@@ -75,7 +91,10 @@ describe("actions/stop.ts", () => {
 
 	test("stopWorkflow handles when no workflow is running", () => {
 		const res = stopWorkflow(info, null);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [

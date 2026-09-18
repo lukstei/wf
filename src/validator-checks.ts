@@ -76,7 +76,10 @@ export function checkStepTitle(step: WorkflowStep): CheckProblem[] {
 }
 
 export function checkActionStepInstruction(step: WorkflowStep): CheckProblem[] {
-	if (step.type === "step" && (!step.instruction || step.instruction.trim().length === 0)) {
+	if (
+		step.type === "step" &&
+		(!step.instruction || step.instruction.trim().length === 0)
+	) {
 		const title = step.title?.trim() || "untitled";
 		return [
 			{
@@ -90,7 +93,10 @@ export function checkActionStepInstruction(step: WorkflowStep): CheckProblem[] {
 }
 
 export function checkGateStepInstruction(step: WorkflowStep): CheckProblem[] {
-	if (step.type === "gate" && (!step.instruction || step.instruction.trim().length === 0)) {
+	if (
+		step.type === "gate" &&
+		(!step.instruction || step.instruction.trim().length === 0)
+	) {
 		const title = step.title?.trim() || "untitled";
 		return [
 			{
@@ -103,7 +109,9 @@ export function checkGateStepInstruction(step: WorkflowStep): CheckProblem[] {
 	return [];
 }
 
-export function checkConditionStepExpression(step: WorkflowStep): CheckProblem[] {
+export function checkConditionStepExpression(
+	step: WorkflowStep,
+): CheckProblem[] {
 	if (step.type === "condition") {
 		const condStep = step as ConditionalStep;
 		if (!condStep.condition || condStep.condition.trim().length === 0) {
@@ -123,7 +131,11 @@ export function checkConditionStepExpression(step: WorkflowStep): CheckProblem[]
 export function checkConditionStepYes(step: WorkflowStep): CheckProblem[] {
 	if (step.type === "condition") {
 		const condStep = step as ConditionalStep;
-		if (!condStep.yes || !Array.isArray(condStep.yes.steps) || condStep.yes.steps.length === 0) {
+		if (
+			!condStep.yes ||
+			!Array.isArray(condStep.yes.steps) ||
+			condStep.yes.steps.length === 0
+		) {
 			const title = step.title?.trim() || "untitled";
 			return [
 				{

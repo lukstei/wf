@@ -46,7 +46,9 @@ describe("actions/condition.ts", () => {
 			{ type: "pre", payload: { conversationId: "c1" } },
 			active,
 		);
-		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatchInlineSnapshot(`
+		expect(
+			res.response.injectSteps?.[0]?.ephemeralMessage,
+		).toMatchInlineSnapshot(`
 			"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
 			[WORKFLOW ACTIVE: CondFlow]
@@ -308,7 +310,12 @@ describe("actions/condition.ts", () => {
 				step: 0,
 				iterationCount: 0,
 			},
-			workflow: { name: "Paused", filePath: "wf.json", steps: [], flatSteps: [] },
+			workflow: {
+				name: "Paused",
+				filePath: "wf.json",
+				steps: [],
+				flatSteps: [],
+			},
 		};
 		expect(() =>
 			conditionStop(
@@ -344,7 +351,56 @@ describe("actions/condition.ts", () => {
 		};
 
 		expect(() =>
-			conditionStop({ type: "stop", payload: { conversationId: "c1" } }, active),
+			conditionStop(
+				{ type: "stop", payload: { conversationId: "c1" } },
+				active,
+			),
 		).toThrow("conditionStop requires current step to be a condition");
+	});
+
+	test("conditionStop terminates with error when safety iteration limit is exceeded", () => {
+		const flat = flattenWorkflow(condDef.steps);
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: flat.length * 5,
+			},
+			workflow: {
+				name: "CondFlow",
+				filePath: "wf.json",
+				steps: condDef.steps,
+				flatSteps: flat,
+			},
+		};
+
+		const res = conditionStop(
+			{
+				type: "stop",
+				payload: { conversationId: "c1" },
+				latestMessage: {
+					stepIndex: 1,
+					type: "PLANNER_RESPONSE",
+					content: "[DECISION: YES]",
+				},
+			},
+			active,
+		);
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "allow",
+			  },
+			  "state": {
+			    "error": "Workflow terminated: Exceeded safety iteration limit (20).",
+			    "iterationCount": 21,
+			    "status": "error",
+			    "step": 0,
+			  },
+			}
+		`);
 	});
 });

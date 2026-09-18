@@ -243,7 +243,11 @@ Start server.
 				],
 			},
 		});
-		expect((wf.steps[0] as any).no).toBeUndefined();
+		const firstStep = wf.steps[0];
+		expect(firstStep.type).toBe("condition");
+		if (firstStep.type === "condition") {
+			expect(firstStep.no).toBeUndefined();
+		}
 		expect(wf.steps[1]).toMatchObject({
 			type: "step",
 			title: "Next Step",
@@ -359,11 +363,31 @@ Start server.
 					t1Pre.response.injectSteps?.[0]?.ephemeralMessage ?? "",
 				),
 			},
-			{ turn: "t1Stop", state: t1Stop.active?.state, response: t1Stop.response },
-			{ turn: "t2Stop", state: t2Stop.active?.state, response: t2Stop.response },
-			{ turn: "t3Stop", state: t3Stop.active?.state, response: t3Stop.response },
-			{ turn: "t4Stop", state: t4Stop.active?.state, response: t4Stop.response },
-			{ turn: "t5Stop", state: t5Stop.active?.state, response: t5Stop.response },
+			{
+				turn: "t1Stop",
+				state: t1Stop.active?.state,
+				response: t1Stop.response,
+			},
+			{
+				turn: "t2Stop",
+				state: t2Stop.active?.state,
+				response: t2Stop.response,
+			},
+			{
+				turn: "t3Stop",
+				state: t3Stop.active?.state,
+				response: t3Stop.response,
+			},
+			{
+				turn: "t4Stop",
+				state: t4Stop.active?.state,
+				response: t4Stop.response,
+			},
+			{
+				turn: "t5Stop",
+				state: t5Stop.active?.state,
+				response: t5Stop.response,
+			},
 		];
 
 		expect(turns).toMatchInlineSnapshot(`

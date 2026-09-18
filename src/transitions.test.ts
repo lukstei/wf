@@ -8,7 +8,7 @@ import {
 	startWorkflow,
 	stopWorkflowState,
 } from "./transitions.ts";
-import { compileWorkflow, type CompiledWorkflow } from "./workflow.ts";
+import { type CompiledWorkflow, compileWorkflow } from "./workflow.ts";
 
 describe("transitions.ts", () => {
 	const linearWf: CompiledWorkflow = compileWorkflow(
@@ -421,7 +421,11 @@ describe("transitions.ts", () => {
 				name: "GateLastFlow",
 				steps: [
 					{ type: "step", title: "First step", instruction: "First step" },
-					{ type: "gate", title: "Final Gate Check", instruction: "Verify last" },
+					{
+						type: "gate",
+						title: "Final Gate Check",
+						instruction: "Verify last",
+					},
 				],
 			},
 			"/test/gate-last.json",

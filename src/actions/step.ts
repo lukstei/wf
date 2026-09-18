@@ -13,7 +13,8 @@ export function step(
 	active: ActiveWorkflow | null,
 ): HandleResult {
 	assert(
-		active && (active.state.status === "active" || active.state.status === "paused"),
+		active &&
+			(active.state.status === "active" || active.state.status === "paused"),
 		"Cannot execute step: workflow must be active or paused",
 	);
 

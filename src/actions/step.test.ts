@@ -28,8 +28,14 @@ describe("actions/step.ts", () => {
 			},
 		};
 
-		const res = step({ type: "pre", payload: { conversationId: "c1" } }, active);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		const res = step(
+			{ type: "pre", payload: { conversationId: "c1" } },
+			active,
+		);
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [
@@ -84,8 +90,14 @@ describe("actions/step.ts", () => {
 			},
 		};
 
-		const res = step({ type: "pre", payload: { conversationId: "c1" } }, active);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		const res = step(
+			{ type: "pre", payload: { conversationId: "c1" } },
+			active,
+		);
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [
@@ -177,8 +189,14 @@ describe("actions/step.ts", () => {
 			},
 		};
 
-		const res = step({ type: "pre", payload: { conversationId: "c1" } }, active);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		const res = step(
+			{ type: "pre", payload: { conversationId: "c1" } },
+			active,
+		);
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [

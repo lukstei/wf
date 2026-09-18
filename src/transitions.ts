@@ -1,14 +1,16 @@
 import { assert } from "./lib/assert.ts";
-import type { ActiveWorkflow, ExtractWorkflowState, WorkflowState } from "./state.ts";
+import type {
+	ActiveWorkflow,
+	ExtractWorkflowState,
+	WorkflowState,
+} from "./state.ts";
 import { type CompiledWorkflow, type FlatStep, nextStep } from "./workflow.ts";
 
 /**
  * Initializes and starts a workflow in active mode.
  * Sets the execution pointer to step 0 with iterationCount 0.
  */
-export function startWorkflow(
-	workflow: CompiledWorkflow,
-): ActiveWorkflow {
+export function startWorkflow(workflow: CompiledWorkflow): ActiveWorkflow {
 	if (workflow.flatSteps.length === 0) {
 		throw new Error(
 			`Cannot start workflow "${workflow.name}": contains no executable steps.`,
@@ -75,7 +77,7 @@ export function advanceStep(
 	state: WorkflowState | null,
 	decision?: "YES" | "NO",
 ): WorkflowState | null {
-	if (!state || state.status !== "active") {
+	if (state?.status !== "active") {
 		return state;
 	}
 

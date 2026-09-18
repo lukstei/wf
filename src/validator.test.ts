@@ -144,6 +144,18 @@ describe("validateWorkflow", () => {
 					},
 				],
 			}),
+			// 8. Step with missing title
+			validateWorkflow({
+				name: "Missing Title",
+				description: "Has description",
+				steps: [
+					{
+						type: "step",
+						title: "",
+						instruction: "Some instruction",
+					},
+				],
+			}),
 		];
 
 		expect(cases).toMatchInlineSnapshot(`
@@ -333,6 +345,26 @@ describe("validateWorkflow", () => {
 			      "totalSteps": 2,
 			    },
 			    "valid": true,
+			  },
+			  {
+			    "problems": [
+			      {
+			        "description": "Step title cannot be empty.",
+			        "id": "step-missing-title",
+			        "source": {
+			          "title": "",
+			          "type": "step",
+			        },
+			        "type": "error",
+			      },
+			    ],
+			    "stats": {
+			      "conditions": 0,
+			      "gates": 0,
+			      "linearSteps": 1,
+			      "totalSteps": 1,
+			    },
+			    "valid": false,
 			  },
 			]
 		`);

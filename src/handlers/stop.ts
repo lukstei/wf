@@ -14,7 +14,7 @@ export function handleStop(
 	active: ActiveWorkflow | null,
 ): HandleResult {
 	// If no workflow is active, allow stop
-	if (!active || active.state.status !== "active") {
+	if (active?.state.status !== "active") {
 		return { active, response: { decision: "allow" } };
 	}
 

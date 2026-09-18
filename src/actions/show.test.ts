@@ -87,7 +87,10 @@ describe("actions/show.ts", () => {
 			{ name: "show", args: {} },
 		);
 
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [
@@ -190,7 +193,10 @@ describe("actions/show.ts", () => {
 		);
 
 		expect({
-			finished: { state: finishedRes.active?.state, response: finishedRes.response },
+			finished: {
+				state: finishedRes.active?.state,
+				response: finishedRes.response,
+			},
 			error: { state: errorRes.active?.state, response: errorRes.response },
 		}).toMatchInlineSnapshot(`
 			{
@@ -271,7 +277,10 @@ describe("actions/show.ts", () => {
 			{ name: "show", args: { path: "/sample.json" } },
 		);
 
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [
@@ -453,8 +462,8 @@ describe("actions/show.ts", () => {
 		);
 
 		expect(res.active).toBeNull();
-		const msg = res.response.injectSteps?.[0]?.ephemeralMessage;
-		expect(stripAbsolutePath(msg!)).toMatchInlineSnapshot(`
+		const msg = res.response.injectSteps?.[0]?.ephemeralMessage ?? "";
+		expect(stripAbsolutePath(msg)).toMatchInlineSnapshot(`
 			"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
 			[WORKFLOW VISUALIZATION: Derive an API client from a recorded session]

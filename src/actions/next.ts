@@ -15,7 +15,8 @@ export function nextPre(
 	active: ActiveWorkflow | null,
 ): HandleResult {
 	assert(
-		active && (active.state.status === "active" || active.state.status === "paused"),
+		active &&
+			(active.state.status === "active" || active.state.status === "paused"),
 		"No workflow is running",
 	);
 
@@ -31,7 +32,10 @@ export function nextStop(
 	_info: HookInfo,
 	active: ActiveWorkflow | null,
 ): HandleResult {
-	assert(active?.state.status === "active", "nextStop requires an active workflow");
+	assert(
+		active?.state.status === "active",
+		"nextStop requires an active workflow",
+	);
 
 	const nextState = advanceStep(active.workflow.flatSteps, active.state);
 	const nextActive = nextState ? { ...active, state: nextState } : null;

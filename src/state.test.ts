@@ -5,7 +5,6 @@ import {
 	getDebugLogPath,
 	getStatePath,
 	getStorageBaseDir,
-	getWorkflowPath,
 	loadActiveWorkflow,
 	loadState,
 	loadWorkflow,

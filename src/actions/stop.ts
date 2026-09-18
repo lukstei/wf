@@ -10,7 +10,10 @@ export function stopWorkflow(
 	_info: HookInfo,
 	active: ActiveWorkflow | null,
 ): HandleResult {
-	const result = stopWorkflowState(active?.state ?? null, active?.workflow.name);
+	const result = stopWorkflowState(
+		active?.state ?? null,
+		active?.workflow.name,
+	);
 	if (!result.wasRunning || !active || !result.state) {
 		return {
 			active,

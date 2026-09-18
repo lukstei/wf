@@ -36,7 +36,10 @@ describe("actions/next.ts", () => {
 			{ type: "pre", payload: { conversationId: "c1" } },
 			active,
 		);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [
@@ -112,7 +115,10 @@ describe("actions/next.ts", () => {
 			{ type: "stop", payload: { conversationId: "c1" } },
 			active,
 		);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "decision": "continue",
@@ -177,7 +183,10 @@ describe("actions/next.ts", () => {
 			{ type: "stop", payload: { conversationId: "c1" } },
 			active,
 		);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "decision": "allow",
@@ -229,7 +238,10 @@ describe("actions/next.ts", () => {
 			{ type: "stop", payload: { conversationId: "c1" } },
 			active,
 		);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "decision": "continue",
@@ -247,6 +259,44 @@ describe("actions/next.ts", () => {
 			    "iterationCount": 1,
 			    "status": "active",
 			    "step": 1,
+			  },
+			}
+		`);
+	});
+
+	test("nextStop terminates with error when safety iteration limit is exceeded", () => {
+		const flat = flattenWorkflow(sampleDef.steps);
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: flat.length * 5,
+			},
+			workflow: {
+				name: "Flow",
+				filePath: "wf.json",
+				steps: sampleDef.steps,
+				flatSteps: flat,
+			},
+		};
+
+		const res = nextStop(
+			{ type: "stop", payload: { conversationId: "c1" } },
+			active,
+		);
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "allow",
+			  },
+			  "state": {
+			    "error": "Workflow terminated: Exceeded safety iteration limit (10).",
+			    "iterationCount": 11,
+			    "status": "error",
+			    "step": 0,
 			  },
 			}
 		`);

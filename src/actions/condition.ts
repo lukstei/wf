@@ -44,9 +44,10 @@ export function conditionStop(
 		active.state,
 		decision,
 	);
-	const nextActive = nextState ? { ...active, state: nextState } : null;
+	assert(nextState, "advanceStep must return next state for active workflow");
+	const nextActive = { ...active, state: nextState };
 
-	if (nextState?.status === "finished") {
+	if (nextState.status === "finished") {
 		logDebug("All workflow steps complete after condition", { totalSteps });
 		return {
 			active: nextActive,
@@ -54,7 +55,7 @@ export function conditionStop(
 		};
 	}
 
-	if (nextState?.status === "error") {
+	if (nextState.status === "error") {
 		logDebug("Condition workflow terminated on error", {
 			error: nextState.error,
 		});
@@ -64,35 +65,21 @@ export function conditionStop(
 		};
 	}
 
-	if (nextState?.status === "active") {
-		const nextTargetStep = active.workflow.flatSteps[nextState.step];
-		const nextStepNum = nextState.step + 1;
-		const reason = formatAdvanceReason(
-			nextTargetStep,
-			active.workflow.preamble,
-		);
+	const nextTargetStep = active.workflow.flatSteps[nextState.step];
+	const nextStepNum = nextState.step + 1;
+	const reason = formatAdvanceReason(nextTargetStep, active.workflow.preamble);
 
-		logDebug("Advancing after condition (auto)", {
-			nextNum: nextStepNum,
-			totalSteps,
-			level: nextTargetStep.level,
-		});
-
-		return {
-			active: nextActive,
-			response: {
-				decision: "continue",
-				reason,
-			},
-		};
-	}
-
-	// Paused mode: yield to user
-	logDebug("Condition finished in paused mode, yielding to user", {
-		nextStep: (nextState?.step ?? 0) + 1,
+	logDebug("Advancing after condition (auto)", {
+		nextNum: nextStepNum,
+		totalSteps,
+		level: nextTargetStep.level,
 	});
+
 	return {
 		active: nextActive,
-		response: { decision: "allow" },
+		response: {
+			decision: "continue",
+			reason,
+		},
 	};
 }

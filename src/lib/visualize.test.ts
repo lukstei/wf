@@ -10,7 +10,9 @@ import {
 
 describe("visualize", () => {
 	it("handles empty workflow", () => {
-		expect(visualize({ name: "Empty", steps: [] })).toMatchInlineSnapshot(`"flowchart TD"`);
+		expect(visualize({ name: "Empty", steps: [] })).toMatchInlineSnapshot(
+			`"flowchart TD"`,
+		);
 	});
 
 	it("converts linear action steps", () => {
@@ -203,7 +205,9 @@ describe("visualize", () => {
 
 describe("visualizePlainText", () => {
 	it("handles empty workflow", () => {
-		expect(visualizePlainText({ name: "Empty", steps: [] })).toMatchInlineSnapshot(`""`);
+		expect(
+			visualizePlainText({ name: "Empty", steps: [] }),
+		).toMatchInlineSnapshot(`""`);
 	});
 
 	it("converts linear action steps", () => {
@@ -404,5 +408,34 @@ describe("visualizeWorkflowPrompt", () => {
 		const plainText = visualizePlainText(wfInfo, 0);
 		expect(plainText).toContain("▶ [CURRENT] - Step: Start");
 		expect(plainText).toContain("- If: Check");
+	});
+
+	it("converts workflow with gate steps in mermaid and plain text", () => {
+		const wf: WorkflowAst = {
+			name: "GateWorkflow",
+			steps: [
+				{ type: "step", title: "Step 1", instruction: "Do 1" },
+				{ type: "gate", title: "Approval", instruction: "Review changes" },
+				{ type: "step", title: "Step 2", instruction: "Do 2" },
+			],
+		};
+
+		const mermaid = visualize(wf, 1);
+		const plainText = visualizePlainText(wf, 1);
+
+		expect({ mermaid, plainText }).toMatchInlineSnapshot(`
+			{
+			  "mermaid": "flowchart TD
+			    s0["Step 1"]
+			    s1{{"🛑 <b>▶ Approval</b>"}}
+			    s2["Step 2"]
+			    s0 --> s1
+			    s1 --> s2
+			    style s1 stroke:#3b82f6,stroke-width:4px",
+			  "plainText": "- Step: Step 1
+			▶ [CURRENT] - Gate: Approval [Approval Required]
+			- Step: Step 2",
+			}
+		`);
 	});
 });

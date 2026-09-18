@@ -25,7 +25,10 @@ describe("handlers/stop.ts", () => {
 			{ type: "stop", payload: { conversationId: "c1" } },
 			null,
 		);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "decision": "allow",
@@ -123,7 +126,10 @@ describe("handlers/stop.ts", () => {
 			},
 			active,
 		);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "decision": "allow",
@@ -159,7 +165,10 @@ describe("handlers/stop.ts", () => {
 			},
 			active,
 		);
-		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "decision": "continue",

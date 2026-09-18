@@ -85,7 +85,8 @@ export function defaultWorkflowResolver(
 		}
 
 		const parsed = JSON.parse(content) as WorkflowAst;
-		parsed.name = parsed.name || path.basename(resolved, path.extname(resolved));
+		parsed.name =
+			parsed.name || path.basename(resolved, path.extname(resolved));
 		if (!Array.isArray(parsed.steps) || parsed.steps.length === 0) {
 			return {
 				error: `Workflow file "${targetPath}" does not contain any steps.`,

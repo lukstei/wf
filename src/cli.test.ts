@@ -361,4 +361,161 @@ describe("src/cli.ts", () => {
 			]
 		`);
 	});
+
+	it("runCli handles static show command and missing file errors", async () => {
+		const outputs: string[] = [];
+		const io = {
+			stdout: (m: string) => outputs.push(m),
+			stderr: (m: string) => outputs.push(`ERROR: ${m}`),
+			env: { PWD: process.cwd() },
+		};
+
+		const resValid = await runCli(["show", "examples/sample-wf.json"], io);
+		expect(resValid.exitCode).toBe(0);
+
+		const resInvalid = await runCli(["show", "nonexistent.json"], io);
+		expect(resInvalid.exitCode).toBe(1);
+
+		expect(stripAbsolutePath(outputs)).toMatchInlineSnapshot(`
+			[
+			  "[WORKFLOW VISUALIZATION: Sample Automated Workflow]
+			Present the structure of workflow "Sample Automated Workflow" to the user.
+
+			If your environment supports rendering Mermaid diagrams, visualize it using:
+			\`\`\`mermaid
+			flowchart TD
+			    s0["Report Current Status"]
+			    s1{{"<i>Check Day Condition</i>"}}
+			    s2["Report Friday Status"]
+			    s3["Report Non-Friday Status"]
+			    s4["Verify and Conclude"]
+			    s0 --> s1
+			    s1 -->|Yes| s2
+			    s1 -->|No| s3
+			    s2 --> s4
+			    s3 --> s4
+			\`\`\`
+
+			If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
+
+			- Step: Report Current Status
+			- If: Check Day Condition
+			  - Step: Report Friday Status
+			- Else:
+			  - Step: Report Non-Friday Status
+			- Step: Verify and Conclude
+
+			RULES:
+			1. Do NOT read or inspect the workflow file ("examples/sample-wf.json") or SKILL.md — steps are already loaded by the runner.
+			2. Do NOT execute any workflow steps. This is strictly an informational visualization.",
+			  "ERROR: Workflow file not found: "nonexistent.json".",
+			]
+		`);
+	});
+
+	it("runCli handles compile with warnings with and without --check", async () => {
+		const tempFile = "/tmp/test-warn-wf.md";
+		fs.writeFileSync(tempFile, "## Step 1\nInstruction 1\n");
+		const outputs: string[] = [];
+		const io = {
+			stdout: (m: string) => outputs.push(m),
+			stderr: (m: string) => outputs.push(`ERROR: ${m}`),
+			env: { PWD: process.cwd() },
+		};
+
+		try {
+			const resCheck = await runCli(["compile", tempFile, "--check"], io);
+			expect(resCheck.exitCode).toBe(0);
+
+			const resCompile = await runCli(["compile", tempFile], io);
+			expect(resCompile.exitCode).toBe(0);
+
+			expect(stripAbsolutePath(outputs)).toMatchInlineSnapshot(`
+				[
+				  "[WORKFLOW VALID] "test-warn-wf" is valid.
+				Steps: 1 (1 linear, 0 condition, 0 gate)
+				File: /tmp/test-warn-wf.md
+
+				Warnings:
+				  - [WARN] Workflow lacks a description in YAML frontmatter.",
+				  "ERROR: [WARN] Workflow lacks a description in YAML frontmatter.",
+				  "{
+				  "name": "test-warn-wf",
+				  "steps": [
+				    {
+				      "type": "step",
+				      "title": "Step 1",
+				      "instruction": "Instruction 1"
+				    }
+				  ]
+				}",
+				]
+			`);
+		} finally {
+			if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+		}
+	});
+
+	it("runCli handles start errors, help fallback, and unknown commands", async () => {
+		const env = {
+			ANTIGRAVITY_CONVERSATION_ID: testConversationId,
+			PWD: process.cwd(),
+		};
+		const outputs: string[] = [];
+		const io = {
+			stdout: (m: string) => outputs.push(m),
+			stderr: (m: string) => outputs.push(`ERROR: ${m}`),
+			env,
+		};
+
+		const resMissing = await runCli(["start"], io);
+		expect(resMissing.exitCode).toBe(1);
+
+		const resNotFound = await runCli(["start", "nonexistent.json"], io);
+		expect(resNotFound.exitCode).toBe(1);
+
+		const tempEmpty = "/tmp/test-empty-wf.json";
+		fs.writeFileSync(tempEmpty, JSON.stringify({ name: "Empty", steps: [] }));
+		try {
+			const resEmpty = await runCli(["start", tempEmpty], io);
+			expect(resEmpty.exitCode).toBe(1);
+		} finally {
+			if (fs.existsSync(tempEmpty)) fs.unlinkSync(tempEmpty);
+		}
+
+		const resShowNone = await runCli(["show"], io);
+		expect(resShowNone.exitCode).toBe(0);
+
+		const resNoCmd = await runCli([], io);
+		expect(resNoCmd.exitCode).toBe(0);
+
+		const resUnknown = await runCli(["foobar"], io);
+		expect(resUnknown.exitCode).toBe(1);
+
+		expect(stripAbsolutePath(outputs)).toMatchInlineSnapshot(`
+			[
+			  "ERROR: Missing required argument: <workflow-file>",
+			  "ERROR: Workflow file not found: "nonexistent.json".",
+			  "ERROR: Workflow file "/tmp/test-empty-wf.json" does not contain any steps.",
+			  "[WORKFLOW STATUS]
+			No workflow is currently loaded.",
+			  "wf - Workflow Runner CLI
+
+			Usage:
+			  wf hook <event>       Execute harness lifecycle hook (pre, stop)
+			  wf compile <file>     Compile workflow to JSON
+			  wf start <file>       Start a workflow from a Markdown or JSON file
+			  wf show [<file>]      Show workflow status, mermaid diagram, and current step
+			  wf next               Execute the next step of a paused workflow
+			  wf stop               Stop and reset the active workflow
+			  wf help               Show this help reference
+
+			Options:
+			  --check               Validate workflow without outputting JSON
+			  -h, --help            Show help
+			  -v, --version         Show version",
+			  "ERROR: Unknown command: "foobar". Run "wf --help" for available commands.",
+			]
+		`);
+	});
 });

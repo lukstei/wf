@@ -37,7 +37,9 @@ function handleCommand(
 		case "help": {
 			const paused = pauseWorkflow(active?.state ?? null);
 			const nextActive =
-				active && paused ? { workflow: active.workflow, state: paused } : active;
+				active && paused
+					? { workflow: active.workflow, state: paused }
+					: active;
 			return {
 				active: nextActive,
 				response: injectSystemMessage(parsedCmd.helpText || getHelpText()),
@@ -47,7 +49,9 @@ function handleCommand(
 		case "show": {
 			const paused = pauseWorkflow(active?.state ?? null);
 			const nextActive =
-				active && paused ? { workflow: active.workflow, state: paused } : active;
+				active && paused
+					? { workflow: active.workflow, state: paused }
+					: active;
 			return show(info, nextActive, parsedCmd.command);
 		}
 
@@ -62,10 +66,7 @@ function handleCommand(
 	}
 }
 
-function dispatchStep(
-	info: HookInfo,
-	active: ActiveWorkflow,
-): HandleResult {
+function dispatchStep(info: HookInfo, active: ActiveWorkflow): HandleResult {
 	const currentStep = active.workflow.flatSteps[active.state.step];
 	if (!currentStep) {
 		return { active, response: {} };
