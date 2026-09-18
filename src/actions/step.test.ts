@@ -97,7 +97,21 @@ describe("actions/step.ts", () => {
 		expect(msg).not.toContain("(Nesting Level");
 	});
 
-	test("step handles missing currentStep gracefully", () => {
+	test("step asserts precondition when state is null or finished", () => {
+		expect(() =>
+			step({ type: "pre", payload: { conversationId: "c1" } }, null),
+		).toThrow("Cannot execute step: workflow must be active or paused");
+
+		const finishedState: WorkflowState = {
+			status: "finished",
+			workflow: { name: "Done", filePath: "wf.json", flatSteps: [] },
+		};
+		expect(() =>
+			step({ type: "pre", payload: { conversationId: "c1" } }, finishedState),
+		).toThrow("Cannot execute step: workflow must be active or paused");
+	});
+
+	test("step asserts precondition when currentStep is missing", () => {
 		const state: WorkflowState = {
 			status: "active",
 			workflow: {
@@ -108,11 +122,12 @@ describe("actions/step.ts", () => {
 			currentStepIndex: 5,
 		};
 
-		const res = step({ type: "pre", payload: { conversationId: "c1" } }, state);
-		expect(res.response).toEqual({});
+		expect(() =>
+			step({ type: "pre", payload: { conversationId: "c1" } }, state),
+		).toThrow("Current step does not exist");
 	});
 
-	test("step returns empty response when currentStep is a condition", () => {
+	test("step formats and injects prompt when currentStep is a condition", () => {
 		const state: WorkflowState = {
 			status: "active",
 			workflow: {
@@ -133,6 +148,9 @@ describe("actions/step.ts", () => {
 		};
 
 		const res = step({ type: "pre", payload: { conversationId: "c1" } }, state);
-		expect(res.response).toEqual({});
+		const msg = res.response.injectSteps?.[0]?.ephemeralMessage;
+		expect(msg).toContain("(Condition Evaluation)");
+		expect(msg).toContain('Condition: "is ready?"');
+		expect(msg).toContain("[DECISION: YES] or [DECISION: NO]");
 	});
 });

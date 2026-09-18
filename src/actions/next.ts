@@ -3,7 +3,6 @@ import { logDebug } from "../lib/logDebug.ts";
 import type { WorkflowState } from "../state.ts";
 import { advanceStep, resumeWorkflow } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
-import { conditionPre } from "./condition.ts";
 import { formatAdvanceReason } from "./formatters.ts";
 import { step } from "./step.ts";
 
@@ -21,24 +20,18 @@ export function nextPre(
 	);
 
 	const nextState = resumeWorkflow(state);
-	const nextTargetStep =
-		nextState.workflow.flatSteps[nextState.currentStepIndex];
-
-	return nextTargetStep?.type === "condition"
-		? conditionPre(info, nextState)
-		: step(info, nextState);
+	return step(info, nextState);
 }
 
 /**
  * nextStop: Advances to the next step after action step completion in Stop hook.
+ * Precondition: workflow must be active.
  */
 export function nextStop(
 	_info: HookInfo,
 	state: WorkflowState | null,
 ): HandleResult {
-	if (!state || state.status !== "active") {
-		return { state: state, response: { decision: "allow" } };
-	}
+	assert(state?.status === "active", "nextStop requires an active workflow");
 
 	const nextState = advanceStep(state);
 

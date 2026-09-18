@@ -285,4 +285,54 @@ describe("actions/condition.ts", () => {
 		expect(reason).toContain("Global preamble");
 		expect(reason).toContain("Deploy step instruction");
 	});
+
+	test("conditionStop asserts precondition when state is not active", () => {
+		expect(() =>
+			conditionStop(
+				{ type: "stop", payload: { conversationId: "c1" } },
+				null,
+			),
+		).toThrow("conditionStop requires an active workflow");
+
+		const pausedState: WorkflowState = {
+			status: "paused",
+			workflow: { name: "Paused", filePath: "wf.json", flatSteps: [] },
+			currentStepIndex: 0,
+		};
+		expect(() =>
+			conditionStop(
+				{ type: "stop", payload: { conversationId: "c1" } },
+				pausedState,
+			),
+		).toThrow("conditionStop requires an active workflow");
+	});
+
+	test("conditionStop asserts precondition when current step is not a condition", () => {
+		const state: WorkflowState = {
+			status: "active",
+			workflow: {
+				name: "Flow",
+				filePath: "wf.json",
+				flatSteps: [
+					{
+						id: "s1",
+						type: "step",
+						title: "Step 1",
+						instruction: "do work",
+						level: 0,
+						index: 0,
+						nextIndex: 1,
+					},
+				],
+			},
+			currentStepIndex: 0,
+		};
+
+		expect(() =>
+			conditionStop(
+				{ type: "stop", payload: { conversationId: "c1" } },
+				state,
+			),
+		).toThrow("conditionStop requires current step to be a condition");
+	});
 });

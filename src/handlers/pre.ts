@@ -1,4 +1,3 @@
-import { conditionPre } from "./../actions/condition.ts";
 import { injectSystemMessage } from "../actions/formatters.ts";
 import { nextPre } from "../actions/next.ts";
 import { run } from "../actions/run.ts";
@@ -71,9 +70,7 @@ function dispatchStep(
 		return { state, response: {} };
 	}
 
-	return currentStep.type === "condition"
-		? conditionPre(info, state)
-		: step(info, state);
+	return step(info, state);
 }
 
 /**

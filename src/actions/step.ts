@@ -1,26 +1,24 @@
+import { assert } from "../lib/assert.ts";
 import { logDebug } from "../lib/logDebug.ts";
 import type { WorkflowState } from "../state.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import { formatStepPrompt, injectSystemMessage } from "./formatters.ts";
 
 /**
- * Step action: injects instruction prompt for a standard action step.
+ * Injects the prompt instructions for the current workflow step.
+ * Precondition: state must be active or paused, and current step must exist.
  */
 export function step(
 	_info: HookInfo,
 	state: WorkflowState | null,
 ): HandleResult {
-	if (!state || (state.status !== "active" && state.status !== "paused")) {
-		return { state: state, response: {} };
-	}
+	assert(
+		state && (state.status === "active" || state.status === "paused"),
+		"Cannot execute step: workflow must be active or paused",
+	);
 
 	const currentStep = state.workflow.flatSteps[state.currentStepIndex];
-	if (
-		!currentStep ||
-		(currentStep.type !== "step" && currentStep.type !== "gate")
-	) {
-		return { state: state, response: {} };
-	}
+	assert(currentStep, "Current step does not exist");
 
 	const stepNum = state.currentStepIndex + 1;
 	const totalSteps = state.workflow.flatSteps.length;

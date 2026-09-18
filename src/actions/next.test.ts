@@ -71,7 +71,11 @@ describe("actions/next.ts", () => {
 		expect(res.response.reason).toMatch(/Do 2/);
 	});
 
-	test("nextStop does not advance when workflow is paused", () => {
+	test("nextStop asserts precondition when workflow is not active", () => {
+		expect(() =>
+			nextStop({ type: "stop", payload: { conversationId: "c1" } }, null),
+		).toThrow("nextStop requires an active workflow");
+
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "paused",
@@ -79,13 +83,9 @@ describe("actions/next.ts", () => {
 			currentStepIndex: 0,
 		};
 
-		const res = nextStop(
-			{ type: "stop", payload: { conversationId: "c1" } },
-			state,
-		);
-		expect(res.state?.currentStepIndex).toBe(0);
-		expect(res.state?.status).toBe("paused");
-		expect(res.response.decision).toBe("allow");
+		expect(() =>
+			nextStop({ type: "stop", payload: { conversationId: "c1" } }, state),
+		).toThrow("nextStop requires an active workflow");
 	});
 
 	test("nextStop completes workflow when reaching the end", () => {

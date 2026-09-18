@@ -1,62 +1,38 @@
+import { assert } from "../lib/assert.ts";
 import { logDebug } from "../lib/logDebug.ts";
 import type { WorkflowState } from "../state.ts";
 import { advanceStep } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import {
 	formatAdvanceReason,
-	formatStepPrompt,
-	injectSystemMessage,
 	parseDecision,
 } from "./formatters.ts";
+import { step } from "./step.ts";
 
 /**
  * conditionPre: Injects the prompt asking the model to evaluate the condition.
+ * Re-uses the unified step action.
  */
-export function conditionPre(
-	_info: HookInfo,
-	state: WorkflowState | null,
-): HandleResult {
-	if (!state || (state.status !== "active" && state.status !== "paused")) {
-		return { state: state, response: {} };
-	}
-
-	const currentStep = state.workflow.flatSteps[state.currentStepIndex];
-	if (currentStep?.type !== "condition") {
-		return { state: state, response: {} };
-	}
-
-	const stepNum = state.currentStepIndex + 1;
-	const totalSteps = state.workflow.flatSteps.length;
-	const prompt = formatStepPrompt(state, currentStep, stepNum, totalSteps);
-
-	logDebug("Injecting condition step (Pre)", {
-		stepNum,
-		totalSteps,
-		level: currentStep.level,
-		status: state.status,
-	});
-
-	return {
-		state: state,
-		response: injectSystemMessage(prompt),
-	};
-}
+export const conditionPre = step;
 
 /**
  * conditionStop: Evaluates model response, branches YES or NO, and advances.
+ * Precondition: workflow must be active and current step must be a condition.
  */
 export function conditionStop(
 	info: HookInfo,
 	state: WorkflowState | null,
 ): HandleResult {
-	if (!state || state.status !== "active") {
-		return { state: state, response: { decision: "allow" } };
-	}
+	assert(
+		state?.status === "active",
+		"conditionStop requires an active workflow",
+	);
 
 	const currentStep = state.workflow.flatSteps[state.currentStepIndex];
-	if (currentStep?.type !== "condition") {
-		return { state: state, response: { decision: "allow" } };
-	}
+	assert(
+		currentStep?.type === "condition",
+		"conditionStop requires current step to be a condition",
+	);
 
 	const totalSteps = state.workflow.flatSteps.length;
 	const modelText = info.latestMessage?.content ?? "";

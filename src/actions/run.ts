@@ -5,7 +5,6 @@ import type { WorkflowState } from "../state.ts";
 import { startWorkflow } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import { flattenWorkflow } from "../workflow.ts";
-import { conditionPre } from "./condition.ts";
 import { injectSystemMessage } from "./formatters.ts";
 import { step } from "./step.ts";
 
@@ -15,9 +14,9 @@ import { step } from "./step.ts";
 export function run(
 	info: HookInfo,
 	state: WorkflowState | null,
-	command?: RunCommand,
+	command: RunCommand,
 ): HandleResult {
-	const targetPath = command?.args.path ?? "";
+	const targetPath = command.args.path ?? "";
 
 	if (!targetPath) {
 		return {
@@ -73,8 +72,5 @@ export function run(
 	});
 
 	// Inject Step 0
-	const firstStep = flatSteps[0];
-	return firstStep.type === "condition"
-		? conditionPre(info, nextState)
-		: step(info, nextState);
+	return step(info, nextState);
 }
