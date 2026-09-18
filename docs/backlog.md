@@ -178,7 +178,8 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
     - **Missing Fallbacks:** Warn or flag conditional branches that lack fallback paths when required.
 - **Diagnostic Output (`ValidationResult`):**
   - Return structured diagnostics distinguishing between `error` (fatal; blocks workflow compilation) and `warning` (advisory lint / code smell).
-  - Diagnostic payload includes error code, human-readable message, step identifier/heading title, and source position (line/offset) when available from the AST.
+  - Diagnostic payload includes error code (`id`), human-readable `description`, and `source` indicator (step title or workflow name).
+  - **Source Line Numbers in Markdown:** Capture source line numbers during markdown parsing (`src/lib/markdown/`) and attach them to `WorkflowStep` AST nodes. This allows validator diagnostics to report precise file locations (e.g., `workflow.md:24`) in `source` alongside or in place of step titles.
 - **Integration & Tooling Alignment:**
   - Reusable core validator in `src/` that can be invoked at compile/load time.
   - Serves as the shared engine for the pre-flight static linter described in **Item 3.2** (`/wf-lint <file>` / `wf lint <file>`).

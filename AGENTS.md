@@ -9,6 +9,8 @@
   - Especially no unnecessary states, always think about how to keep the state minimal
   - Prefer inline types, if the type is not reused
   - Prefer discriminated unions
+  - Never add any backwards compatibility regarding the code, there is no external consumer of the code
+  - Be careful when chaging the state schema, syntax definitions, and all external facing stuff, that might affect users
 - No use of any or unjustified type castings
 - Never change the git state without confirmation
 - Use /no-ai-slop for all texts intended for humans
@@ -28,6 +30,7 @@
 - `state.ts`: Reads, writes, and paths workflow state files on disk keyed by conversation ID.
 - `resolver.ts`: Locates and parses workflow files across workspace folders and search paths.
 - `validator.ts`: Validates workflow syntax, structural integrity, and step connections against workflow schemas.
+- `validator-checks.ts`: Standalone workflow and step validation check functions returning diagnostic problems.
 - `types.ts`: TypeScript interfaces for agent hook payloads, egress responses, and execution results.
 - `test-utils.ts`: Test utilities for path stripping and snapshot normalization across environments.
 

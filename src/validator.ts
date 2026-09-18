@@ -1,13 +1,33 @@
+import {
+	STEP_CHECKS,
+	WORKFLOW_CHECKS,
+	type CheckProblem,
+	type ProblemId,
+	type ProblemSource,
+} from "./validator-checks.ts";
 import type { ConditionalStep, WorkflowDef, WorkflowStep } from "./workflow.ts";
 
-export interface ValidationError {
-	message: string;
-	stepTitle?: string;
-}
+export * from "./validator-checks.ts";
 
-export interface ValidationWarning {
-	message: string;
-	stepTitle?: string;
+export const PROBLEM_SEVERITY: Record<ProblemId, "warning" | "error"> = {
+	"workflow-missing-name": "error",
+	"workflow-missing-description": "warning",
+	"workflow-no-steps": "error",
+	"step-missing-title": "error",
+	"step-action-empty-instruction": "error",
+	"step-gate-empty-instruction": "error",
+	"step-condition-empty-expression": "error",
+	"step-condition-empty-yes": "error",
+	"step-condition-empty-no": "warning",
+} as const;
+
+export type ProblemSeverity = "warning" | "error";
+
+export interface ValidationProblem {
+	id: ProblemId;
+	type: ProblemSeverity;
+	description: string;
+	source: ProblemSource;
 }
 
 export interface ValidationStats {
@@ -17,40 +37,19 @@ export interface ValidationStats {
 	gates: number;
 }
 
-export type ValidationResult =
-	| {
-			valid: true;
-			stats: ValidationStats;
-			warnings: ValidationWarning[];
-	  }
-	| {
-			valid: false;
-			errors: ValidationError[];
-			warnings: ValidationWarning[];
-	  };
+export interface ValidationResult {
+	valid: boolean;
+	stats: ValidationStats;
+	problems: ValidationProblem[];
+}
 
 export function validateWorkflow(def: WorkflowDef): ValidationResult {
-	const errors: ValidationError[] = [];
-	const warnings: ValidationWarning[] = [];
+	const problems: ValidationProblem[] = [];
 
-	if (!def.name || def.name.trim().length === 0) {
-		errors.push({
-			message:
-				'Workflow must define a non-empty name (via YAML frontmatter "name" or Markdown H1 title).',
-		});
-	}
-
-	if (!def.description || def.description.trim().length === 0) {
-		warnings.push({
-			message: "Workflow lacks a description in YAML frontmatter.",
-		});
-	}
-
-	if (!Array.isArray(def.steps) || def.steps.length === 0) {
-		errors.push({
-			message: "Workflow contains no actionable steps.",
-		});
-		return { valid: false, errors, warnings };
+	for (const check of WORKFLOW_CHECKS) {
+		for (const p of check(def)) {
+			problems.push({ ...p, type: PROBLEM_SEVERITY[p.id] });
+		}
 	}
 
 	let totalSteps = 0;
@@ -58,90 +57,48 @@ export function validateWorkflow(def: WorkflowDef): ValidationResult {
 	let conditions = 0;
 	let gates = 0;
 
-	function validateStep(step: WorkflowStep) {
-		totalSteps++;
-
-		const title = step.title?.trim();
-		if (!title) {
-			errors.push({ message: "Step title cannot be empty." });
-		}
-
-		if (step.type === "step") {
-			linearSteps++;
-			if (!step.instruction || step.instruction.trim().length === 0) {
-				errors.push({
-					stepTitle: title,
-					message: `Action step "${title || "untitled"}" has empty instructions.`,
-				});
-			}
-			return;
-		}
-
-		if (step.type === "gate") {
-			gates++;
-			if (!step.instruction || step.instruction.trim().length === 0) {
-				errors.push({
-					stepTitle: title,
-					message: `Gate step "${title || "untitled"}" has empty verification instructions.`,
-				});
-			}
-			return;
-		}
-
-		if (step.type === "condition") {
-			conditions++;
-			const condStep = step as ConditionalStep;
-			if (!condStep.condition || condStep.condition.trim().length === 0) {
-				errors.push({
-					stepTitle: title,
-					message: `Condition step "${title || "untitled"}" has an empty condition expression.`,
-				});
+	if (Array.isArray(def.steps)) {
+		function validateStep(step: WorkflowStep) {
+			totalSteps++;
+			if (step.type === "step") {
+				linearSteps++;
+			} else if (step.type === "gate") {
+				gates++;
+			} else if (step.type === "condition") {
+				conditions++;
 			}
 
-			if (
-				!condStep.yes ||
-				!Array.isArray(condStep.yes.steps) ||
-				condStep.yes.steps.length === 0
-			) {
-				errors.push({
-					stepTitle: title,
-					message: `Condition step "${title || "untitled"}" has no YES branch steps.`,
-				});
-			} else {
-				for (const child of condStep.yes.steps) {
-					validateStep(child);
+			for (const check of STEP_CHECKS) {
+				for (const p of check(step)) {
+					problems.push({ ...p, type: PROBLEM_SEVERITY[p.id] });
 				}
 			}
 
-			if (condStep.no) {
-				if (
-					(!condStep.no.steps || condStep.no.steps.length === 0) &&
-					!condStep.no.preamble
-				) {
-					warnings.push({
-						stepTitle: title,
-						message: `Condition step "${title || "untitled"}" defines an empty NO branch.`,
-					});
-				} else if (condStep.no.steps) {
+			if (step.type === "condition") {
+				const condStep = step as ConditionalStep;
+				if (condStep.yes?.steps) {
+					for (const child of condStep.yes.steps) {
+						validateStep(child);
+					}
+				}
+				if (condStep.no?.steps) {
 					for (const child of condStep.no.steps) {
 						validateStep(child);
 					}
 				}
 			}
 		}
+
+		for (const step of def.steps) {
+			validateStep(step);
+		}
 	}
 
-	for (const step of def.steps) {
-		validateStep(step);
-	}
-
-	if (errors.length > 0) {
-		return { valid: false, errors, warnings };
-	}
+	const valid = !problems.some((p) => p.type === "error");
 
 	return {
-		valid: true,
+		valid,
 		stats: { totalSteps, linearSteps, conditions, gates },
-		warnings,
+		problems,
 	};
 }

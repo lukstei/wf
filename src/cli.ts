@@ -132,17 +132,20 @@ export async function runCli(
 			return { exitCode: 1, output: err };
 		}
 		const result = validateWorkflow(resolved.workflow);
+		const errors = result.problems.filter((p) => p.type === "error");
+		const warnings = result.problems.filter((p) => p.type === "warning");
+
 		if (!result.valid) {
 			const lines = [
 				`[WORKFLOW INVALID] Validation failed for "${resolved.workflow.name || path.basename(resolved.filePath)}":`,
 			];
-			for (const e of result.errors) {
-				lines.push(`  - [ERROR] ${e.message}`);
+			for (const e of errors) {
+				lines.push(`  - [ERROR] ${e.description}`);
 			}
-			if (result.warnings.length > 0) {
+			if (warnings.length > 0) {
 				lines.push("\nWarnings:");
-				for (const w of result.warnings) {
-					lines.push(`  - [WARN] ${w.message}`);
+				for (const w of warnings) {
+					lines.push(`  - [WARN] ${w.description}`);
 				}
 			}
 			const out = lines.join("\n");
@@ -156,10 +159,10 @@ export async function runCli(
 				`Steps: ${result.stats.totalSteps} (${result.stats.linearSteps} linear, ${result.stats.conditions} condition, ${result.stats.gates} gate)`,
 				`File: ${resolved.filePath}`,
 			];
-			if (result.warnings.length > 0) {
+			if (warnings.length > 0) {
 				lines.push("\nWarnings:");
-				for (const w of result.warnings) {
-					lines.push(`  - [WARN] ${w.message}`);
+				for (const w of warnings) {
+					lines.push(`  - [WARN] ${w.description}`);
 				}
 			}
 			const out = lines.join("\n");
@@ -167,9 +170,9 @@ export async function runCli(
 			return { exitCode: 0, output: out };
 		}
 
-		if (result.warnings.length > 0) {
-			for (const w of result.warnings) {
-				writeErr(`[WARN] ${w.message}`);
+		if (warnings.length > 0) {
+			for (const w of warnings) {
+				writeErr(`[WARN] ${w.description}`);
 			}
 		}
 		const compiledJson = JSON.stringify(resolved.workflow, null, 2);
