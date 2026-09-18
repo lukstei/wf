@@ -44,9 +44,9 @@
 		"dev:install:agy": "npm run build && node scripts/dev-install.js ~/.gemini/config/plugins/wf",
 		"dev:install:claude": "npm run build && node scripts/dev-install.js ~/.claude/plugins/cache/wf-marketplace/wf/c8afe6994317",
 		"dev:install:codex": "npm run build && node scripts/dev-install.js ~/.codex/plugins/cache/wf/wf",
-		"release:patch": "npm run check:clean && npm run verify && gh workflow run publish.yml -f bump=patch && sleep 2 && gh run watch",
-		"release:minor": "npm run check:clean && npm run verify && gh workflow run publish.yml -f bump=minor && sleep 2 && gh run watch",
-		"release:major": "npm run check:clean && npm run verify && gh workflow run publish.yml -f bump=major && sleep 2 && gh run watch"
+		"release:patch": "node scripts/release.js patch",
+		"release:minor": "node scripts/release.js minor",
+		"release:major": "node scripts/release.js major"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.14",
