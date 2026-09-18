@@ -1,9 +1,9 @@
 import { detectHarness, getHarness } from "../harnesses/index.ts";
+import type { EgressOutput } from "../harnesses/types.ts";
 import { logDebug } from "../lib/logDebug.ts";
 import { loadState, saveState } from "../state.ts";
 import type { HookInfo } from "../types.ts";
 import { handle } from "../wf.ts";
-import { type EgressOutput, formatEgress } from "./egress.ts";
 import { parseJsonSafe, readStdin } from "./stdin.ts";
 
 export async function runShim(
@@ -59,5 +59,5 @@ export async function runShim(
 		saveState(event.conversationId, nextState);
 	}
 
-	return formatEgress(event.harness, event, response);
+	return adapter.formatEgress(event, response);
 }

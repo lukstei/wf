@@ -3,7 +3,6 @@ import { parseArgs } from "node:util";
 import { logDebug } from "./lib/logDebug.ts";
 import { visualizeWorkflowPrompt } from "./lib/visualize.ts";
 import { defaultWorkflowResolver } from "./resolver.ts";
-import { emitEgress } from "./shim/egress.ts";
 import { runShim } from "./shim/runtime-shim.ts";
 import { loadState, saveState } from "./state.ts";
 import {
@@ -103,7 +102,9 @@ export async function runCli(
 			if (egress.stdout) writeOut(egress.stdout);
 			if (egress.stderr && io.stderr) io.stderr(egress.stderr);
 		} else {
-			emitEgress(egress);
+			if (egress.stdout) process.stdout.write(egress.stdout);
+			if (egress.stderr) process.stderr.write(egress.stderr);
+			process.exit(egress.exitCode);
 		}
 		return { exitCode: egress.exitCode, output: egress.stdout };
 	}

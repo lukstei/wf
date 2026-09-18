@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { detectHarness, isVsCodeCopilotRoot } from "./detect.ts";
+import { isVsCodeCopilotRoot } from "./copilot.ts";
+import { detectHarness } from "./index.ts";
 
 describe("detectHarness", () => {
 	describe("isVsCodeCopilotRoot", () => {
