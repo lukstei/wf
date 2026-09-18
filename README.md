@@ -17,35 +17,62 @@ Works in Google Antigravity, Claude Code, and OpenAI Codex.
 
 ## Quickstart
 
-### 1. Write a workflow (`deploy.md`)
+### 1. Write a workflow (`weekend.md`)
 
 ```markdown
-# Production Deployment
+# Weekend Readiness Protocol
 
-Ensure all checks pass before deploying.
+Decide whether it is safe to clock out for the weekend.
 
-## 1. Run tests
-Run the test suite:
-`npm run verify`
+## 1. If: Is it past Friday 4:00 PM?
+Check the current day and local time.
 
-## 2. If: Did all tests pass?
+### If: Is the git working directory clean?
+Run `git status --porcelain` to check for unstaged or uncommitted changes.
 
-### Publish
-Publish packages to npm and create GitHub release.
+#### Gate: Confirm Slack post
+Ready to notify the team that you are heading out?
 
-### No
-Stop and report the failures.
+#### Announce on Slack
+Use the Slack CLI to post "Happy weekend!" to #general.
 
-## Gate: Confirm release
-Check the files in `dist/`. Ready to publish to production?
+### No: Dirty working tree
+Say: "Commit your changes before going home!"
+
+## No: Still on the clock
+Calculate the remaining time and say: "Sorry, you still have X days and X hours left to work."
 ```
 
-### 2. Run in chat
+### 2. Preview the graph (`/wf-show`)
+
+Inspect the workflow structure before or during execution:
 
 | Environment | Command |
 | :--- | :--- |
-| Google Antigravity / Claude Code | `/wf deploy.md` |
-| OpenAI Codex | `$wf:wf deploy.md` |
+| Google Antigravity / Claude Code | `/wf-show weekend.md` |
+| OpenAI Codex | `$wf:wf-show weekend.md` |
+
+```mermaid
+flowchart TD
+    s0{{"<i>Is it past Friday 4:00 PM?</i>"}}
+    s1{{"<i>Is the git working directory clean?</i>"}}
+    s2[["🛑 <b>Confirm Slack post</b>"]]
+    s3["Announce on Slack"]
+    s4["Dirty working tree"]
+    s5["Still on the clock"]
+    s0 -->|Yes| s1
+    s0 -->|No| s5
+    s1 -->|Yes| s2
+    s1 -->|No| s4
+    s2 --> s3
+```
+
+### 3. Run in chat
+
+| Environment | Command |
+| :--- | :--- |
+| Google Antigravity / Claude Code | `/wf weekend.md` |
+| OpenAI Codex | `$wf:wf weekend.md` |
 
 ## How it works
 

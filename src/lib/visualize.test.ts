@@ -427,7 +427,7 @@ describe("visualizeWorkflowPrompt", () => {
 			{
 			  "mermaid": "flowchart TD
 			    s0["Step 1"]
-			    s1{{"🛑 <b>▶ Approval</b>"}}
+			    s1[["🛑 <b>▶ Approval</b>"]]
 			    s2["Step 2"]
 			    s0 --> s1
 			    s1 --> s2
@@ -436,6 +436,25 @@ describe("visualizeWorkflowPrompt", () => {
 			▶ [CURRENT] - Gate: Approval [Approval Required]
 			- Step: Step 2",
 			}
+		`);
+	});
+
+	it("renders inactive gates with double-border subroutine shape", () => {
+		const wf: WorkflowAst = {
+			name: "GateWorkflow",
+			steps: [
+				{ type: "step", title: "Step 1", instruction: "Do 1" },
+				{ type: "gate", title: "Approval", instruction: "Review changes" },
+			],
+		};
+
+		const mermaid = visualize(wf, 0);
+		expect(mermaid).toMatchInlineSnapshot(`
+			"flowchart TD
+			    s0["▶ Step 1"]
+			    s1[["🛑 <b>Approval</b>"]]
+			    s0 --> s1
+			    style s0 stroke:#3b82f6,stroke-width:4px"
 		`);
 	});
 });

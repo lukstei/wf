@@ -46,7 +46,7 @@ export function visualize(
 		} else if (step.type === "gate") {
 			const rawLabel = `${prefix}${step.title}`;
 			const label = escapeLabel(rawLabel);
-			lines.push(`    ${id}{{"🛑 <b>${label}</b>"}}`);
+			lines.push(`    ${id}[["🛑 <b>${label}</b>"]]`);
 		} else {
 			const rawLabel = `${prefix}${step.title}`;
 			const label = escapeLabel(rawLabel);
