@@ -1,9 +1,0 @@
-{
-	"artifactDirectoryPath": "/Users/Lukas.Steinbrecher/.gemini/antigravity/brain/cd283a1c-a9db-45ea-bbf5-d42e167ad0fb",
-	"conversationId": "cd283a1c-a9db-45ea-bbf5-d42e167ad0fb",
-	"initialNumSteps": 5,
-	"invocationNum": 2,
-	"modelName": "gemini-3.8-flash-low",
-	"transcriptPath": "/Users/Lukas.Steinbrecher/.gemini/antigravity/brain/cd283a1c-a9db-45ea-bbf5-d42e167ad0fb/.system_generated/logs/transcript_full.jsonl",
-	"workspacePaths": ["/Users/Lukas.Steinbrecher/dev/ai-skills/wf"]
-}
