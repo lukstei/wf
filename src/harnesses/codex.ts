@@ -174,4 +174,8 @@ export const codexHarness: HarnessAdapter = {
 	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
 		return env.CODEX_CONVERSATION_ID || env.CODEX_SESSION_ID || null;
 	},
+
+	resolveStorageDir(env: NodeJS.ProcessEnv): string | null {
+		return env.PLUGIN_DATA || null;
+	},
 };

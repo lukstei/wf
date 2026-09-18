@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { isVsCodeCopilotRoot } from "./copilot.ts";
-import { detectHarness, resolveConversationIdFromHarnesses } from "./index.ts";
+import {
+	detectHarness,
+	resolveConversationIdFromHarnesses,
+	resolveStorageDirFromHarnesses,
+} from "./index.ts";
 
 describe("detectHarness", () => {
 	describe("isVsCodeCopilotRoot", () => {
@@ -174,6 +178,44 @@ describe("detectHarness", () => {
 
 		it("returns null when no harness environment variables are set", () => {
 			expect(resolveConversationIdFromHarnesses({})).toBeNull();
+		});
+	});
+
+	describe("resolveStorageDirFromHarnesses", () => {
+		it("resolves storage directory for Codex from PLUGIN_DATA", () => {
+			expect(
+				resolveStorageDirFromHarnesses({
+					PLUGIN_DATA: "/path/to/codex/data",
+				}),
+			).toBe("/path/to/codex/data");
+		});
+
+		it("resolves storage directory for Claude Code from CLAUDE_PLUGIN_DATA", () => {
+			expect(
+				resolveStorageDirFromHarnesses({
+					CLAUDE_PLUGIN_DATA: "/path/to/claude/data",
+				}),
+			).toBe("/path/to/claude/data");
+		});
+
+		it("resolves storage directory for Copilot from COPILOT_PLUGIN_DATA", () => {
+			expect(
+				resolveStorageDirFromHarnesses({
+					COPILOT_PLUGIN_DATA: "/path/to/copilot/data",
+				}),
+			).toBe("/path/to/copilot/data");
+		});
+
+		it("resolves storage directory for Antigravity from AGY_PLUGIN_DATA", () => {
+			expect(
+				resolveStorageDirFromHarnesses({
+					AGY_PLUGIN_DATA: "/path/to/agy/data",
+				}),
+			).toBe("/path/to/agy/data");
+		});
+
+		it("returns null when no harness storage variables are set", () => {
+			expect(resolveStorageDirFromHarnesses({})).toBeNull();
 		});
 	});
 });

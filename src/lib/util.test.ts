@@ -6,6 +6,7 @@ import { injectSystemMessage, OVERRIDE_HEADER } from "../actions/formatters.ts";
 import { parseAgyMessage } from "../harnesses/agy.ts";
 import { parseClaudeMessage } from "../harnesses/claude.ts";
 import { defaultWorkflowResolver, resolveWorkflowPath } from "../resolver.ts";
+import { getDebugLogPath } from "../state.ts";
 import { getLatestMessage } from "./getLatestMessage.ts";
 import { logDebug } from "./logDebug.ts";
 
@@ -223,7 +224,7 @@ describe("util library functions", () => {
 	});
 
 	test("logDebug is disabled in unit tests by default", () => {
-		const tmpLog = "/tmp/wf-debug.log";
+		const tmpLog = getDebugLogPath();
 		const sizeBefore = fs.existsSync(tmpLog) ? fs.statSync(tmpLog).size : 0;
 		expect(() => {
 			logDebug("Test debug message", { sample: 123 });

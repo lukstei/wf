@@ -69,31 +69,36 @@ describe("runShim End-to-End Simulation", () => {
 
 	it("advances active workflow in Codex stop hook with block decision", async () => {
 		const sessionId = "codex-active-wf-1";
-		saveState(sessionId, {
-			status: "active",
-			workflow: {
-				name: "Sample Workflow",
-				filePath: "sample.md",
-				flatSteps: [
-					{
-						index: 0,
-						level: 1,
-						type: "step",
-						instruction: "Step 1 instruction",
-						nextIndex: 1,
-					},
-					{
-						index: 1,
-						level: 1,
-						type: "step",
-						instruction: "Step 2 instruction",
-						nextIndex: 2,
-					},
-				],
+		const env = { PLUGIN_DATA: "/tmp/codex-data" };
+		saveState(
+			sessionId,
+			{
+				status: "active",
+				workflow: {
+					name: "Sample Workflow",
+					filePath: "sample.md",
+					flatSteps: [
+						{
+							index: 0,
+							level: 1,
+							type: "step",
+							instruction: "Step 1 instruction",
+							nextIndex: 1,
+						},
+						{
+							index: 1,
+							level: 1,
+							type: "step",
+							instruction: "Step 2 instruction",
+							nextIndex: 2,
+						},
+					],
+				},
+				step: 0,
+				iterationCount: 0,
 			},
-			step: 0,
-			iterationCount: 0,
-		});
+			env,
+		);
 
 		const rawInput = JSON.stringify({
 			hook_event_name: "Stop",
@@ -103,11 +108,10 @@ describe("runShim End-to-End Simulation", () => {
 			last_assistant_message: "Finished step 1",
 		});
 
-		const egress = await runShim("stop", rawInput, {
-			PLUGIN_DATA: "/tmp/codex-data",
-		});
+		const egress = await runShim("stop", rawInput, env);
 
 		expect(egress.exitCode).toBe(0);
+
 		expect(JSON.parse(egress.stdout ?? "{}")).toMatchInlineSnapshot(`
 			{
 			  "decision": "block",

@@ -205,4 +205,8 @@ export const agyHarness: HarnessAdapter = {
 	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
 		return env.ANTIGRAVITY_CONVERSATION_ID || env.AGY_CONVERSATION_ID || null;
 	},
+
+	resolveStorageDir(env: NodeJS.ProcessEnv): string | null {
+		return env.AGY_PLUGIN_DATA || null;
+	},
 };

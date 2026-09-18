@@ -206,12 +206,13 @@ export async function runCli(
 			writeErr(err);
 			return { exitCode: 1, output: err };
 		}
+		logDebug.conversationId = conversationId;
 
 		if (parsed.command === "stop") {
-			const state = loadState(conversationId);
+			const state = loadState(conversationId, env);
 			const result = stopWorkflowState(state);
 			if (result.state !== null) {
-				saveState(conversationId, result.state);
+				saveState(conversationId, result.state, env);
 			}
 			const msg = result.wasRunning
 				? `[WORKFLOW STOPPED] Workflow "${result.workflowName}" has been stopped.`
@@ -252,7 +253,7 @@ export async function runCli(
 				steps: resolved.workflow.steps,
 				flatSteps,
 			});
-			saveState(conversationId, nextState);
+			saveState(conversationId, nextState, env);
 			const firstStep = flatSteps[0];
 			const msg = `[WORKFLOW STARTED] "${nextState.workflow.name}"\nStep 1/${flatSteps.length}: ${firstStep.title}\n${firstStep.instruction}`;
 			writeOut(msg);
@@ -260,7 +261,7 @@ export async function runCli(
 		}
 
 		if (parsed.command === "next") {
-			const state = loadState(conversationId);
+			const state = loadState(conversationId, env);
 
 			if (!state || (state.status !== "active" && state.status !== "paused")) {
 				const err =
@@ -270,7 +271,7 @@ export async function runCli(
 			}
 
 			const nextState = resumeWorkflow(state);
-			saveState(conversationId, nextState);
+			saveState(conversationId, nextState, env);
 			const currentStep = nextState.workflow.flatSteps[nextState.step];
 			const stepNum = nextState.step + 1;
 			const total = nextState.workflow.flatSteps.length;
@@ -281,7 +282,8 @@ export async function runCli(
 		}
 
 		if (parsed.command === "show") {
-			const state = loadState(conversationId);
+			const state = loadState(conversationId, env);
+
 			if (!state) {
 				const msg = "[WORKFLOW STATUS]\nNo workflow is currently loaded.";
 				writeOut(msg);

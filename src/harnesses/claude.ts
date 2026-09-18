@@ -187,4 +187,8 @@ export const claudeHarness: HarnessAdapter = {
 	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
 		return env.CLAUDE_CONVERSATION_ID || env.CLAUDE_SESSION_ID || null;
 	},
+
+	resolveStorageDir(env: NodeJS.ProcessEnv): string | null {
+		return env.CLAUDE_PLUGIN_DATA || null;
+	},
 };

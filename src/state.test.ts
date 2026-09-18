@@ -1,7 +1,10 @@
 import * as fs from "node:fs";
+import * as path from "node:path";
 import { describe, expect, test } from "vitest";
 import {
+	getDebugLogPath,
 	getStatePath,
+	getStorageBaseDir,
 	loadState,
 	saveState,
 	type WorkflowState,
@@ -263,6 +266,56 @@ describe("state.ts", () => {
     `);
 	});
 
+	test("getStorageBaseDir and path helpers resolve harness and default locations", () => {
+		const customEnv = {
+			PLUGIN_DATA: "/custom/codex/data",
+		};
+		expect(getStorageBaseDir(customEnv)).toBe("/custom/codex/data");
+		expect(getStatePath("session-1", customEnv)).toBe(
+			"/custom/codex/data/session-1/state.json",
+		);
+		expect(getDebugLogPath("session-1", customEnv)).toBe(
+			"/custom/codex/data/session-1/debug.log",
+		);
+		expect(getDebugLogPath(undefined, customEnv)).toBe(
+			"/custom/codex/data/debug.log",
+		);
+
+		const claudeEnv = {
+			CLAUDE_PLUGIN_DATA: "/custom/claude/data",
+		};
+		expect(getStorageBaseDir(claudeEnv)).toBe("/custom/claude/data");
+		expect(getStatePath("session-2", claudeEnv)).toBe(
+			"/custom/claude/data/session-2/state.json",
+		);
+		expect(getDebugLogPath("session-2", claudeEnv)).toBe(
+			"/custom/claude/data/session-2/debug.log",
+		);
+
+		const copilotEnv = {
+			COPILOT_PLUGIN_DATA: "/custom/copilot/data",
+		};
+		expect(getStorageBaseDir(copilotEnv)).toBe("/custom/copilot/data");
+		expect(getStatePath("session-3", copilotEnv)).toBe(
+			"/custom/copilot/data/session-3/state.json",
+		);
+		expect(getDebugLogPath("session-3", copilotEnv)).toBe(
+			"/custom/copilot/data/session-3/debug.log",
+		);
+
+		const emptyEnv = {};
+		expect(getStorageBaseDir(emptyEnv)).toMatch(/[/\\]wf$/);
+		expect(getStatePath("session-4", emptyEnv)).toMatch(
+			/[/\\]wf[/\\]session-4[/\\]state\.json$/,
+		);
+		expect(getDebugLogPath("session-4", emptyEnv)).toMatch(
+			/[/\\]wf[/\\]session-4[/\\]debug\.log$/,
+		);
+		expect(getDebugLogPath(undefined, emptyEnv)).toMatch(
+			/[/\\]wf[/\\]debug\.log$/,
+		);
+	});
+
 	test("loadState and saveState persist state to disk", () => {
 		const testConvId = `test-conv-${Date.now()}`;
 		const empty = loadState(testConvId);
@@ -289,7 +342,10 @@ describe("state.ts", () => {
 
 		// Clean up
 		try {
-			fs.unlinkSync(getStatePath(testConvId));
+			fs.rmSync(path.dirname(getStatePath(testConvId)), {
+				recursive: true,
+				force: true,
+			});
 		} catch {}
 	});
 

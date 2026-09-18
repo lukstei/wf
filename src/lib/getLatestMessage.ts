@@ -1,6 +1,5 @@
 import * as fs from "node:fs";
 import type { LatestMessage } from "../types.ts";
-import { logDebug } from "./logDebug.ts";
 
 export type TranscriptItemParser = (
 	item: Record<string, unknown>,
@@ -58,8 +57,8 @@ export function getLatestMessage(
 				// Continue searching
 			}
 		}
-	} catch (err) {
-		logDebug("Error reading transcript", err);
+	} catch {
+		// Ignore transcript read errors
 	}
 
 	return null;

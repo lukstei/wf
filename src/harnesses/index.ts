@@ -51,3 +51,15 @@ export function resolveConversationIdFromHarnesses(
 	}
 	return null;
 }
+
+export function resolveStorageDirFromHarnesses(
+	env: NodeJS.ProcessEnv = process.env,
+): string | null {
+	for (const harness of HARNESSES) {
+		const dir = harness.resolveStorageDir?.(env);
+		if (dir) {
+			return dir;
+		}
+	}
+	return null;
+}

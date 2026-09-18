@@ -46,7 +46,7 @@ export async function runShim(
 		latestMessage: event.latestMessage,
 	};
 
-	const state = loadState(event.conversationId);
+	const state = loadState(event.conversationId, env);
 	const { state: nextState, response } = handle(hookInfo, state);
 
 	if (nextState !== null && nextState !== state) {
@@ -56,7 +56,7 @@ export async function runShim(
 			nextState: { ...nextState, workflow: undefined },
 			response,
 		});
-		saveState(event.conversationId, nextState);
+		saveState(event.conversationId, nextState, env);
 	}
 
 	return adapter.formatEgress(event, response);

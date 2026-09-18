@@ -37,4 +37,5 @@ export interface HarnessAdapter {
 	formatEgress(event: NormalizedEvent, response: HookResponse): EgressOutput;
 	extractLatestMessage(event: NormalizedEvent): LatestMessage | null;
 	resolveConversationId?(env: NodeJS.ProcessEnv): string | null;
+	resolveStorageDir?(env: NodeJS.ProcessEnv): string | null;
 }

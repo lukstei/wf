@@ -1,13 +1,14 @@
 import * as fs from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import { getCliHelp, parseCliArgs, runCli } from "./cli.ts";
+import { getStatePath } from "./state.ts";
 import { stripAbsolutePath } from "./test-utils.ts";
 
 describe("src/cli.ts", () => {
 	const testConversationId = "test-cli-suite";
 
 	beforeEach(() => {
-		const stateFile = `/tmp/wf-state-${testConversationId}.json`;
+		const stateFile = getStatePath(testConversationId);
 		if (fs.existsSync(stateFile)) {
 			fs.unlinkSync(stateFile);
 		}

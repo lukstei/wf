@@ -170,4 +170,8 @@ export const copilotHarness: HarnessAdapter = {
 	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
 		return env.COPILOT_CONVERSATION_ID || env.VSCODE_COPILOT_SESSION_ID || null;
 	},
+
+	resolveStorageDir(env: NodeJS.ProcessEnv): string | null {
+		return env.COPILOT_PLUGIN_DATA || null;
+	},
 };
