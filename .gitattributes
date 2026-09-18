@@ -1,9 +1,6 @@
 # Suppress binary/bundled diffs in GitHub Pull Requests
 dist/** linguist-generated=true -diff
 .agents/plugins/wf/dist/** linguist-generated=true -diff
-
-# Treat markdown snapshots and fixtures cleanly
-fixtures/** linguist-generated=true
 package-lock.json linguist-generated=true
 
 # Ensure consistent line endings
