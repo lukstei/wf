@@ -231,7 +231,15 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
   - Update `src/lib/parseCommand.ts` regex and routing logic to accept `wf:` prefixed commands.
   - Add test cases to `src/lib/parseCommand.test.ts` covering `/wf:wf deploy.md`, `/wf:wf-show`, `/wf:wf-next`, `/wf:show`, `/wf:next`, etc.
 
+### [ ] 2.12 Standalone Session Resolution & Explicit Conversation Override (`-c` / `--conversation-id` / Multi-Harness State Discovery)
+- **Current State:** CLI commands interacting with active state (`wf start`, `wf next`, `wf stop`, `wf show`) strictly rely on harness environment variables (`resolveConversationIdFromHarnesses`). If no harness environment is detected (e.g. human developer running commands directly in terminal bash/zsh outside an agent shell), the CLI hard exits with code `1`.
+- **Objective:** Enable flexible standalone and multi-harness terminal workflows:
+  - **Explicit Conversation Flag:** Add `-c <id>` / `--conversation-id <id>` to CLI argument parsing so developers or external scripts can target a specific conversation state explicitly.
+  - **Multi-Harness State Discovery:** When no harness environment variable and no `-c` flag is present, inspect `/tmp/wf-state-*.json` or harness session directories (e.g. `CLAUDE_PLUGIN_DATA`) to find the most recently modified active workflow state file and adopt it automatically.
+  - **Active Session List / Selector:** If multiple active state files are found, surface a selectable list or prompt in interactive terminals.
+
 ---
+
 
 ## Priority 3: Antigravity 2.0 Integration & Tooling (Polish)
 

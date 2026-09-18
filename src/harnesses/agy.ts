@@ -201,4 +201,8 @@ export const agyHarness: HarnessAdapter = {
 
 		return { exitCode: 0, stdout: JSON.stringify(response) };
 	},
+
+	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
+		return env.ANTIGRAVITY_CONVERSATION_ID || env.AGY_CONVERSATION_ID || null;
+	},
 };

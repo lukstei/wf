@@ -256,29 +256,12 @@ describe("parseCommand.ts", () => {
 		});
 	});
 
-	test("parseCommand guides user when using old subcommand syntax", () => {
-		const resRun = parseCommand("/wf run path/to/wf.json");
-		expect(resRun.error).toBe("Use /wf <file> directly without 'run'.");
-
-		const resStatus = parseCommand("/wf status");
-		expect(resStatus.error).toBe("Use /wf-show instead of /wf status.");
-
-		const resNext = parseCommand("/wf next");
-		expect(resNext.error).toBe("Use /wf-next instead of /wf next.");
-
-		const resStop = parseCommand("/wf stop");
-		expect(resStop.error).toBe("Use /wf-stop instead of /wf stop.");
-
-		const resHelp = parseCommand("/wf help");
-		expect(resHelp.error).toBe("Use /wf-help instead of /wf help.");
-	});
-
-	test("parseCommand rejects unknown subcommands", () => {
-		const resUnknown = parseCommand("/wf-foo");
-		expect(resUnknown.error).toBe('Unknown command: "/wf-foo"');
-
-		const resStatus = parseCommand("/wf-status");
-		expect(resStatus.error).toBe('Unknown command: "/wf-status"');
+	test("parseCommand passes through non-runner skills", () => {
+		// Non-runner skills like /wf-convert must not be intercepted by the runner hook
+		expect(parseCommand("/wf-convert").isWfCommand).toBe(false);
+		expect(parseCommand("/wf-convert derive-client").isWfCommand).toBe(false);
+		expect(parseCommand("/wf-foo").isWfCommand).toBe(false);
+		expect(parseCommand("/wf-status").isWfCommand).toBe(false);
 	});
 
 	test("parseCommand detects missing arguments for /wf", () => {
@@ -301,9 +284,6 @@ describe("parseCommand.ts", () => {
 			"<USER_REQUEST>\n/wf-show \n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nSome metadata\n</ADDITIONAL_METADATA>",
 		);
 		expect(withMetadata.command).toEqual({ name: "show", args: {} });
-
-		const oldSyntax = parseCommand("/wf show examples/sample-wf.md");
-		expect(oldSyntax.error).toBe("Use /wf-show instead of /wf show.");
 	});
 
 	test("getHelpText returns usage and command listing", () => {

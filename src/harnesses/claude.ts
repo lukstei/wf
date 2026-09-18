@@ -183,4 +183,8 @@ export const claudeHarness: HarnessAdapter = {
 
 		return { exitCode: 0, stdout: JSON.stringify(response) };
 	},
+
+	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
+		return env.CLAUDE_CONVERSATION_ID || env.CLAUDE_SESSION_ID || null;
+	},
 };

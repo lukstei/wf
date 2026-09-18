@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isVsCodeCopilotRoot } from "./copilot.ts";
-import { detectHarness } from "./index.ts";
+import { detectHarness, resolveConversationIdFromHarnesses } from "./index.ts";
 
 describe("detectHarness", () => {
 	describe("isVsCodeCopilotRoot", () => {
@@ -116,6 +116,64 @@ describe("detectHarness", () => {
 		it("returns null when no indicators exist", () => {
 			const harness = detectHarness({}, {});
 			expect(harness).toBeNull();
+		});
+	});
+
+	describe("resolveConversationIdFromHarnesses", () => {
+		it("resolves conversation ID for Antigravity", () => {
+			expect(
+				resolveConversationIdFromHarnesses({
+					ANTIGRAVITY_CONVERSATION_ID: "agy-uuid-1",
+				}),
+			).toBe("agy-uuid-1");
+			expect(
+				resolveConversationIdFromHarnesses({
+					AGY_CONVERSATION_ID: "agy-uuid-2",
+				}),
+			).toBe("agy-uuid-2");
+		});
+
+		it("resolves conversation ID for Claude Code", () => {
+			expect(
+				resolveConversationIdFromHarnesses({
+					CLAUDE_CONVERSATION_ID: "claude-uuid-1",
+				}),
+			).toBe("claude-uuid-1");
+			expect(
+				resolveConversationIdFromHarnesses({
+					CLAUDE_SESSION_ID: "claude-uuid-2",
+				}),
+			).toBe("claude-uuid-2");
+		});
+
+		it("resolves conversation ID for Codex", () => {
+			expect(
+				resolveConversationIdFromHarnesses({
+					CODEX_CONVERSATION_ID: "codex-uuid-1",
+				}),
+			).toBe("codex-uuid-1");
+			expect(
+				resolveConversationIdFromHarnesses({
+					CODEX_SESSION_ID: "codex-uuid-2",
+				}),
+			).toBe("codex-uuid-2");
+		});
+
+		it("resolves conversation ID for Copilot", () => {
+			expect(
+				resolveConversationIdFromHarnesses({
+					COPILOT_CONVERSATION_ID: "copilot-uuid-1",
+				}),
+			).toBe("copilot-uuid-1");
+			expect(
+				resolveConversationIdFromHarnesses({
+					VSCODE_COPILOT_SESSION_ID: "copilot-uuid-2",
+				}),
+			).toBe("copilot-uuid-2");
+		});
+
+		it("returns null when no harness environment variables are set", () => {
+			expect(resolveConversationIdFromHarnesses({})).toBeNull();
 		});
 	});
 });

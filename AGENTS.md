@@ -2,11 +2,11 @@
 - Always place workflow state transitions and status mutations in `src/transitions.ts`
 - Run `npm run verify` after each change
 - Keep the code as clean and pure as possible
-  - no unecessary condition checking
+  - no unnecessary condition checking
   - no over-defensive programming (instead assert, the preconditions of a function if necessary)
-  - no unecessary optional types
-  - No unecessary exporting of internal types
-  - Especially no unecessary states, always think about how to keep the state minimal
+  - no unnecessary optional types
+  - No unnecessary exporting of internal types
+  - Especially no unnecessary states, always think about how to keep the state minimal
   - Prefer inline types, if the type is not reused
   - Prefer discriminated unions
 - No use of any or unjustified type castings

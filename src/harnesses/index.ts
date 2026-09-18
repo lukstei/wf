@@ -39,3 +39,15 @@ export function getHarness(type: HarnessType): HarnessAdapter {
 			return copilotHarness;
 	}
 }
+
+export function resolveConversationIdFromHarnesses(
+	env: NodeJS.ProcessEnv = process.env,
+): string | null {
+	for (const harness of HARNESSES) {
+		const conversationId = harness.resolveConversationId?.(env);
+		if (conversationId) {
+			return conversationId;
+		}
+	}
+	return null;
+}

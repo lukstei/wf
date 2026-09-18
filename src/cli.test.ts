@@ -198,8 +198,95 @@ describe("src/cli.ts", () => {
 		expect(JSON.parse(stopStdout)).toEqual({ decision: "allow" });
 	});
 
+	it("runCli hard exits code 1 when no harness conversation ID is present for session commands", async () => {
+		const outputs: string[] = [];
+		const io = {
+			stdout: (m: string) => outputs.push(m),
+			stderr: (m: string) => outputs.push(`ERROR: ${m}`),
+			env: { PWD: process.cwd() }, // No harness conversation env set
+		};
+
+		const stopRes = await runCli(["stop"], io);
+		expect(stopRes.exitCode).toBe(1);
+
+		const startRes = await runCli(["start", "examples/sample-wf.json"], io);
+		expect(startRes.exitCode).toBe(1);
+
+		const nextRes = await runCli(["next"], io);
+		expect(nextRes.exitCode).toBe(1);
+
+		const showRes = await runCli(["show"], io);
+		expect(showRes.exitCode).toBe(1);
+
+		expect(outputs).toMatchInlineSnapshot(`
+			[
+			  "ERROR: [wf error] Unable to resolve active conversation ID from harness environment.",
+			  "ERROR: [wf error] Unable to resolve active conversation ID from harness environment.",
+			  "ERROR: [wf error] Unable to resolve active conversation ID from harness environment.",
+			  "ERROR: [wf error] Unable to resolve active conversation ID from harness environment.",
+			]
+		`);
+	});
+
+	it("runCli executes compile command on valid, invalid, and check formats", async () => {
+		const outputs: string[] = [];
+		const io = {
+			stdout: (m: string) => outputs.push(m),
+			stderr: (m: string) => outputs.push(`ERROR: ${m}`),
+			env: { PWD: process.cwd() },
+		};
+
+		// 1. Valid workflow with compile outputs JSON
+		const resCompile = await runCli(["compile", "examples/sample-wf.json"], io);
+		expect(resCompile.exitCode).toBe(0);
+		expect(JSON.parse(outputs[0]).name).toBe("Sample Automated Workflow");
+
+		// 2. Valid workflow with --check outputs validation summary without JSON
+		const resCheck = await runCli(
+			["compile", "examples/sample-wf.json", "--check"],
+			io,
+		);
+		expect(resCheck.exitCode).toBe(0);
+
+		// 3. Missing file
+		const resMissing = await runCli(["compile"], io);
+		expect(resMissing.exitCode).toBe(1);
+
+		// 4. Nonexistent file
+		const resNotFound = await runCli(["compile", "nonexistent-file.md"], io);
+		expect(resNotFound.exitCode).toBe(1);
+
+		// 5. Invalid workflow (condition without branch steps)
+		const invalidFile = "/tmp/test-invalid-wf.md";
+		fs.writeFileSync(invalidFile, "## If: Condition without branches\n");
+		try {
+			const resInvalid = await runCli(["compile", invalidFile, "--check"], io);
+			expect(resInvalid.exitCode).toBe(1);
+		} finally {
+			if (fs.existsSync(invalidFile)) fs.unlinkSync(invalidFile);
+		}
+
+		expect(stripAbsolutePath(outputs.slice(1))).toMatchInlineSnapshot(`
+			[
+			  "[WORKFLOW VALID] "Sample Automated Workflow" is valid.
+			Steps: 5 (4 linear, 1 condition, 0 gate)
+			File: examples/sample-wf.json",
+			  "ERROR: Missing required argument: <workflow-file>",
+			  "ERROR: Workflow file not found: "nonexistent-file.md".",
+			  "ERROR: [WORKFLOW INVALID] Validation failed for "test-invalid-wf":
+			  - [ERROR] Condition step "Condition without branches" has no YES branch steps.
+
+			Warnings:
+			  - [WARN] Workflow lacks a description in YAML frontmatter.",
+			]
+		`);
+	});
+
 	it("runCli executes pure CLI workflow lifecycle: stop, start, show, next", async () => {
-		const env = { WF_CONVERSATION_ID: testConversationId, PWD: process.cwd() };
+		const env = {
+			ANTIGRAVITY_CONVERSATION_ID: testConversationId,
+			PWD: process.cwd(),
+		};
 		const outputs: string[] = [];
 		const io = {
 			stdout: (m: string) => outputs.push(m),

@@ -170,4 +170,8 @@ export const codexHarness: HarnessAdapter = {
 
 		return { exitCode: 0, stdout: JSON.stringify(response) };
 	},
+
+	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
+		return env.CODEX_CONVERSATION_ID || env.CODEX_SESSION_ID || null;
+	},
 };

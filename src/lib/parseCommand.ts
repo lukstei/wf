@@ -184,7 +184,6 @@ export function parseCommand(input: string): ParseResult {
 		return { isWfCommand: false };
 	}
 
-	const prefix = match[1];
 	const subcommand = match[3]?.toLowerCase();
 	const rawArgs = (match[4] ?? "").trim();
 
@@ -193,11 +192,7 @@ export function parseCommand(input: string): ParseResult {
 		const cmdName = subcommand as CommandName;
 		const def = findCommandByName(cmdName);
 		if (!def) {
-			return {
-				isWfCommand: true,
-				error: `Unknown command: "${prefix}wf-${subcommand}"`,
-				helpText: getHelpText(`Unknown command: "${prefix}wf-${subcommand}"`),
-			};
+			return { isWfCommand: false };
 		}
 
 		const parsed = def.parse(rawArgs);
@@ -225,22 +220,6 @@ export function parseCommand(input: string): ParseResult {
 			isWfCommand: true,
 			error: "Missing required argument: <workflow-file>",
 			helpText: getHelpText("Missing required argument: <workflow-file>"),
-		};
-	}
-
-	const firstToken = rawArgs.split(/\s+/)[0].toLowerCase();
-	// If user used old syntax like /wf status, /wf next, or /wf run, guide them to new syntax
-	if (["status", "next", "stop", "help", "run", "show"].includes(firstToken)) {
-		const hint =
-			firstToken === "run"
-				? `Use ${prefix}wf <file> directly without 'run'.`
-				: firstToken === "status"
-					? `Use ${prefix}wf-show instead of ${prefix}wf status.`
-					: `Use ${prefix}wf-${firstToken} instead of ${prefix}wf ${firstToken}.`;
-		return {
-			isWfCommand: true,
-			error: hint,
-			helpText: getHelpText(hint),
 		};
 	}
 

@@ -166,4 +166,8 @@ export const copilotHarness: HarnessAdapter = {
 
 		return { exitCode: 0, stdout: JSON.stringify(response) };
 	},
+
+	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
+		return env.COPILOT_CONVERSATION_ID || env.VSCODE_COPILOT_SESSION_ID || null;
+	},
 };
