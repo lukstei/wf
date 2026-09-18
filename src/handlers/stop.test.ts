@@ -56,13 +56,12 @@ describe("handlers/stop.ts", () => {
 		expect(abortRes.state?.status).toBe("paused");
 	});
 
-	test("handleStop does not advance step if stepPending is false", () => {
+	test("handleStop does not advance step if status is paused", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "paused",
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
 			currentStepIndex: 1,
-			stepPending: false,
 		};
 		const res = handleStop(
 			{
@@ -87,7 +86,6 @@ describe("handlers/stop.ts", () => {
 			status: "active",
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
 			currentStepIndex: 0, // s1 action
-			stepPending: true,
 		};
 		const res = handleStop(
 			{
@@ -109,7 +107,6 @@ describe("handlers/stop.ts", () => {
 			status: "active",
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
 			currentStepIndex: 1, // c1 condition
-			stepPending: true,
 		};
 		const resYes = handleStop(
 			{

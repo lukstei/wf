@@ -7,8 +7,8 @@ import { defaultWorkflowResolver } from "./resolver.ts";
 import { runShim } from "./shim/runtime-shim.ts";
 import { loadState, saveState } from "./state.ts";
 import {
+	resumeWorkflow,
 	startWorkflow,
-	stepPausedWorkflow,
 	stopWorkflowState,
 } from "./transitions.ts";
 import { validateWorkflow } from "./validator.ts";
@@ -269,28 +269,12 @@ export async function runCli(
 				return { exitCode: 1, output: err };
 			}
 
-			const result = stepPausedWorkflow(state);
-			if (result.error === "already_finished") {
-				const msg =
-					"[WORKFLOW RUNNER] Workflow has already completed all steps.";
-				writeOut(msg);
-				return { exitCode: 0, output: msg };
-			}
-			if (
-				result.error === "no_workflow" ||
-				!result.state ||
-				result.state.currentStepIndex === undefined
-			) {
-				const err =
-					"No workflow is loaded. Start a workflow with 'wf start <workflow-file>'.";
-				writeErr(err);
-				return { exitCode: 1, output: err };
-			}
-			saveState(conversationId, result.state);
+			const nextState = resumeWorkflow(state);
+			saveState(conversationId, nextState);
 			const currentStep =
-				result.state.workflow.flatSteps[result.state.currentStepIndex];
-			const stepNum = result.state.currentStepIndex + 1;
-			const total = result.state.workflow.flatSteps.length;
+				nextState.workflow.flatSteps[nextState.currentStepIndex];
+			const stepNum = nextState.currentStepIndex + 1;
+			const total = nextState.workflow.flatSteps.length;
 			const title = currentStep?.title || `Step ${stepNum}`;
 			const msg = `[STEP ${stepNum}/${total}] ${title}\n${currentStep?.instruction || ""}`;
 			writeOut(msg);

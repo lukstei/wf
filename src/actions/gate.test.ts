@@ -30,7 +30,6 @@ describe("Gate Semantics", () => {
 				flatSteps: flat,
 			},
 			currentStepIndex: 1,
-			stepPending: true,
 		};
 
 		const stepInjectionResult = step(
@@ -53,7 +52,6 @@ describe("Gate Semantics", () => {
 				flatSteps: flat,
 			},
 			currentStepIndex: 2,
-			stepPending: false,
 		};
 
 		const nextPreResult = nextPre(
@@ -73,7 +71,6 @@ describe("Gate Semantics", () => {
 			  "advanceResult": {
 			    "currentStepIndex": 2,
 			    "status": "paused",
-			    "stepPending": false,
 			    "workflow": {
 			      "filePath": "gate.json",
 			      "flatSteps": [
@@ -111,7 +108,7 @@ describe("Gate Semantics", () => {
 			        {
 			          "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
-			[WORKFLOW PAUSED: GateTestFlow]
+			[WORKFLOW ACTIVE: GateTestFlow]
 			Step 3 of 3: Step 3
 
 			INSTRUCTION:
@@ -127,8 +124,7 @@ describe("Gate Semantics", () => {
 			    },
 			    "state": {
 			      "currentStepIndex": 2,
-			      "status": "paused",
-			      "stepPending": true,
+			      "status": "active",
 			      "workflow": {
 			        "filePath": "gate.json",
 			        "flatSteps": [
@@ -186,7 +182,6 @@ describe("Gate Semantics", () => {
 			    "state": {
 			      "currentStepIndex": 1,
 			      "status": "active",
-			      "stepPending": true,
 			      "workflow": {
 			        "filePath": "gate.json",
 			        "flatSteps": [
@@ -226,7 +221,6 @@ describe("Gate Semantics", () => {
 			    "state": {
 			      "currentStepIndex": 2,
 			      "status": "paused",
-			      "stepPending": false,
 			      "workflow": {
 			        "filePath": "gate.json",
 			        "flatSteps": [

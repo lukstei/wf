@@ -49,7 +49,7 @@ export function conditionStop(
 	info: HookInfo,
 	state: WorkflowState | null,
 ): HandleResult {
-	if (!state || (state.status !== "active" && state.status !== "paused")) {
+	if (!state || state.status !== "active") {
 		return { state: state, response: { decision: "allow" } };
 	}
 

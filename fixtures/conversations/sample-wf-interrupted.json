@@ -61,8 +61,7 @@
 				"state": {
 					"status": "active",
 					"currentStepIndex": 0,
-					"iterationCount": 1,
-					"stepPending": true
+					"iterationCount": 1
 				}
 			},
 			"model": {
@@ -81,8 +80,7 @@
 				"state": {
 					"status": "active",
 					"currentStepIndex": 1,
-					"iterationCount": 1,
-					"stepPending": true
+					"iterationCount": 1
 				}
 			}
 		},
@@ -100,8 +98,7 @@
 				"state": {
 					"status": "paused",
 					"currentStepIndex": 1,
-					"iterationCount": 1,
-					"stepPending": false
+					"iterationCount": 1
 				}
 			},
 			"model": {
@@ -119,8 +116,7 @@
 				"state": {
 					"status": "paused",
 					"currentStepIndex": 1,
-					"iterationCount": 1,
-					"stepPending": false
+					"iterationCount": 1
 				}
 			}
 		},
@@ -137,15 +133,14 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW PAUSED: Sample Automated Workflow]\nStep 2 of 5: Check Day Condition (Condition Evaluation)\nCondition: \"is it friday?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is it friday?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"sample-wf.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Sample Automated Workflow]\nStep 2 of 5: Check Day Condition (Condition Evaluation)\nCondition: \"is it friday?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is it friday?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"sample-wf.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
 				"state": {
-					"status": "paused",
+					"status": "active",
 					"currentStepIndex": 1,
-					"iterationCount": 1,
-					"stepPending": true
+					"iterationCount": 1
 				}
 			}
 		}

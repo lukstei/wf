@@ -13,8 +13,8 @@ export function handleStop(
 	info: HookInfo,
 	state: WorkflowState | null,
 ): HandleResult {
-	// If no workflow is active or paused, allow stop
-	if (!state || (state.status !== "active" && state.status !== "paused")) {
+	// If no workflow is active, allow stop
+	if (!state || state.status !== "active") {
 		return { state: state, response: { decision: "allow" } };
 	}
 
@@ -44,10 +44,6 @@ export function handleStop(
 			state: pauseWorkflow(state),
 			response: { decision: "allow" },
 		};
-	}
-
-	if (state.stepPending === false) {
-		return { state: state, response: { decision: "allow" } };
 	}
 
 	const currentStep = state.workflow.flatSteps[state.currentStepIndex];

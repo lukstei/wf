@@ -13,7 +13,6 @@ import {
 } from "../lib/parseCommand.ts";
 import type { ExtractWorkflowState, WorkflowState } from "../state.ts";
 import {
-	clearStepPending,
 	pauseWorkflow,
 	prepareStepExecution,
 } from "../transitions.ts";
@@ -39,15 +38,17 @@ function handleCommand(
 	}
 
 	switch (parsedCmd.command.name) {
-		case "help":
+		case "help": {
+			const paused = pauseWorkflow(state);
 			return {
-				state: clearStepPending(state),
+				state: paused,
 				response: injectSystemMessage(parsedCmd.helpText || getHelpText()),
 			};
+		}
 
 		case "show": {
-			const showState = clearStepPending(state);
-			return show(info, showState, parsedCmd.command);
+			const paused = pauseWorkflow(state);
+			return show(info, paused, parsedCmd.command);
 		}
 
 		case "next":

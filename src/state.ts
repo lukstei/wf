@@ -5,7 +5,6 @@ interface RunningWorkflowState {
 	currentStepIndex: number;
 	workflow: WorkflowInfo;
 	iterationCount?: number;
-	stepPending?: boolean;
 }
 
 export type WorkflowState =
@@ -16,7 +15,6 @@ export type WorkflowState =
 			workflow: WorkflowInfo;
 			currentStepIndex?: number;
 			iterationCount?: number;
-			stepPending?: boolean;
 	  }
 	| ({ status: "error"; error: string } & RunningWorkflowState);
 

@@ -2,12 +2,11 @@ import { describe, expect, test } from "vitest";
 import type { ExtractWorkflowState, WorkflowState } from "./state.ts";
 import {
 	advanceStep,
-	clearStepPending,
 	failWorkflow,
 	pauseWorkflow,
 	prepareStepExecution,
+	resumeWorkflow,
 	startWorkflow,
-	stepPausedWorkflow,
 	stopWorkflowState,
 } from "./transitions.ts";
 import { flattenWorkflow, type WorkflowInfo } from "./workflow.ts";
@@ -44,35 +43,34 @@ describe("transitions.ts", () => {
 		const activeState = startWorkflow(linearWf);
 
 		expect(activeState).toMatchInlineSnapshot(`
-      {
-        "currentStepIndex": 0,
-        "iterationCount": 1,
-        "status": "active",
-        "stepPending": true,
-        "workflow": {
-          "filePath": "/test/linear.json",
-          "flatSteps": [
-            {
-              "index": 0,
-              "instruction": "First step",
-              "level": 0,
-              "nextIndex": 1,
-              "title": "First step",
-              "type": "step",
-            },
-            {
-              "index": 1,
-              "instruction": "Second step",
-              "level": 0,
-              "nextIndex": 2,
-              "title": "Second step",
-              "type": "step",
-            },
-          ],
-          "name": "LinearFlow",
-        },
-      }
-    `);
+			{
+			  "currentStepIndex": 0,
+			  "iterationCount": 1,
+			  "status": "active",
+			  "workflow": {
+			    "filePath": "/test/linear.json",
+			    "flatSteps": [
+			      {
+			        "index": 0,
+			        "instruction": "First step",
+			        "level": 0,
+			        "nextIndex": 1,
+			        "title": "First step",
+			        "type": "step",
+			      },
+			      {
+			        "index": 1,
+			        "instruction": "Second step",
+			        "level": 0,
+			        "nextIndex": 2,
+			        "title": "Second step",
+			        "type": "step",
+			      },
+			    ],
+			    "name": "LinearFlow",
+			  },
+			}
+		`);
 
 		expect(() =>
 			startWorkflow({
@@ -90,13 +88,11 @@ describe("transitions.ts", () => {
 			status: "active",
 			currentStepIndex: 1,
 			iterationCount: 2,
-			stepPending: true,
 			workflow: linearWf,
 		};
 		const pausedState: WorkflowState = {
 			status: "paused",
 			currentStepIndex: 1,
-			stepPending: false,
 			workflow: linearWf,
 		};
 		const finishedState: WorkflowState = {
@@ -119,120 +115,118 @@ describe("transitions.ts", () => {
 		};
 
 		expect(results).toMatchInlineSnapshot(`
-      {
-        "fromActive": {
-          "currentStepIndex": 1,
-          "iterationCount": 2,
-          "status": "paused",
-          "stepPending": false,
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-        "fromError": {
-          "currentStepIndex": 0,
-          "error": "Something failed",
-          "status": "error",
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-        "fromFinished": {
-          "status": "finished",
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-        "fromNull": null,
-        "fromPaused": {
-          "currentStepIndex": 1,
-          "status": "paused",
-          "stepPending": false,
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-      }
-    `);
+			{
+			  "fromActive": {
+			    "currentStepIndex": 1,
+			    "iterationCount": 2,
+			    "status": "paused",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			  "fromError": {
+			    "currentStepIndex": 0,
+			    "error": "Something failed",
+			    "status": "error",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			  "fromFinished": {
+			    "status": "finished",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			  "fromNull": null,
+			  "fromPaused": {
+			    "currentStepIndex": 1,
+			    "status": "paused",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			}
+		`);
 	});
 
-	test("stepPausedWorkflow snapshot matrix", () => {
+	test("resumeWorkflow snapshot matrix and precondition assertions", () => {
 		const activeState: WorkflowState = {
 			status: "active",
 			currentStepIndex: 0,
@@ -241,16 +235,10 @@ describe("transitions.ts", () => {
 		const pausedState: WorkflowState = {
 			status: "paused",
 			currentStepIndex: 0,
-			stepPending: false,
 			workflow: linearWf,
 		};
 		const finishedState: WorkflowState = {
 			status: "finished",
-			workflow: linearWf,
-		};
-		const pastEndState: WorkflowState = {
-			status: "paused",
-			currentStepIndex: 2, // linearWf has 2 steps (indices 0, 1)
 			workflow: linearWf,
 		};
 		const errorState: WorkflowState = {
@@ -261,166 +249,76 @@ describe("transitions.ts", () => {
 		};
 
 		const results = {
-			fromActive: stepPausedWorkflow(activeState),
-			fromPaused: stepPausedWorkflow(pausedState),
-			fromFinished: stepPausedWorkflow(finishedState),
-			fromPastEnd: stepPausedWorkflow(pastEndState),
-			fromError: stepPausedWorkflow(errorState),
-			fromNull: stepPausedWorkflow(null),
+			fromActive: resumeWorkflow(activeState),
+			fromPaused: resumeWorkflow(pausedState),
 		};
 
 		expect(results).toMatchInlineSnapshot(`
-      {
-        "fromActive": {
-          "state": {
-            "currentStepIndex": 0,
-            "status": "paused",
-            "stepPending": true,
-            "workflow": {
-              "filePath": "/test/linear.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "First step",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "First step",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Second step",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Second step",
-                  "type": "step",
-                },
-              ],
-              "name": "LinearFlow",
-            },
-          },
-        },
-        "fromError": {
-          "error": "no_workflow",
-          "state": {
-            "currentStepIndex": 0,
-            "error": "Boom",
-            "status": "error",
-            "workflow": {
-              "filePath": "/test/linear.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "First step",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "First step",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Second step",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Second step",
-                  "type": "step",
-                },
-              ],
-              "name": "LinearFlow",
-            },
-          },
-        },
-        "fromFinished": {
-          "error": "already_finished",
-          "state": {
-            "status": "finished",
-            "workflow": {
-              "filePath": "/test/linear.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "First step",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "First step",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Second step",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Second step",
-                  "type": "step",
-                },
-              ],
-              "name": "LinearFlow",
-            },
-          },
-        },
-        "fromNull": {
-          "error": "no_workflow",
-          "state": null,
-        },
-        "fromPastEnd": {
-          "error": "already_finished",
-          "state": {
-            "status": "finished",
-            "workflow": {
-              "filePath": "/test/linear.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "First step",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "First step",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Second step",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Second step",
-                  "type": "step",
-                },
-              ],
-              "name": "LinearFlow",
-            },
-          },
-        },
-        "fromPaused": {
-          "state": {
-            "currentStepIndex": 0,
-            "status": "paused",
-            "stepPending": true,
-            "workflow": {
-              "filePath": "/test/linear.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "First step",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "First step",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Second step",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Second step",
-                  "type": "step",
-                },
-              ],
-              "name": "LinearFlow",
-            },
-          },
-        },
-      }
-    `);
+			{
+			  "fromActive": {
+			    "currentStepIndex": 0,
+			    "status": "active",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			  "fromPaused": {
+			    "currentStepIndex": 0,
+			    "status": "active",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			}
+		`);
+
+		expect(() => resumeWorkflow(finishedState)).toThrow(
+			"Cannot resume workflow: no active or paused workflow is loaded",
+		);
+		expect(() => resumeWorkflow(errorState)).toThrow(
+			"Cannot resume workflow: no active or paused workflow is loaded",
+		);
+		expect(() => resumeWorkflow(null)).toThrow(
+			"Cannot resume workflow: no active or paused workflow is loaded",
+		);
 	});
 
 	test("advanceStep snapshot matrix for linear and conditional progressions", () => {
@@ -462,218 +360,215 @@ describe("transitions.ts", () => {
 		};
 
 		expect(advanceAssertions).toMatchInlineSnapshot(`
-      {
-        "activeLinearStep0To1": {
-          "currentStepIndex": 1,
-          "status": "active",
-          "stepPending": true,
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-        "activeLinearStep1ToFinish": {
-          "status": "finished",
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-        "conditionBranchNo": {
-          "currentStepIndex": 3,
-          "status": "active",
-          "stepPending": true,
-          "workflow": {
-            "filePath": "/test/cond.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "Init",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "Init",
-                "type": "step",
-              },
-              {
-                "condition": "is ready?",
-                "index": 1,
-                "level": 0,
-                "nextIndex": 2,
-                "skipIndex": 3,
-                "title": "is ready?",
-                "type": "condition",
-              },
-              {
-                "index": 2,
-                "instruction": "Deploy",
-                "level": 1,
-                "nextIndex": 4,
-                "title": "Deploy",
-                "type": "step",
-              },
-              {
-                "index": 3,
-                "instruction": "Fix",
-                "level": 1,
-                "nextIndex": 4,
-                "title": "Fix",
-                "type": "step",
-              },
-              {
-                "index": 4,
-                "instruction": "Done",
-                "level": 0,
-                "nextIndex": 5,
-                "title": "Done",
-                "type": "step",
-              },
-            ],
-            "name": "CondFlow",
-          },
-        },
-        "conditionBranchYes": {
-          "currentStepIndex": 2,
-          "status": "active",
-          "stepPending": true,
-          "workflow": {
-            "filePath": "/test/cond.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "Init",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "Init",
-                "type": "step",
-              },
-              {
-                "condition": "is ready?",
-                "index": 1,
-                "level": 0,
-                "nextIndex": 2,
-                "skipIndex": 3,
-                "title": "is ready?",
-                "type": "condition",
-              },
-              {
-                "index": 2,
-                "instruction": "Deploy",
-                "level": 1,
-                "nextIndex": 4,
-                "title": "Deploy",
-                "type": "step",
-              },
-              {
-                "index": 3,
-                "instruction": "Fix",
-                "level": 1,
-                "nextIndex": 4,
-                "title": "Fix",
-                "type": "step",
-              },
-              {
-                "index": 4,
-                "instruction": "Done",
-                "level": 0,
-                "nextIndex": 5,
-                "title": "Done",
-                "type": "step",
-              },
-            ],
-            "name": "CondFlow",
-          },
-        },
-        "nullStateUnchanged": null,
-        "pausedLinearStep0To1": {
-          "currentStepIndex": 1,
-          "status": "paused",
-          "stepPending": false,
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-        "pausedLinearStep1ToFinish": {
-          "status": "finished",
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-      }
-    `);
+			{
+			  "activeLinearStep0To1": {
+			    "currentStepIndex": 1,
+			    "status": "active",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			  "activeLinearStep1ToFinish": {
+			    "status": "finished",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			  "conditionBranchNo": {
+			    "currentStepIndex": 3,
+			    "status": "active",
+			    "workflow": {
+			      "filePath": "/test/cond.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "Init",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "Init",
+			          "type": "step",
+			        },
+			        {
+			          "condition": "is ready?",
+			          "index": 1,
+			          "level": 0,
+			          "nextIndex": 2,
+			          "skipIndex": 3,
+			          "title": "is ready?",
+			          "type": "condition",
+			        },
+			        {
+			          "index": 2,
+			          "instruction": "Deploy",
+			          "level": 1,
+			          "nextIndex": 4,
+			          "title": "Deploy",
+			          "type": "step",
+			        },
+			        {
+			          "index": 3,
+			          "instruction": "Fix",
+			          "level": 1,
+			          "nextIndex": 4,
+			          "title": "Fix",
+			          "type": "step",
+			        },
+			        {
+			          "index": 4,
+			          "instruction": "Done",
+			          "level": 0,
+			          "nextIndex": 5,
+			          "title": "Done",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "CondFlow",
+			    },
+			  },
+			  "conditionBranchYes": {
+			    "currentStepIndex": 2,
+			    "status": "active",
+			    "workflow": {
+			      "filePath": "/test/cond.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "Init",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "Init",
+			          "type": "step",
+			        },
+			        {
+			          "condition": "is ready?",
+			          "index": 1,
+			          "level": 0,
+			          "nextIndex": 2,
+			          "skipIndex": 3,
+			          "title": "is ready?",
+			          "type": "condition",
+			        },
+			        {
+			          "index": 2,
+			          "instruction": "Deploy",
+			          "level": 1,
+			          "nextIndex": 4,
+			          "title": "Deploy",
+			          "type": "step",
+			        },
+			        {
+			          "index": 3,
+			          "instruction": "Fix",
+			          "level": 1,
+			          "nextIndex": 4,
+			          "title": "Fix",
+			          "type": "step",
+			        },
+			        {
+			          "index": 4,
+			          "instruction": "Done",
+			          "level": 0,
+			          "nextIndex": 5,
+			          "title": "Done",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "CondFlow",
+			    },
+			  },
+			  "nullStateUnchanged": null,
+			  "pausedLinearStep0To1": {
+			    "currentStepIndex": 0,
+			    "status": "paused",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			  "pausedLinearStep1ToFinish": {
+			    "currentStepIndex": 1,
+			    "status": "paused",
+			    "workflow": {
+			      "filePath": "/test/linear.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Second step",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Second step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "LinearFlow",
+			    },
+			  },
+			}
+		`);
 	});
 
 	test("prepareStepExecution snapshot matrix for safety limits", () => {
@@ -683,21 +578,18 @@ describe("transitions.ts", () => {
 			currentStepIndex: 0,
 			workflow: linearWf,
 			iterationCount: 0,
-			stepPending: false,
 		};
 		const atBoundaryActive: ExtractWorkflowState<"active"> = {
 			status: "active",
 			currentStepIndex: 0,
 			workflow: linearWf,
 			iterationCount: 9, // next will be 10 === limit -> allowed
-			stepPending: false,
 		};
 		const exceededActive: ExtractWorkflowState<"active"> = {
 			status: "active",
 			currentStepIndex: 0,
 			workflow: linearWf,
 			iterationCount: 10, // next will be 11 > 10 -> exceeded
-			stepPending: false,
 		};
 
 		const results = {
@@ -707,106 +599,103 @@ describe("transitions.ts", () => {
 		};
 
 		expect(results).toMatchInlineSnapshot(`
-      {
-        "atBoundary": {
-          "exceeded": false,
-          "maxIterations": 10,
-          "state": {
-            "currentStepIndex": 0,
-            "iterationCount": 10,
-            "status": "active",
-            "stepPending": true,
-            "workflow": {
-              "filePath": "/test/linear.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "First step",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "First step",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Second step",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Second step",
-                  "type": "step",
-                },
-              ],
-              "name": "LinearFlow",
-            },
-          },
-        },
-        "limitExceeded": {
-          "exceeded": true,
-          "maxIterations": 10,
-          "state": {
-            "currentStepIndex": 0,
-            "error": "Workflow terminated: Exceeded safety iteration limit (10).",
-            "iterationCount": 10,
-            "status": "error",
-            "stepPending": false,
-            "workflow": {
-              "filePath": "/test/linear.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "First step",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "First step",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Second step",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Second step",
-                  "type": "step",
-                },
-              ],
-              "name": "LinearFlow",
-            },
-          },
-        },
-        "normalIncrement": {
-          "exceeded": false,
-          "maxIterations": 10,
-          "state": {
-            "currentStepIndex": 0,
-            "iterationCount": 1,
-            "status": "active",
-            "stepPending": true,
-            "workflow": {
-              "filePath": "/test/linear.json",
-              "flatSteps": [
-                {
-                  "index": 0,
-                  "instruction": "First step",
-                  "level": 0,
-                  "nextIndex": 1,
-                  "title": "First step",
-                  "type": "step",
-                },
-                {
-                  "index": 1,
-                  "instruction": "Second step",
-                  "level": 0,
-                  "nextIndex": 2,
-                  "title": "Second step",
-                  "type": "step",
-                },
-              ],
-              "name": "LinearFlow",
-            },
-          },
-        },
-      }
-    `);
+			{
+			  "atBoundary": {
+			    "exceeded": false,
+			    "maxIterations": 10,
+			    "state": {
+			      "currentStepIndex": 0,
+			      "iterationCount": 10,
+			      "status": "active",
+			      "workflow": {
+			        "filePath": "/test/linear.json",
+			        "flatSteps": [
+			          {
+			            "index": 0,
+			            "instruction": "First step",
+			            "level": 0,
+			            "nextIndex": 1,
+			            "title": "First step",
+			            "type": "step",
+			          },
+			          {
+			            "index": 1,
+			            "instruction": "Second step",
+			            "level": 0,
+			            "nextIndex": 2,
+			            "title": "Second step",
+			            "type": "step",
+			          },
+			        ],
+			        "name": "LinearFlow",
+			      },
+			    },
+			  },
+			  "limitExceeded": {
+			    "exceeded": true,
+			    "maxIterations": 10,
+			    "state": {
+			      "currentStepIndex": 0,
+			      "error": "Workflow terminated: Exceeded safety iteration limit (10).",
+			      "iterationCount": 10,
+			      "status": "error",
+			      "workflow": {
+			        "filePath": "/test/linear.json",
+			        "flatSteps": [
+			          {
+			            "index": 0,
+			            "instruction": "First step",
+			            "level": 0,
+			            "nextIndex": 1,
+			            "title": "First step",
+			            "type": "step",
+			          },
+			          {
+			            "index": 1,
+			            "instruction": "Second step",
+			            "level": 0,
+			            "nextIndex": 2,
+			            "title": "Second step",
+			            "type": "step",
+			          },
+			        ],
+			        "name": "LinearFlow",
+			      },
+			    },
+			  },
+			  "normalIncrement": {
+			    "exceeded": false,
+			    "maxIterations": 10,
+			    "state": {
+			      "currentStepIndex": 0,
+			      "iterationCount": 1,
+			      "status": "active",
+			      "workflow": {
+			        "filePath": "/test/linear.json",
+			        "flatSteps": [
+			          {
+			            "index": 0,
+			            "instruction": "First step",
+			            "level": 0,
+			            "nextIndex": 1,
+			            "title": "First step",
+			            "type": "step",
+			          },
+			          {
+			            "index": 1,
+			            "instruction": "Second step",
+			            "level": 0,
+			            "nextIndex": 2,
+			            "title": "Second step",
+			            "type": "step",
+			          },
+			        ],
+			        "name": "LinearFlow",
+			      },
+			    },
+			  },
+			}
+		`);
 	});
 
 	test("failWorkflow snapshot matrix", () => {
@@ -1013,117 +902,6 @@ describe("transitions.ts", () => {
 		`);
 	});
 
-	test("clearStepPending snapshot matrix", () => {
-		const activePending: WorkflowState = {
-			status: "active",
-			currentStepIndex: 0,
-			stepPending: true,
-			workflow: linearWf,
-		};
-		const pausedPending: WorkflowState = {
-			status: "paused",
-			currentStepIndex: 0,
-			stepPending: true,
-			workflow: linearWf,
-		};
-		const finished: WorkflowState = {
-			status: "finished",
-			workflow: linearWf,
-		};
-
-		const results = {
-			clearActive: clearStepPending(activePending),
-			clearPaused: clearStepPending(pausedPending),
-			clearFinished: clearStepPending(finished),
-			clearNull: clearStepPending(null),
-		};
-
-		expect(results).toMatchInlineSnapshot(`
-      {
-        "clearActive": {
-          "currentStepIndex": 0,
-          "status": "active",
-          "stepPending": false,
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-        "clearFinished": {
-          "status": "finished",
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-        "clearNull": null,
-        "clearPaused": {
-          "currentStepIndex": 0,
-          "status": "paused",
-          "stepPending": false,
-          "workflow": {
-            "filePath": "/test/linear.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Second step",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Second step",
-                "type": "step",
-              },
-            ],
-            "name": "LinearFlow",
-          },
-        },
-      }
-    `);
-	});
-
 	test("advanceStep snapshot matrix for gate step transitions", () => {
 		const gateWf: WorkflowInfo = {
 			name: "GateFlow",
@@ -1169,103 +947,101 @@ describe("transitions.ts", () => {
 		};
 
 		expect(assertions).toMatchInlineSnapshot(`
-      {
-        "activeGateStepAdvancesToPaused": {
-          "currentStepIndex": 2,
-          "status": "paused",
-          "stepPending": false,
-          "workflow": {
-            "filePath": "/test/gate.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Verify",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Gate Check",
-                "type": "gate",
-              },
-              {
-                "index": 2,
-                "instruction": "Final step",
-                "level": 0,
-                "nextIndex": 3,
-                "title": "Final step",
-                "type": "step",
-              },
-            ],
-            "name": "GateFlow",
-          },
-        },
-        "lastGateStepAdvancesToFinished": {
-          "status": "finished",
-          "workflow": {
-            "filePath": "/test/gate-last.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Verify last",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Final Gate Check",
-                "type": "gate",
-              },
-            ],
-            "name": "GateLastFlow",
-          },
-        },
-        "pausedGateStepAdvancesToPaused": {
-          "currentStepIndex": 2,
-          "status": "paused",
-          "stepPending": false,
-          "workflow": {
-            "filePath": "/test/gate.json",
-            "flatSteps": [
-              {
-                "index": 0,
-                "instruction": "First step",
-                "level": 0,
-                "nextIndex": 1,
-                "title": "First step",
-                "type": "step",
-              },
-              {
-                "index": 1,
-                "instruction": "Verify",
-                "level": 0,
-                "nextIndex": 2,
-                "title": "Gate Check",
-                "type": "gate",
-              },
-              {
-                "index": 2,
-                "instruction": "Final step",
-                "level": 0,
-                "nextIndex": 3,
-                "title": "Final step",
-                "type": "step",
-              },
-            ],
-            "name": "GateFlow",
-          },
-        },
-      }
-    `);
+			{
+			  "activeGateStepAdvancesToPaused": {
+			    "currentStepIndex": 2,
+			    "status": "paused",
+			    "workflow": {
+			      "filePath": "/test/gate.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Verify",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Gate Check",
+			          "type": "gate",
+			        },
+			        {
+			          "index": 2,
+			          "instruction": "Final step",
+			          "level": 0,
+			          "nextIndex": 3,
+			          "title": "Final step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "GateFlow",
+			    },
+			  },
+			  "lastGateStepAdvancesToFinished": {
+			    "status": "finished",
+			    "workflow": {
+			      "filePath": "/test/gate-last.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Verify last",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Final Gate Check",
+			          "type": "gate",
+			        },
+			      ],
+			      "name": "GateLastFlow",
+			    },
+			  },
+			  "pausedGateStepAdvancesToPaused": {
+			    "currentStepIndex": 1,
+			    "status": "paused",
+			    "workflow": {
+			      "filePath": "/test/gate.json",
+			      "flatSteps": [
+			        {
+			          "index": 0,
+			          "instruction": "First step",
+			          "level": 0,
+			          "nextIndex": 1,
+			          "title": "First step",
+			          "type": "step",
+			        },
+			        {
+			          "index": 1,
+			          "instruction": "Verify",
+			          "level": 0,
+			          "nextIndex": 2,
+			          "title": "Gate Check",
+			          "type": "gate",
+			        },
+			        {
+			          "index": 2,
+			          "instruction": "Final step",
+			          "level": 0,
+			          "nextIndex": 3,
+			          "title": "Final step",
+			          "type": "step",
+			        },
+			      ],
+			      "name": "GateFlow",
+			    },
+			  },
+			}
+		`);
 	});
 });

@@ -104,7 +104,6 @@ describe("actions/run.ts", () => {
 		expect(res.state?.status).toBe("active");
 		expect(res.state?.currentStepIndex).toBe(0);
 		expect(res.state?.iterationCount).toBe(1);
-		expect(res.state?.stepPending).toBe(true);
 		expect(res.state?.workflow.name).toBe("SampleRun");
 		expect(res.response.injectSteps).toBeDefined();
 		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
@@ -125,7 +124,6 @@ describe("actions/run.ts", () => {
 		expect(res.state?.status).toBe("active");
 		expect(res.state?.currentStepIndex).toBe(0);
 		expect(res.state?.iterationCount).toBe(1);
-		expect(res.state?.stepPending).toBe(true);
 		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
 			/Condition Evaluation/,
 		);

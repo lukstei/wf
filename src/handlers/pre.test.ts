@@ -77,7 +77,7 @@ describe("handlers/pre.ts", () => {
 			currentStepIndex: 0,
 		};
 		const { state: nextState, response } = handlePre(info, state);
-		expect(nextState?.status).toBe("paused");
+		expect(nextState?.status).toBe("active");
 		expect(response.injectSteps?.[0]?.ephemeralMessage).toMatch(
 			/Do the first thing/,
 		);
@@ -90,7 +90,6 @@ describe("handlers/pre.ts", () => {
 			workflow: { name: "Sample", filePath: "/mock.json", flatSteps: flat },
 			currentStepIndex: 0,
 			iterationCount: 1,
-			stepPending: true,
 		};
 		const showNoArgRes = handlePre(
 			{
@@ -105,7 +104,7 @@ describe("handlers/pre.ts", () => {
 			initial,
 		);
 		expect(showNoArgRes.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
-			/WORKFLOW STATUS: ACTIVE/,
+			/WORKFLOW STATUS: PAUSED/,
 		);
 		expect(showNoArgRes.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
 			/WORKFLOW VISUALIZATION/,
@@ -113,7 +112,7 @@ describe("handlers/pre.ts", () => {
 		expect(showNoArgRes.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
 			/style s0 stroke:#3b82f6,stroke-width:4px/,
 		);
-		expect(showNoArgRes.state).toEqual({ ...initial, stepPending: false });
+		expect(showNoArgRes.state).toEqual({ ...initial, status: "paused" });
 
 		const stopRes = handlePre(
 			{
@@ -165,7 +164,7 @@ describe("handlers/pre.ts", () => {
 		expect(showRes.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
 			/\[WORKFLOW VISUALIZATION: Sample\]/,
 		);
-		expect(showRes.state).toEqual({ ...initial, stepPending: false });
+		expect(showRes.state).toEqual({ ...initial, status: "paused" });
 	});
 
 	test("handlePre terminates on runaway loop iteration limit", () => {
@@ -179,13 +178,11 @@ describe("handlers/pre.ts", () => {
 			status: "active",
 			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
 			currentStepIndex: 0,
-			iterationCount: 20, // next iteration will be 21 > 20
+			iterationCount: 20, // limit is 20, next iteration will be 21 -> exceeded
 		};
+
 		const { state: nextState, response } = handlePre(info, state);
 		expect(nextState?.status).toBe("error");
-		if (nextState?.status === "error") {
-			expect(nextState.error).toContain("Exceeded safety iteration limit (20)");
-		}
 		expect(response.injectSteps?.[0]?.ephemeralMessage).toMatch(
 			/Exceeded safety iteration limit/,
 		);
@@ -206,7 +203,6 @@ describe("handlers/pre.ts", () => {
 		expect(nextState?.status).toBe("active");
 		expect(nextState?.currentStepIndex).toBe(1);
 		expect(nextState?.iterationCount).toBe(1);
-		expect(nextState?.stepPending).toBe(true);
 
 		const msg = response.injectSteps?.[0]?.ephemeralMessage;
 		expect(msg).toMatch(/Condition Evaluation/);

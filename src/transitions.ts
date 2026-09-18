@@ -1,9 +1,10 @@
+import { assert } from "./lib/assert.ts";
 import type { ExtractWorkflowState, WorkflowState } from "./state.ts";
 import { nextStep, type WorkflowInfo } from "./workflow.ts";
 
 /**
  * Initializes and starts a workflow in active mode.
- * Sets the execution pointer to step 0 with iterationCount 1 and stepPending true.
+ * Sets the execution pointer to step 0 with iterationCount 1.
  */
 export function startWorkflow(
 	workflow: WorkflowInfo,
@@ -18,14 +19,12 @@ export function startWorkflow(
 		status: "active",
 		currentStepIndex: 0,
 		iterationCount: 1,
-		stepPending: true,
 		workflow,
 	};
 }
 
 /**
  * Pauses an active workflow.
- * Sets status to "paused" and clears stepPending.
  * If the workflow is not active (e.g. paused, finished, error, or null),
  * the state is returned unchanged.
  */
@@ -36,64 +35,42 @@ export function pauseWorkflow(
 		return {
 			...state,
 			status: "paused",
-			stepPending: false,
 		};
 	}
 	return state;
 }
 
-export type StepPausedResult =
-	| { state: WorkflowState; error?: undefined }
-	| { state: WorkflowState | null; error: "no_workflow" | "already_finished" };
-
 /**
- * Prepares a workflow to execute the current step in paused mode (triggered by /wf next).
- * Returns an error indicator if no workflow is running or if the workflow is already finished.
+ * Resumes an active or paused workflow (triggered by /wf next).
+ * Sets status to "active" so execution proceeds.
+ * Precondition: state must be in an active or paused status.
  */
-export function stepPausedWorkflow(
+export function resumeWorkflow(
 	state: WorkflowState | null,
-): StepPausedResult {
-	if (
-		state?.status === "finished" ||
-		(state &&
-			"currentStepIndex" in state &&
-			state.currentStepIndex >= state.workflow.flatSteps.length)
-	) {
-		return {
-			state: { status: "finished", workflow: state.workflow },
-			error: "already_finished",
-		};
-	}
-
-	if (!state || (state.status !== "active" && state.status !== "paused")) {
-		return {
-			state,
-			error: "no_workflow",
-		};
-	}
+): ExtractWorkflowState<"active"> {
+	assert(
+		state && (state.status === "active" || state.status === "paused"),
+		"Cannot resume workflow: no active or paused workflow is loaded",
+	);
 
 	return {
-		state: {
-			...state,
-			status: "paused",
-			stepPending: true,
-		},
+		...state,
+		status: "active",
 	};
 }
 
 /**
- * Pure transition advancing a running workflow (active or paused) to its next step.
+ * Pure transition advancing an active workflow to its next step.
  * Computes the target step index using nextStep().
  * If the target index reaches or exceeds the total step count, transitions to "finished".
- * If the completed step was a gate, transitions status to "paused" and clears stepPending.
- * In active mode, marks stepPending: true so the next step automatically executes.
- * In paused mode, marks stepPending: false so execution halts and yields back to the user.
+ * If the completed step was a gate, transitions status to "paused".
+ * Otherwise keeps status as "active".
  */
 export function advanceStep(
 	state: WorkflowState | null,
 	decision?: "YES" | "NO",
 ): WorkflowState | null {
-	if (!state || (state.status !== "active" && state.status !== "paused")) {
+	if (!state || state.status !== "active") {
 		return state;
 	}
 
@@ -116,8 +93,7 @@ export function advanceStep(
 	return {
 		...state,
 		currentStepIndex: targetIndex,
-		status: isGate ? "paused" : state.status,
-		stepPending: isGate ? false : state.status === "active",
+		status: isGate ? "paused" : "active",
 	};
 }
 
@@ -130,7 +106,7 @@ export interface StepExecutionResult {
 /**
  * Checks runaway loop iteration limits and prepares the next step dispatch for an active workflow.
  * If iteration count exceeds limit (steps * 5), transitions to "error" state.
- * Otherwise increments iterationCount and ensures stepPending: true.
+ * Otherwise increments iterationCount.
  */
 export function prepareStepExecution(
 	state: ExtractWorkflowState<"active">,
@@ -156,7 +132,6 @@ export function prepareStepExecution(
 		state: {
 			...state,
 			iterationCount: nextIterationCount,
-			stepPending: true,
 		},
 	};
 }
@@ -205,20 +180,4 @@ export function stopWorkflowState(
 		wasRunning: true,
 		workflowName: state.workflow.name,
 	};
-}
-
-/**
- * Clears the stepPending flag for a running workflow.
- * Used when intermediate slash commands (like /wf-help or /wf-show) are processed.
- */
-export function clearStepPending(
-	state: WorkflowState | null,
-): WorkflowState | null {
-	if (state && "currentStepIndex" in state) {
-		return {
-			...state,
-			stepPending: false,
-		};
-	}
-	return state;
 }

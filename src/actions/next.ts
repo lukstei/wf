@@ -1,56 +1,32 @@
+import { assert } from "../lib/assert.ts";
 import { logDebug } from "../lib/logDebug.ts";
-import { getHelpText } from "../lib/parseCommand.ts";
 import type { WorkflowState } from "../state.ts";
-import { advanceStep, stepPausedWorkflow } from "../transitions.ts";
+import { advanceStep, resumeWorkflow } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import { conditionPre } from "./condition.ts";
-import { formatAdvanceReason, injectSystemMessage } from "./formatters.ts";
+import { formatAdvanceReason } from "./formatters.ts";
 import { step } from "./step.ts";
 
 /**
  * nextPre: Handles /wf next user command in PreInvocation.
- * Sets paused mode and injects the current step.
+ * Resumes workflow in active mode and injects the current step.
  */
 export function nextPre(
 	info: HookInfo,
 	state: WorkflowState | null,
 ): HandleResult {
-	const result = stepPausedWorkflow(state);
+	assert(
+		state && (state.status === "active" || state.status === "paused"),
+		"No workflow is running",
+	);
 
-	if (result.error === "already_finished") {
-		return {
-			state: result.state,
-			response: injectSystemMessage(
-				"[WORKFLOW RUNNER] Workflow has already completed all steps.",
-			),
-		};
-	}
-
-	if (result.error === "no_workflow") {
-		return {
-			state: result.state,
-			response: injectSystemMessage(
-				getHelpText(
-					"No workflow is loaded. Start a workflow with '/wf <workflow-file>'.",
-				),
-			),
-		};
-	}
-
-	if (!result.state || result.state.currentStepIndex === undefined) {
-		return {
-			state: result.state,
-			response: injectSystemMessage(
-				"[WORKFLOW RUNNER] Workflow has already completed all steps.",
-			),
-		};
-	}
-
+	const nextState = resumeWorkflow(state);
 	const nextTargetStep =
-		result.state.workflow.flatSteps[result.state.currentStepIndex];
+		nextState.workflow.flatSteps[nextState.currentStepIndex];
+
 	return nextTargetStep?.type === "condition"
-		? conditionPre(info, result.state)
-		: step(info, result.state);
+		? conditionPre(info, nextState)
+		: step(info, nextState);
 }
 
 /**
@@ -60,7 +36,7 @@ export function nextStop(
 	_info: HookInfo,
 	state: WorkflowState | null,
 ): HandleResult {
-	if (!state || (state.status !== "active" && state.status !== "paused")) {
+	if (!state || state.status !== "active") {
 		return { state: state, response: { decision: "allow" } };
 	}
 
@@ -101,8 +77,8 @@ export function nextStop(
 		};
 	}
 
-	// If paused, yield back to user (wait for /wf next)
-	logDebug("Step finished in paused mode, yielding to user", {
+	// If paused (e.g. at a gate), yield back to user (wait for /wf next)
+	logDebug("Step finished at gate, yielding to user", {
 		nextStep: (nextState?.currentStepIndex ?? 0) + 1,
 	});
 	return {

@@ -16,10 +16,10 @@ const sampleDef: WorkflowDef = {
 };
 
 describe("actions/next.ts", () => {
-	test("nextPre sets paused mode and injects current step", () => {
+	test("nextPre resumes active mode and injects current step", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
-			status: "active",
+			status: "paused",
 			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
 			currentStepIndex: 0,
 		};
@@ -28,36 +28,29 @@ describe("actions/next.ts", () => {
 			{ type: "pre", payload: { conversationId: "c1" } },
 			state,
 		);
-		expect(res.state?.status).toBe("paused");
-		expect(res.state?.stepPending).toBe(true);
+		expect(res.state?.status).toBe("active");
 		expect(res.response.injectSteps).toBeDefined();
 		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
-			/\[WORKFLOW PAUSED: Flow\]/,
+			/\[WORKFLOW ACTIVE: Flow\]/,
 		);
 		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(/Do 1/);
 	});
 
-	test("nextPre handles uninitialized or completed workflows", () => {
-		const uninitRes = nextPre(
-			{ type: "pre", payload: { conversationId: "c1" } },
-			null,
-		);
-		expect(uninitRes.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
-			/No workflow is loaded/,
-		);
+	test("nextPre throws when workflow is uninitialized or completed", () => {
+		expect(() =>
+			nextPre({ type: "pre", payload: { conversationId: "c1" } }, null),
+		).toThrow("No workflow is running");
 
 		const flat = flattenWorkflow(sampleDef.steps);
-		const completedRes = nextPre(
-			{ type: "pre", payload: { conversationId: "c1" } },
-			{
-				status: "finished",
-				workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
-			},
-		);
-		expect(completedRes.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
-			/completed all steps/,
-		);
-		expect(completedRes.state?.status).toBe("finished");
+		expect(() =>
+			nextPre(
+				{ type: "pre", payload: { conversationId: "c1" } },
+				{
+					status: "finished",
+					workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+				},
+			),
+		).toThrow("No workflow is running");
 	});
 
 	test("nextStop advances to next step and signals continue in active mode", () => {
@@ -66,7 +59,6 @@ describe("actions/next.ts", () => {
 			status: "active",
 			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
 			currentStepIndex: 0,
-			stepPending: true,
 		};
 
 		const res = nextStop(
@@ -75,27 +67,24 @@ describe("actions/next.ts", () => {
 		);
 		expect(res.state?.currentStepIndex).toBe(1);
 		expect(res.state?.status).toBe("active");
-		expect(res.state?.stepPending).toBe(true);
 		expect(res.response.decision).toBe("continue");
 		expect(res.response.reason).toMatch(/Do 2/);
 	});
 
-	test("nextStop yields to user in paused mode", () => {
+	test("nextStop does not advance when workflow is paused", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
 		const state: WorkflowState = {
 			status: "paused",
 			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
 			currentStepIndex: 0,
-			stepPending: true,
 		};
 
 		const res = nextStop(
 			{ type: "stop", payload: { conversationId: "c1" } },
 			state,
 		);
-		expect(res.state?.currentStepIndex).toBe(1);
+		expect(res.state?.currentStepIndex).toBe(0);
 		expect(res.state?.status).toBe("paused");
-		expect(res.state?.stepPending).toBe(false);
 		expect(res.response.decision).toBe("allow");
 	});
 

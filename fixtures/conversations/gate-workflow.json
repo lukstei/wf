@@ -41,8 +41,7 @@
 				"state": {
 					"status": "active",
 					"currentStepIndex": 0,
-					"iterationCount": 1,
-					"stepPending": true
+					"iterationCount": 1
 				}
 			},
 			"model": {
@@ -58,8 +57,7 @@
 				"state": {
 					"status": "active",
 					"currentStepIndex": 1,
-					"iterationCount": 1,
-					"stepPending": true
+					"iterationCount": 1
 				}
 			}
 		},
@@ -77,8 +75,7 @@
 				"state": {
 					"status": "paused",
 					"currentStepIndex": 2,
-					"iterationCount": 2,
-					"stepPending": false
+					"iterationCount": 2
 				}
 			}
 		},
@@ -93,15 +90,14 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW PAUSED: Gate Approval Flow]\nStep 3 of 3: Execute Release\n\nINSTRUCTION:\nDeploy the assets.\n\nRULES:\n1. Execute this specific step now.\n2. Do NOT jump ahead to subsequent steps.\n3. Conclude your response when this step is complete.\n4. Do NOT read or inspect the workflow file (\"gate-flow.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Gate Approval Flow]\nStep 3 of 3: Execute Release\n\nINSTRUCTION:\nDeploy the assets.\n\nRULES:\n1. Execute this specific step now.\n2. Do NOT jump ahead to subsequent steps.\n3. Conclude your response when this step is complete.\n4. Do NOT read or inspect the workflow file (\"gate-flow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
 				"state": {
-					"status": "paused",
+					"status": "active",
 					"currentStepIndex": 2,
-					"iterationCount": 2,
-					"stepPending": true
+					"iterationCount": 2
 				}
 			},
 			"model": {

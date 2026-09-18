@@ -47,7 +47,6 @@ describe("actions/show.ts", () => {
 			status: "active",
 			currentStepIndex: 1,
 			iterationCount: 2,
-			stepPending: false,
 			workflow: {
 				name: "ActiveFlow",
 				filePath: "/active.json",
@@ -146,7 +145,6 @@ describe("actions/show.ts", () => {
 			status: "active",
 			currentStepIndex: 1,
 			iterationCount: 2,
-			stepPending: false,
 			workflow: {
 				name: "SampleShow",
 				filePath: "/sample.json",
@@ -216,7 +214,6 @@ describe("actions/show.ts", () => {
 			status: "active",
 			currentStepIndex: 1,
 			iterationCount: 2,
-			stepPending: false,
 			workflow: {
 				name: "ExistingFlow",
 				filePath: "/existing.json",
