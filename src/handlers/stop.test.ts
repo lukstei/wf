@@ -176,7 +176,9 @@ describe("handlers/stop.ts", () => {
 
 			Evaluate condition: "is ready?"
 
-			Continue immediately and execute this step.",
+			Start your response with: "Checking condition: is ready?"
+			At the very end of your response, output strictly either:
+			[DECISION: YES] or [DECISION: NO]",
 			  },
 			  "state": {
 			    "iterationCount": 1,
@@ -240,6 +242,7 @@ describe("handlers/stop.ts", () => {
 			INSTRUCTION:
 			Fix
 
+			Start your response with: "Executing Step: Fix"
 			Continue immediately and execute this step.",
 			    },
 			    "state": {
@@ -256,6 +259,7 @@ describe("handlers/stop.ts", () => {
 			INSTRUCTION:
 			Deploy
 
+			Start your response with: "Executing Step: Deploy"
 			Continue immediately and execute this step.",
 			    },
 			    "state": {

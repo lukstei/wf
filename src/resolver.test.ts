@@ -7,30 +7,30 @@ import { stripAbsolutePath } from "./test-utils.ts";
 describe("resolver.ts", () => {
 	test("resolveWorkflowPath handles mentions, quotes, and extensionless candidate paths", () => {
 		const results = [
-			resolveWorkflowPath("@[examples/sample-wf.json]"),
-			resolveWorkflowPath("@examples/sample-wf.json"),
-			resolveWorkflowPath('"examples/sample-wf.json"'),
-			resolveWorkflowPath("'examples/sample-wf.json'"),
-			resolveWorkflowPath("examples/sample-wf"),
+			resolveWorkflowPath("@[examples/weekend.md]"),
+			resolveWorkflowPath("@examples/weekend.md"),
+			resolveWorkflowPath('"examples/weekend.md"'),
+			resolveWorkflowPath("'examples/weekend.md'"),
+			resolveWorkflowPath("examples/weekend"),
 			resolveWorkflowPath("nonexistent/file.json"),
 		].map((p) => (p ? stripAbsolutePath(p) : null));
 
 		expect(results).toMatchInlineSnapshot(`
 			[
-			  "examples/sample-wf.json",
-			  "examples/sample-wf.json",
-			  "examples/sample-wf.json",
-			  "examples/sample-wf.json",
-			  "examples/sample-wf.md",
+			  "examples/weekend.md",
+			  "examples/weekend.md",
+			  "examples/weekend.md",
+			  "examples/weekend.md",
+			  "examples/weekend.md",
 			  null,
 			]
 		`);
 	});
 
 	test("resolveWorkflowPath resolves across workspace paths and absolute paths", () => {
-		const absPath = path.resolve(process.cwd(), "examples/sample-wf.json");
+		const absPath = path.resolve(process.cwd(), "examples/weekend.md");
 		const fromAbs = resolveWorkflowPath(absPath);
-		const fromWs = resolveWorkflowPath("sample-wf.json", [
+		const fromWs = resolveWorkflowPath("weekend.md", [
 			path.resolve(process.cwd(), "examples"),
 		]);
 
@@ -39,23 +39,25 @@ describe("resolver.ts", () => {
 			fromWs ? stripAbsolutePath(fromWs) : null,
 		]).toMatchInlineSnapshot(`
 			[
-			  "examples/sample-wf.json",
-			  "examples/sample-wf.json",
+			  "examples/weekend.md",
+			  "examples/weekend.md",
 			]
 		`);
 	});
 
 	test("defaultWorkflowResolver resolves and parses markdown and json workflows", () => {
-		const jsonRes = defaultWorkflowResolver("examples/sample-wf.json");
-		const mdRes = defaultWorkflowResolver("examples/sample-wf.md");
+		const jsonRes = defaultWorkflowResolver(
+			"fixtures/md-parser/test-01-sample-wf.json",
+		);
+		const mdRes = defaultWorkflowResolver("examples/weekend.md");
 
 		expect({
 			jsonName: jsonRes && "workflow" in jsonRes ? jsonRes.workflow.name : null,
 			mdName: mdRes && "workflow" in mdRes ? mdRes.workflow.name : null,
 		}).toMatchInlineSnapshot(`
 			{
-			  "jsonName": "Sample Automated Workflow",
-			  "mdName": "Derive an API client from a recorded session",
+			  "jsonName": "Derive an API client from a recorded session",
+			  "mdName": "Weekend Readiness Protocol",
 			}
 		`);
 	});

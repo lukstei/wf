@@ -29,6 +29,7 @@ export function formatStepPrompt(
 	totalSteps: number,
 ): string {
 	const wfName = active.workflow.name;
+	const title = currentStep.title || `Step ${stepNum}`;
 	const stepTitle = `: ${currentStep.title}`;
 	const levelStr =
 		currentStep.level > 0 ? ` (Nesting Level ${currentStep.level})` : "";
@@ -37,6 +38,7 @@ export function formatStepPrompt(
 		: "";
 
 	if (currentStep.type === "condition") {
+		const conditionText = currentStep.condition || title;
 		const lines: string[] = [
 			`[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
 			`Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr} (Condition Evaluation)`,
@@ -57,6 +59,8 @@ export function formatStepPrompt(
 			);
 		}
 		lines.push(
+			"",
+			`Start your response with: "Checking condition: ${conditionText}"`,
 			"At the very end of your response, output strictly either:",
 			"[DECISION: YES] or [DECISION: NO]",
 			"",
@@ -89,10 +93,13 @@ export function formatStepPrompt(
 	promptParts.push(
 		"",
 		"RULES:",
-		"1. Execute this specific step now.",
-		"2. Do NOT jump ahead to subsequent steps.",
-		"3. Conclude your response when this step is complete.",
-		`4. Do NOT read or inspect the workflow file${fileRef} or SKILL.md — steps are already loaded by the runner.`,
+		isGate
+			? `1. Start your response with: "Waiting at Gate: ${title}"`
+			: `1. Start your response with: "Executing Step: ${title}"`,
+		"2. Execute this specific step now.",
+		"3. Do NOT jump ahead to subsequent steps.",
+		"4. Conclude your response when this step is complete.",
+		`5. Do NOT read or inspect the workflow file${fileRef} or SKILL.md — steps are already loaded by the runner.`,
 	);
 
 	return promptParts.join("\n");
@@ -113,9 +120,14 @@ export function formatAdvanceReason(step: FlatStep, preamble?: string): string {
 	}
 
 	if (isCondition) {
+		const conditionText = step.condition || title;
 		reasonParts.push(
 			"",
 			step.instruction || `Evaluate condition: "${step.condition}"`,
+			"",
+			`Start your response with: "Checking condition: ${conditionText}"`,
+			"At the very end of your response, output strictly either:",
+			"[DECISION: YES] or [DECISION: NO]",
 		);
 	} else {
 		reasonParts.push("", "INSTRUCTION:", step.instruction ?? "");
@@ -124,10 +136,15 @@ export function formatAdvanceReason(step: FlatStep, preamble?: string): string {
 	if (isGate) {
 		reasonParts.push(
 			"",
+			`Start your response with: "Waiting at Gate: ${title}"`,
 			"NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'.",
 		);
-	} else {
-		reasonParts.push("", "Continue immediately and execute this step.");
+	} else if (!isCondition) {
+		reasonParts.push(
+			"",
+			`Start your response with: "Executing Step: ${title}"`,
+			"Continue immediately and execute this step.",
+		);
 	}
 
 	return reasonParts.join("\n");

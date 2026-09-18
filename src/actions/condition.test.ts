@@ -58,6 +58,8 @@ describe("actions/condition.ts", () => {
 			INSTRUCTION:
 			Evaluate whether the following condition is true or false: "is db healthy?".
 			If needed, use tools to inspect the environment, files, date/time, or git state.
+
+			Start your response with: "Checking condition: is db healthy?"
 			At the very end of your response, output strictly either:
 			[DECISION: YES] or [DECISION: NO]
 
@@ -107,6 +109,7 @@ describe("actions/condition.ts", () => {
 			INSTRUCTION:
 			Run queries
 
+			Start your response with: "Executing Step: Run queries"
 			Continue immediately and execute this step.",
 			  },
 			  "state": {
@@ -159,6 +162,7 @@ describe("actions/condition.ts", () => {
 			INSTRUCTION:
 			Restart db
 
+			Start your response with: "Executing Step: Restart db"
 			Continue immediately and execute this step.",
 			  },
 			  "state": {
@@ -288,6 +292,7 @@ describe("actions/condition.ts", () => {
 			INSTRUCTION:
 			Deploy step instruction
 
+			Start your response with: "Executing Step: Deploy"
 			Continue immediately and execute this step.",
 			  },
 			  "state": {

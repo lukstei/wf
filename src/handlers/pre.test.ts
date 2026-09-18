@@ -49,10 +49,11 @@ describe("handlers/pre.ts", () => {
 			Do the first thing
 
 			RULES:
-			1. Execute this specific step now.
-			2. Do NOT jump ahead to subsequent steps.
-			3. Conclude your response when this step is complete.
-			4. Do NOT read or inspect the workflow file ("/mock.json") or SKILL.md — steps are already loaded by the runner.",
+			1. Start your response with: "Executing Step: First Step"
+			2. Execute this specific step now.
+			3. Do NOT jump ahead to subsequent steps.
+			4. Conclude your response when this step is complete.
+			5. Do NOT read or inspect the workflow file ("/mock.json") or SKILL.md — steps are already loaded by the runner.",
 			      },
 			    ],
 			  },
@@ -137,10 +138,11 @@ describe("handlers/pre.ts", () => {
 			Do the first thing
 
 			RULES:
-			1. Execute this specific step now.
-			2. Do NOT jump ahead to subsequent steps.
-			3. Conclude your response when this step is complete.
-			4. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
+			1. Start your response with: "Executing Step: First Step"
+			2. Execute this specific step now.
+			3. Do NOT jump ahead to subsequent steps.
+			4. Conclude your response when this step is complete.
+			5. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
 			      },
 			    ],
 			  },
@@ -441,6 +443,8 @@ describe("handlers/pre.ts", () => {
 			INSTRUCTION:
 			Evaluate whether the following condition is true or false: "is ready?".
 			If needed, use tools to inspect the environment, files, date/time, or git state.
+
+			Start your response with: "Checking condition: is ready?"
 			At the very end of your response, output strictly either:
 			[DECISION: YES] or [DECISION: NO]
 

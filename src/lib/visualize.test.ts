@@ -1,5 +1,3 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { CompiledWorkflow, WorkflowAst } from "../workflow.ts";
 import {
@@ -15,7 +13,7 @@ describe("visualize", () => {
 		);
 	});
 
-	it("converts linear action steps", () => {
+	it("converts simple linear workflow", () => {
 		const wf: WorkflowAst = {
 			name: "Linear",
 			steps: [
@@ -33,13 +31,47 @@ describe("visualize", () => {
 	});
 
 	it("converts conditional workflow like sample-wf.json", () => {
-		const samplePath = path.resolve(
-			import.meta.dirname,
-			"../../examples/sample-wf.json",
-		);
-		const sampleDef: WorkflowAst = JSON.parse(
-			fs.readFileSync(samplePath, "utf-8"),
-		);
+		const sampleDef: WorkflowAst = {
+			name: "Sample Automated Workflow",
+			description: "A workflow with a conditional branch",
+			steps: [
+				{
+					type: "step",
+					title: "Report Current Status",
+					instruction:
+						"State that Workflow Step 1 is starting. Output a single sentence confirming readiness.",
+				},
+				{
+					type: "condition",
+					title: "Check Day Condition",
+					condition: "is it friday?",
+					yes: {
+						steps: [
+							{
+								type: "step",
+								title: "Report Friday Status",
+								instruction: "State that it is friday.",
+							},
+						],
+					},
+					no: {
+						steps: [
+							{
+								type: "step",
+								title: "Report Non-Friday Status",
+								instruction: "State that it is not friday.",
+							},
+						],
+					},
+				},
+				{
+					type: "step",
+					title: "Verify and Conclude",
+					instruction:
+						"Announce that the workflow has successfully completed all steps.",
+				},
+			],
+		};
 
 		expect(visualize(sampleDef)).toMatchInlineSnapshot(`
       "flowchart TD
@@ -427,7 +459,7 @@ describe("visualizeWorkflowPrompt", () => {
 			{
 			  "mermaid": "flowchart TD
 			    s0["Step 1"]
-			    s1[["🛑 <b>▶ Approval</b>"]]
+			    s1[["🛑 ▶ Approval"]]
 			    s2["Step 2"]
 			    s0 --> s1
 			    s1 --> s2
@@ -452,7 +484,7 @@ describe("visualizeWorkflowPrompt", () => {
 		expect(mermaid).toMatchInlineSnapshot(`
 			"flowchart TD
 			    s0["▶ Step 1"]
-			    s1[["🛑 <b>Approval</b>"]]
+			    s1[["🛑 Approval"]]
 			    s0 --> s1
 			    style s0 stroke:#3b82f6,stroke-width:4px"
 		`);

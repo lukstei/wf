@@ -274,7 +274,7 @@ Start server.
 				latestMessage: {
 					stepIndex: 1,
 					type: "USER_INPUT",
-					content: "/wf examples/sample-wf.md",
+					content: "/wf fixtures/md-parser/test-01-sample-wf.md",
 				},
 			},
 			active,
@@ -405,10 +405,11 @@ Start server.
 			say "Hello to workflow test"
 
 			RULES:
-			1. Execute this specific step now.
-			2. Do NOT jump ahead to subsequent steps.
-			3. Conclude your response when this step is complete.
-			4. Do NOT read or inspect the workflow file ("examples/sample-wf.md") or SKILL.md — steps are already loaded by the runner.",
+			1. Start your response with: "Executing Step: record"
+			2. Execute this specific step now.
+			3. Do NOT jump ahead to subsequent steps.
+			4. Conclude your response when this step is complete.
+			5. Do NOT read or inspect the workflow file ("fixtures/md-parser/test-01-sample-wf.md") or SKILL.md — steps are already loaded by the runner.",
 			    "state": {
 			      "iterationCount": 0,
 			      "status": "active",
@@ -426,7 +427,9 @@ Start server.
 
 			Evaluate condition: "it is friday?"
 
-			Continue immediately and execute this step.",
+			Start your response with: "Checking condition: it is friday?"
+			At the very end of your response, output strictly either:
+			[DECISION: YES] or [DECISION: NO]",
 			    },
 			    "state": {
 			      "iterationCount": 1,
@@ -446,6 +449,7 @@ Start server.
 			INSTRUCTION:
 			echo hello monday
 
+			Start your response with: "Executing Step: it is friday? no"
 			Continue immediately and execute this step.",
 			    },
 			    "state": {
@@ -466,6 +470,7 @@ Start server.
 			INSTRUCTION:
 			report how many days until friday
 
+			Start your response with: "Executing Step: report"
 			Continue immediately and execute this step.",
 			    },
 			    "state": {
@@ -486,6 +491,7 @@ Start server.
 			INSTRUCTION:
 			report end of workflow - have a nice day
 
+			Start your response with: "Executing Step: gg"
 			Continue immediately and execute this step.",
 			    },
 			    "state": {

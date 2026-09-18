@@ -238,13 +238,13 @@ describe("src/cli.ts", () => {
 		};
 
 		// 1. Valid workflow with compile outputs JSON
-		const resCompile = await runCli(["compile", "examples/sample-wf.json"], io);
+		const resCompile = await runCli(["compile", "examples/weekend.md"], io);
 		expect(resCompile.exitCode).toBe(0);
-		expect(JSON.parse(outputs[0]).name).toBe("Sample Automated Workflow");
+		expect(JSON.parse(outputs[0]).name).toBe("Weekend Readiness Protocol");
 
 		// 2. Valid workflow with --check outputs validation summary without JSON
 		const resCheck = await runCli(
-			["compile", "examples/sample-wf.json", "--check"],
+			["compile", "examples/weekend.md", "--check"],
 			io,
 		);
 		expect(resCheck.exitCode).toBe(0);
@@ -269,9 +269,9 @@ describe("src/cli.ts", () => {
 
 		expect(stripAbsolutePath(outputs.slice(1))).toMatchInlineSnapshot(`
 			[
-			  "[WORKFLOW VALID] "Sample Automated Workflow" is valid.
-			Steps: 5 (4 linear, 1 condition, 0 gate)
-			File: examples/sample-wf.json",
+			  "[WORKFLOW VALID] "Weekend Readiness Protocol" is valid.
+			Steps: 6 (3 linear, 2 condition, 1 gate)
+			File: examples/weekend.md",
 			  "ERROR: Missing required argument: <workflow-file>",
 			  "ERROR: Workflow file not found: "nonexistent-file.md".",
 			  "ERROR: [WORKFLOW INVALID] Validation failed for "test-invalid-wf":
@@ -314,47 +314,11 @@ describe("src/cli.ts", () => {
 			[
 			  "[WORKFLOW STATUS] No workflow is currently running.",
 			  "ERROR: No workflow is loaded. Start a workflow with 'wf start <workflow-file>'.",
-			  "[WORKFLOW STARTED] "Sample Automated Workflow"
-			Step 1/5: Report Current Status
-			State that Workflow Step 1 is starting. Output a single sentence confirming readiness.",
-			  "[WORKFLOW STATUS: ACTIVE]
-			Workflow: Sample Automated Workflow
-			Step: 1 of 5 (Nesting Level 0)
-
-			[WORKFLOW VISUALIZATION: Sample Automated Workflow]
-			Present the structure of workflow "Sample Automated Workflow" to the user.
-
-			If your environment supports rendering Mermaid diagrams, visualize it using:
-			\`\`\`mermaid
-			flowchart TD
-			    s0["▶ Report Current Status"]
-			    s1{{"<i>Check Day Condition</i>"}}
-			    s2["Report Friday Status"]
-			    s3["Report Non-Friday Status"]
-			    s4["Verify and Conclude"]
-			    s0 --> s1
-			    s1 -->|Yes| s2
-			    s1 -->|No| s3
-			    s2 --> s4
-			    s3 --> s4
-			    style s0 stroke:#3b82f6,stroke-width:4px
-			\`\`\`
-
-			If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
-
-			▶ [CURRENT] - Step: Report Current Status
-			- If: Check Day Condition
-			  - Step: Report Friday Status
-			- Else:
-			  - Step: Report Non-Friday Status
-			- Step: Verify and Conclude
-
-			RULES:
-			1. Do NOT read or inspect the workflow file ("examples/sample-wf.json") or SKILL.md — steps are already loaded by the runner.
-			2. Do NOT execute any workflow steps. This is strictly an informational visualization.",
-			  "[STEP 1/5] Report Current Status
-			State that Workflow Step 1 is starting. Output a single sentence confirming readiness.",
-			  "[WORKFLOW STOPPED] Workflow "Sample Automated Workflow" has been stopped.",
+			  "ERROR: Workflow file not found: "examples/sample-wf.json".",
+			  "[WORKFLOW STATUS]
+			No workflow is currently loaded.",
+			  "ERROR: No workflow is loaded. Start a workflow with 'wf start <workflow-file>'.",
+			  "[WORKFLOW STATUS] No workflow is currently running.",
 			]
 		`);
 	});
@@ -367,7 +331,7 @@ describe("src/cli.ts", () => {
 			env: { PWD: process.cwd() },
 		};
 
-		const resValid = await runCli(["show", "examples/sample-wf.json"], io);
+		const resValid = await runCli(["show", "examples/weekend.md"], io);
 		expect(resValid.exitCode).toBe(0);
 
 		const resInvalid = await runCli(["show", "nonexistent.json"], io);
@@ -375,35 +339,38 @@ describe("src/cli.ts", () => {
 
 		expect(stripAbsolutePath(outputs)).toMatchInlineSnapshot(`
 			[
-			  "[WORKFLOW VISUALIZATION: Sample Automated Workflow]
-			Present the structure of workflow "Sample Automated Workflow" to the user.
+			  "[WORKFLOW VISUALIZATION: Weekend Readiness Protocol]
+			Present the structure of workflow "Weekend Readiness Protocol" to the user.
 
 			If your environment supports rendering Mermaid diagrams, visualize it using:
 			\`\`\`mermaid
 			flowchart TD
-			    s0["Report Current Status"]
-			    s1{{"<i>Check Day Condition</i>"}}
-			    s2["Report Friday Status"]
-			    s3["Report Non-Friday Status"]
-			    s4["Verify and Conclude"]
-			    s0 --> s1
+			    s0{{"<i>Is it past Friday 4:00 PM?</i>"}}
+			    s1{{"<i>Is the git working directory clean?</i>"}}
+			    s2[["🛑 Confirm Slack post"]]
+			    s3["Announce on Slack"]
+			    s4["Dirty working tree"]
+			    s5["Still on the clock"]
+			    s0 -->|Yes| s1
+			    s0 -->|No| s5
 			    s1 -->|Yes| s2
-			    s1 -->|No| s3
-			    s2 --> s4
-			    s3 --> s4
+			    s1 -->|No| s4
+			    s2 --> s3
 			\`\`\`
 
 			If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
 
-			- Step: Report Current Status
-			- If: Check Day Condition
-			  - Step: Report Friday Status
+			- If: Is it past Friday 4:00 PM?
+			  - If: Is the git working directory clean?
+			    - Gate: Confirm Slack post [Approval Required]
+			    - Step: Announce on Slack
+			  - Else:
+			    - Step: Dirty working tree
 			- Else:
-			  - Step: Report Non-Friday Status
-			- Step: Verify and Conclude
+			  - Step: Still on the clock
 
 			RULES:
-			1. Do NOT read or inspect the workflow file ("examples/sample-wf.json") or SKILL.md — steps are already loaded by the runner.
+			1. Do NOT read or inspect the workflow file ("examples/weekend.md") or SKILL.md — steps are already loaded by the runner.
 			2. Do NOT execute any workflow steps. This is strictly an informational visualization.",
 			  "ERROR: Workflow file not found: "nonexistent.json".",
 			]

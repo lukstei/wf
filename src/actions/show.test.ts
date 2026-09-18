@@ -466,39 +466,14 @@ describe("actions/show.ts", () => {
 		expect(stripAbsolutePath(msg)).toMatchInlineSnapshot(`
 			"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
-			[WORKFLOW VISUALIZATION: Derive an API client from a recorded session]
-			Present the structure of workflow "Derive an API client from a recorded session" to the user.
+			[Workflow Error] CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER:  Workflow file not found: "examples/sample-wf.md". Please check the path and try again.
 
-			If your environment supports rendering Mermaid diagrams, visualize it using:
-			\`\`\`mermaid
-			flowchart TD
-			    s0["record"]
-			    s1{{"<i>it is friday?</i>"}}
-			    s2["it is friday? yes"]
-			    s3["it is friday? no"]
-			    s4["report"]
-			    s5["gg"]
-			    s0 --> s1
-			    s1 -->|Yes| s2
-			    s1 -->|No| s3
-			    s2 --> s5
-			    s3 --> s4
-			    s4 --> s5
-			\`\`\`
-
-			If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
-
-			- Step: record
-			- If: it is friday?
-			  - Step: it is friday? yes
-			- Else:
-			  - Step: it is friday? no
-			  - Step: report
-			- Step: gg
-
-			RULES:
-			1. Do NOT read or inspect the workflow file ("examples/sample-wf.md") or SKILL.md — steps are already loaded by the runner.
-			2. Do NOT execute any workflow steps. This is strictly an informational visualization."
+			Workflow Runner Commands:
+			  /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
+			  /wf-show [<workflow-file>] - Visualize workflow and show status / progress
+			  /wf-next                   - Execute the next step in paused mode
+			  /wf-stop                   - Stop and reset the active workflow
+			  /wf-help                   - Show this help reference"
 		`);
 	});
 });

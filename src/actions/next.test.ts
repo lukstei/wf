@@ -53,10 +53,11 @@ describe("actions/next.ts", () => {
 			Do 1
 
 			RULES:
-			1. Execute this specific step now.
-			2. Do NOT jump ahead to subsequent steps.
-			3. Conclude your response when this step is complete.
-			4. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
+			1. Start your response with: "Executing Step: Step 1"
+			2. Execute this specific step now.
+			3. Do NOT jump ahead to subsequent steps.
+			4. Conclude your response when this step is complete.
+			5. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
 			      },
 			    ],
 			  },
@@ -127,6 +128,7 @@ describe("actions/next.ts", () => {
 			INSTRUCTION:
 			Do 2
 
+			Start your response with: "Executing Step: Step 2"
 			Continue immediately and execute this step.",
 			  },
 			  "state": {
@@ -253,6 +255,7 @@ describe("actions/next.ts", () => {
 			INSTRUCTION:
 			Step 2 instruction
 
+			Start your response with: "Executing Step: Step 2"
 			Continue immediately and execute this step.",
 			  },
 			  "state": {

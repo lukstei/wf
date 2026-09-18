@@ -34,7 +34,7 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Gate Approval Flow]\nStep 1 of 3: Prepare Deployment\n\nINSTRUCTION:\nPrepare the release assets.\n\nRULES:\n1. Execute this specific step now.\n2. Do NOT jump ahead to subsequent steps.\n3. Conclude your response when this step is complete.\n4. Do NOT read or inspect the workflow file (\"gate-flow.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Gate Approval Flow]\nStep 1 of 3: Prepare Deployment\n\nINSTRUCTION:\nPrepare the release assets.\n\nRULES:\n1. Start your response with: \"Executing Step: Prepare Deployment\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"gate-flow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
@@ -52,11 +52,11 @@
 			"expectedStop": {
 				"output": {
 					"decision": "continue",
-					"reason": "[wf] Executing next step: Approve Release\n\nINSTRUCTION:\nVerify the build before proceeding.\n\nNOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'."
+					"reason": "[wf] Executing next step: Approve Release\n\nINSTRUCTION:\nVerify the build before proceeding.\n\nStart your response with: \"Waiting at Gate: Approve Release\"\nNOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'."
 				},
 				"state": {
-					"status": "active",
 					"step": 1,
+					"status": "active",
 					"iterationCount": 1
 				}
 			}
@@ -73,8 +73,8 @@
 					"decision": "allow"
 				},
 				"state": {
-					"status": "paused",
 					"step": 2,
+					"status": "paused",
 					"iterationCount": 2
 				}
 			}
@@ -90,13 +90,13 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Gate Approval Flow]\nStep 3 of 3: Execute Release\n\nINSTRUCTION:\nDeploy the assets.\n\nRULES:\n1. Execute this specific step now.\n2. Do NOT jump ahead to subsequent steps.\n3. Conclude your response when this step is complete.\n4. Do NOT read or inspect the workflow file (\"gate-flow.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Gate Approval Flow]\nStep 3 of 3: Execute Release\n\nINSTRUCTION:\nDeploy the assets.\n\nRULES:\n1. Start your response with: \"Executing Step: Execute Release\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"gate-flow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
 				"state": {
-					"status": "active",
 					"step": 2,
+					"status": "active",
 					"iterationCount": 2
 				}
 			},

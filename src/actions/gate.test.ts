@@ -103,10 +103,11 @@ describe("Gate Semantics", () => {
 			Apply schema
 
 			RULES:
-			1. Execute this specific step now.
-			2. Do NOT jump ahead to subsequent steps.
-			3. Conclude your response when this step is complete.
-			4. Do NOT read or inspect the workflow file ("gate.json") or SKILL.md — steps are already loaded by the runner.",
+			1. Start your response with: "Executing Step: Step 3"
+			2. Execute this specific step now.
+			3. Do NOT jump ahead to subsequent steps.
+			4. Conclude your response when this step is complete.
+			5. Do NOT read or inspect the workflow file ("gate.json") or SKILL.md — steps are already loaded by the runner.",
 			        },
 			      ],
 			    },
@@ -131,10 +132,11 @@ describe("Gate Semantics", () => {
 			NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'.
 
 			RULES:
-			1. Execute this specific step now.
-			2. Do NOT jump ahead to subsequent steps.
-			3. Conclude your response when this step is complete.
-			4. Do NOT read or inspect the workflow file ("gate.json") or SKILL.md — steps are already loaded by the runner.",
+			1. Start your response with: "Waiting at Gate: Confirm Migration"
+			2. Execute this specific step now.
+			3. Do NOT jump ahead to subsequent steps.
+			4. Conclude your response when this step is complete.
+			5. Do NOT read or inspect the workflow file ("gate.json") or SKILL.md — steps are already loaded by the runner.",
 			        },
 			      ],
 			    },

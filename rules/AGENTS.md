@@ -6,6 +6,10 @@ These rules govern agent behavior whenever the `wf` plugin or an active workflow
 
 ## 1. Strict Step-by-Step Execution
 
+- **Announce Active Step:** Always start your response by visibly stating what you are doing before executing any tools or commands:
+  - For normal steps: `Executing Step: <title>`
+  - For condition evaluations: `Checking condition: <condition>`
+  - For approval gates: `Waiting at Gate: <title>`
 - **Execute Only the Active Step:** When a step instruction is injected into context, execute that specific step and nothing else.
 - **Never Jump Ahead:** Do not anticipate or execute subsequent steps, future phases, or follow-on actions ahead of time.
 - **Conclude Immediately:** Stop and complete your response as soon as the current step's task is finished. The workflow engine will automatically inject the next step.

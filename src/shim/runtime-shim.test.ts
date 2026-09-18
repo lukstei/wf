@@ -125,6 +125,7 @@ describe("runShim End-to-End Simulation", () => {
 			INSTRUCTION:
 			Step 2 instruction
 
+			Start your response with: "Executing Step: Step 2"
 			Continue immediately and execute this step.",
 			  "suppressOutput": true,
 			}
