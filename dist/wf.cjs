@@ -1549,133 +1549,6 @@ function saveState(conversationId, state) {
   }
 }
 
-// src/transitions.ts
-function startWorkflow(workflow) {
-  if (workflow.flatSteps.length === 0) {
-    throw new Error(
-      `Cannot start workflow "${workflow.name}": contains no executable steps.`
-    );
-  }
-  return {
-    status: "active",
-    currentStepIndex: 0,
-    iterationCount: 1,
-    stepPending: true,
-    workflow
-  };
-}
-function pauseWorkflow(state) {
-  if (state?.status === "active") {
-    return {
-      ...state,
-      status: "paused",
-      stepPending: false
-    };
-  }
-  return state;
-}
-function stepPausedWorkflow(state) {
-  if (state?.status === "finished" || state && "currentStepIndex" in state && state.currentStepIndex >= state.workflow.flatSteps.length) {
-    return {
-      state: { status: "finished", workflow: state.workflow },
-      error: "already_finished"
-    };
-  }
-  if (!state || state.status !== "active" && state.status !== "paused") {
-    return {
-      state,
-      error: "no_workflow"
-    };
-  }
-  return {
-    state: {
-      ...state,
-      status: "paused",
-      stepPending: true
-    }
-  };
-}
-function advanceStep(state, decision) {
-  if (!state || state.status !== "active" && state.status !== "paused") {
-    return state;
-  }
-  const currentStep = state.workflow.flatSteps[state.currentStepIndex];
-  const targetIndex = nextStep(
-    state.workflow.flatSteps,
-    state.currentStepIndex,
-    decision
-  );
-  if (targetIndex >= state.workflow.flatSteps.length) {
-    return {
-      status: "finished",
-      workflow: state.workflow
-    };
-  }
-  const isGate = currentStep?.type === "gate";
-  return {
-    ...state,
-    currentStepIndex: targetIndex,
-    status: isGate ? "paused" : state.status,
-    stepPending: isGate ? false : state.status === "active"
-  };
-}
-function prepareStepExecution(state) {
-  const maxIterations = state.workflow.flatSteps.length * 5;
-  const nextIterationCount = (state.iterationCount ?? 0) + 1;
-  if (nextIterationCount > maxIterations) {
-    return {
-      exceeded: true,
-      maxIterations,
-      state: {
-        ...state,
-        status: "error",
-        error: `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`
-      }
-    };
-  }
-  return {
-    exceeded: false,
-    maxIterations,
-    state: {
-      ...state,
-      iterationCount: nextIterationCount,
-      stepPending: true
-    }
-  };
-}
-function failWorkflow(state, error) {
-  if (!state || state.status !== "active" && state.status !== "paused") {
-    return state;
-  }
-  return {
-    ...state,
-    status: "error",
-    error
-  };
-}
-function stopWorkflowState(state) {
-  if (!state || state.status !== "active" && state.status !== "paused") {
-    return { state: null, wasRunning: false };
-  }
-  return {
-    state: {
-      status: "finished",
-      workflow: state.workflow
-    },
-    wasRunning: true,
-    workflowName: state.workflow.name
-  };
-}
-function clearStepPending(state) {
-  if (state && "currentStepIndex" in state) {
-    return {
-      ...state,
-      stepPending: false
-    };
-  }
-  return state;
-}
-
 // src/actions/formatters.ts
 var OVERRIDE_HEADER = "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]";
 function injectSystemMessage(ephemeralMessage) {
@@ -1777,19 +1650,114 @@ function formatAdvanceReason(step2, preamble) {
   return reasonParts.join("\n");
 }
 
-// src/actions/condition.ts
-function conditionPre(_info, state) {
+// src/lib/assert.ts
+function assert(condition, message) {
+  if (!condition) {
+    throw new Error(message ?? "Assertion failed");
+  }
+}
+
+// src/transitions.ts
+function startWorkflow(workflow) {
+  if (workflow.flatSteps.length === 0) {
+    throw new Error(
+      `Cannot start workflow "${workflow.name}": contains no executable steps.`
+    );
+  }
+  return {
+    status: "active",
+    step: 0,
+    iterationCount: 0,
+    workflow
+  };
+}
+function pauseWorkflow(state) {
+  if (state?.status === "active") {
+    return {
+      ...state,
+      status: "paused"
+    };
+  }
+  return state;
+}
+function resumeWorkflow(state) {
+  assert(
+    state && (state.status === "active" || state.status === "paused"),
+    "Cannot resume workflow: no active or paused workflow is loaded"
+  );
+  return {
+    ...state,
+    status: "active"
+  };
+}
+function advanceStep(state, decision) {
+  if (!state || state.status !== "active") {
+    return state;
+  }
+  const nextIterationCount = state.iterationCount + 1;
+  const maxIterations = state.workflow.flatSteps.length * 5;
+  if (nextIterationCount > maxIterations) {
+    return {
+      ...state,
+      status: "error",
+      error: `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
+      iterationCount: nextIterationCount
+    };
+  }
+  const currentStep = state.workflow.flatSteps[state.step];
+  const targetIndex = nextStep(state.workflow.flatSteps, state.step, decision);
+  if (targetIndex >= state.workflow.flatSteps.length) {
+    return {
+      ...state,
+      status: "finished",
+      step: targetIndex,
+      iterationCount: nextIterationCount
+    };
+  }
+  const isGate = currentStep?.type === "gate";
+  return {
+    ...state,
+    step: targetIndex,
+    status: isGate ? "paused" : "active",
+    iterationCount: nextIterationCount
+  };
+}
+function failWorkflow(state, error) {
   if (!state || state.status !== "active" && state.status !== "paused") {
-    return { state, response: {} };
+    return state;
   }
-  const currentStep = state.workflow.flatSteps[state.currentStepIndex];
-  if (currentStep?.type !== "condition") {
-    return { state, response: {} };
+  return {
+    ...state,
+    status: "error",
+    error
+  };
+}
+function stopWorkflowState(state) {
+  if (!state || state.status !== "active" && state.status !== "paused") {
+    return { state: null, wasRunning: false };
   }
-  const stepNum = state.currentStepIndex + 1;
+  return {
+    state: {
+      ...state,
+      status: "finished"
+    },
+    wasRunning: true,
+    workflowName: state.workflow.name
+  };
+}
+
+// src/actions/step.ts
+function step(_info, state) {
+  assert(
+    state && (state.status === "active" || state.status === "paused"),
+    "Cannot execute step: workflow must be active or paused"
+  );
+  const currentStep = state.workflow.flatSteps[state.step];
+  assert(currentStep, "Current step does not exist");
+  const stepNum = state.step + 1;
   const totalSteps = state.workflow.flatSteps.length;
   const prompt = formatStepPrompt(state, currentStep, stepNum, totalSteps);
-  logDebug("Injecting condition step (Pre)", {
+  logDebug("Injecting step", {
     stepNum,
     totalSteps,
     level: currentStep.level,
@@ -1800,38 +1768,45 @@ function conditionPre(_info, state) {
     response: injectSystemMessage(prompt)
   };
 }
-function conditionStop(info, state) {
-  if (!state || state.status !== "active" && state.status !== "paused") {
-    return { state, response: { decision: "allow" } };
-  }
-  const currentStep = state.workflow.flatSteps[state.currentStepIndex];
-  if (currentStep?.type !== "condition") {
-    return { state, response: { decision: "allow" } };
-  }
-  const totalSteps = state.workflow.flatSteps.length;
-  const modelText = info.latestMessage?.content ?? "";
-  const decision = parseDecision(modelText);
-  logDebug("Condition evaluated (Stop)", {
-    condition: currentStep.condition,
-    decision
-  });
-  const nextState = advanceStep(state, decision);
+
+// src/actions/next.ts
+function nextPre(info, state) {
+  assert(
+    state && (state.status === "active" || state.status === "paused"),
+    "No workflow is running"
+  );
+  const nextState = resumeWorkflow(state);
+  return step(info, nextState);
+}
+function nextStop(_info, state) {
+  assert(state?.status === "active", "nextStop requires an active workflow");
+  const nextState = advanceStep(state);
   if (nextState?.status === "finished") {
-    logDebug("All workflow steps complete after condition", { totalSteps });
+    logDebug("All workflow steps complete", {
+      totalSteps: state.workflow.flatSteps.length
+    });
+    return {
+      state: nextState,
+      response: { decision: "allow" }
+    };
+  }
+  if (nextState?.status === "error") {
+    logDebug("Workflow terminated on error", { error: nextState.error });
     return {
       state: nextState,
       response: { decision: "allow" }
     };
   }
   if (nextState?.status === "active") {
-    const nextTargetStep = nextState.workflow.flatSteps[nextState.currentStepIndex];
-    const nextStepNum = nextState.currentStepIndex + 1;
+    const nextTargetStep = nextState.workflow.flatSteps[nextState.step];
+    const stepNum = nextState.step + 1;
+    const totalSteps = nextState.workflow.flatSteps.length;
     const reason = formatAdvanceReason(
       nextTargetStep,
       nextState.workflow.preamble
     );
-    logDebug("Advancing after condition (auto)", {
-      nextNum: nextStepNum,
+    logDebug("Advancing to step (auto)", {
+      nextNum: stepNum,
       totalSteps,
       level: nextTargetStep.level
     });
@@ -1843,14 +1818,17 @@ function conditionStop(info, state) {
       }
     };
   }
-  logDebug("Condition finished in paused mode, yielding to user", {
-    nextStep: (nextState?.currentStepIndex ?? 0) + 1
+  logDebug("Step finished at gate, yielding to user", {
+    nextStep: (nextState?.step ?? 0) + 1
   });
   return {
     state: nextState,
     response: { decision: "allow" }
   };
 }
+
+// src/actions/run.ts
+var path3 = __toESM(require("node:path"), 1);
 
 // src/lib/parseCommand.ts
 function parseFilePath(argsStr) {
@@ -2029,110 +2007,9 @@ function parseCommand(input) {
   };
 }
 
-// src/actions/step.ts
-function step(_info, state) {
-  if (!state || state.status !== "active" && state.status !== "paused") {
-    return { state, response: {} };
-  }
-  const currentStep = state.workflow.flatSteps[state.currentStepIndex];
-  if (!currentStep || currentStep.type !== "step" && currentStep.type !== "gate") {
-    return { state, response: {} };
-  }
-  const stepNum = state.currentStepIndex + 1;
-  const totalSteps = state.workflow.flatSteps.length;
-  const prompt = formatStepPrompt(state, currentStep, stepNum, totalSteps);
-  logDebug("Injecting step", {
-    stepNum,
-    totalSteps,
-    level: currentStep.level,
-    status: state.status
-  });
-  return {
-    state,
-    response: injectSystemMessage(prompt)
-  };
-}
-
-// src/actions/next.ts
-function nextPre(info, state) {
-  const result = stepPausedWorkflow(state);
-  if (result.error === "already_finished") {
-    return {
-      state: result.state,
-      response: injectSystemMessage(
-        "[WORKFLOW RUNNER] Workflow has already completed all steps."
-      )
-    };
-  }
-  if (result.error === "no_workflow") {
-    return {
-      state: result.state,
-      response: injectSystemMessage(
-        getHelpText(
-          "No workflow is loaded. Start a workflow with '/wf <workflow-file>'."
-        )
-      )
-    };
-  }
-  if (!result.state || result.state.currentStepIndex === void 0) {
-    return {
-      state: result.state,
-      response: injectSystemMessage(
-        "[WORKFLOW RUNNER] Workflow has already completed all steps."
-      )
-    };
-  }
-  const nextTargetStep = result.state.workflow.flatSteps[result.state.currentStepIndex];
-  return nextTargetStep?.type === "condition" ? conditionPre(info, result.state) : step(info, result.state);
-}
-function nextStop(_info, state) {
-  if (!state || state.status !== "active" && state.status !== "paused") {
-    return { state, response: { decision: "allow" } };
-  }
-  const nextState = advanceStep(state);
-  if (nextState?.status === "finished") {
-    logDebug("All workflow steps complete", {
-      totalSteps: state.workflow.flatSteps.length
-    });
-    return {
-      state: nextState,
-      response: { decision: "allow" }
-    };
-  }
-  if (nextState?.status === "active") {
-    const nextTargetStep = nextState.workflow.flatSteps[nextState.currentStepIndex];
-    const stepNum = nextState.currentStepIndex + 1;
-    const totalSteps = nextState.workflow.flatSteps.length;
-    const reason = formatAdvanceReason(
-      nextTargetStep,
-      nextState.workflow.preamble
-    );
-    logDebug("Advancing to step (auto)", {
-      nextNum: stepNum,
-      totalSteps,
-      level: nextTargetStep.level
-    });
-    return {
-      state: nextState,
-      response: {
-        decision: "continue",
-        reason
-      }
-    };
-  }
-  logDebug("Step finished in paused mode, yielding to user", {
-    nextStep: (nextState?.currentStepIndex ?? 0) + 1
-  });
-  return {
-    state: nextState,
-    response: { decision: "allow" }
-  };
-}
-
 // src/actions/run.ts
-var path3 = __toESM(require("node:path"), 1);
 function run(info, state, command) {
-  const targetPath = command?.args.path ?? "";
+  const targetPath = command.args.path ?? "";
   if (!targetPath) {
     return {
       state,
@@ -2178,8 +2055,7 @@ function run(info, state, command) {
     steps: resolved.workflow.steps,
     flatSteps
   });
-  const firstStep = flatSteps[0];
-  return firstStep.type === "condition" ? conditionPre(info, nextState) : step(info, nextState);
+  return step(info, nextState);
 }
 
 // src/actions/show.ts
@@ -2214,15 +2090,15 @@ Error: ${state.error}`
         )
       };
     }
-    const currentLevel = state.workflow.flatSteps[state.currentStepIndex]?.level ?? 0;
+    const currentLevel = state.workflow.flatSteps[state.step]?.level ?? 0;
     const statusHeader2 = `[WORKFLOW STATUS: ${state.status.toUpperCase()}]
 Workflow: ${state.workflow.name}
-Step: ${state.currentStepIndex + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})`;
+Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})`;
     const prompt2 = visualizeWorkflowPrompt(
       state.workflow.name,
       state.workflow,
       state.workflow.filePath,
-      state.currentStepIndex,
+      state.step,
       statusHeader2
     );
     return {
@@ -2249,10 +2125,10 @@ Step: ${state.currentStepIndex + 1} of ${state.workflow.flatSteps.length} (Nesti
     };
   }
   const isActiveWorkflow = state && (state.status === "active" || state.status === "paused") && state.workflow.filePath === resolved.filePath;
-  const activeStepIndex = isActiveWorkflow ? state.currentStepIndex : void 0;
+  const activeStepIndex = isActiveWorkflow ? state.step : void 0;
   const statusHeader = isActiveWorkflow ? `[WORKFLOW STATUS: ${state.status.toUpperCase()}]
 Workflow: ${state.workflow.name}
-Step: ${state.currentStepIndex + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${state.workflow.flatSteps[state.currentStepIndex]?.level ?? 0})` : void 0;
+Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${state.workflow.flatSteps[state.step]?.level ?? 0})` : void 0;
   const wfName = resolved.workflow.name || path4.basename(resolved.filePath);
   const prompt = visualizeWorkflowPrompt(
     wfName,
@@ -2301,14 +2177,16 @@ function handleCommand(info, state, parsedCmd) {
     return { state, response: {} };
   }
   switch (parsedCmd.command.name) {
-    case "help":
+    case "help": {
+      const paused = pauseWorkflow(state);
       return {
-        state: clearStepPending(state),
+        state: paused,
         response: injectSystemMessage(parsedCmd.helpText || getHelpText())
       };
+    }
     case "show": {
-      const showState = clearStepPending(state);
-      return show(info, showState, parsedCmd.command);
+      const paused = pauseWorkflow(state);
+      return show(info, paused, parsedCmd.command);
     }
     case "next":
       return nextPre(info, state);
@@ -2319,11 +2197,11 @@ function handleCommand(info, state, parsedCmd) {
   }
 }
 function dispatchStep(info, state) {
-  const currentStep = state.workflow.flatSteps[state.currentStepIndex];
+  const currentStep = state.workflow.flatSteps[state.step];
   if (!currentStep) {
     return { state, response: {} };
   }
-  return currentStep.type === "condition" ? conditionPre(info, state) : step(info, state);
+  return step(info, state);
 }
 function handlePre(info, state) {
   if (info.latestMessage && info.latestMessage.type === "USER_INPUT") {
@@ -2345,21 +2223,89 @@ function handlePre(info, state) {
   if (state?.status !== "active") {
     return { state, response: {} };
   }
-  const stepExec = prepareStepExecution(state);
-  if (stepExec.exceeded) {
+  const maxIterations = state.workflow.flatSteps.length * 5;
+  if (state.iterationCount >= maxIterations) {
+    const errorState = failWorkflow(
+      state,
+      `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`
+    );
     return {
-      state: stepExec.state,
+      state: errorState,
       response: injectSystemMessage(
-        `[WORKFLOW RUNNER] Workflow terminated: Exceeded safety iteration limit (${stepExec.maxIterations}).`
+        `[WORKFLOW RUNNER] Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`
       )
     };
   }
-  return dispatchStep(info, stepExec.state);
+  return dispatchStep(info, state);
+}
+
+// src/actions/condition.ts
+function conditionStop(info, state) {
+  assert(
+    state?.status === "active",
+    "conditionStop requires an active workflow"
+  );
+  const currentStep = state.workflow.flatSteps[state.step];
+  assert(
+    currentStep?.type === "condition",
+    "conditionStop requires current step to be a condition"
+  );
+  const totalSteps = state.workflow.flatSteps.length;
+  const modelText = info.latestMessage?.content ?? "";
+  const decision = parseDecision(modelText);
+  logDebug("Condition evaluated (Stop)", {
+    condition: currentStep.condition,
+    decision
+  });
+  const nextState = advanceStep(state, decision);
+  if (nextState?.status === "finished") {
+    logDebug("All workflow steps complete after condition", { totalSteps });
+    return {
+      state: nextState,
+      response: { decision: "allow" }
+    };
+  }
+  if (nextState?.status === "error") {
+    logDebug("Condition workflow terminated on error", {
+      error: nextState.error
+    });
+    return {
+      state: nextState,
+      response: { decision: "allow" }
+    };
+  }
+  if (nextState?.status === "active") {
+    const nextTargetStep = nextState.workflow.flatSteps[nextState.step];
+    const nextStepNum = nextState.step + 1;
+    const reason = formatAdvanceReason(
+      nextTargetStep,
+      nextState.workflow.preamble
+    );
+    logDebug("Advancing after condition (auto)", {
+      nextNum: nextStepNum,
+      totalSteps,
+      level: nextTargetStep.level
+    });
+    return {
+      state: nextState,
+      response: {
+        decision: "continue",
+        reason
+      }
+    };
+  }
+  logDebug("Condition finished in paused mode, yielding to user", {
+    nextStep: (nextState?.step ?? 0) + 1
+  });
+  return {
+    state: nextState,
+    response: { decision: "allow" }
+  };
 }
 
 // src/handlers/stop.ts
 function handleStop(info, state) {
-  if (!state || state.status !== "active" && state.status !== "paused") {
+  if (!state || state.status !== "active") {
     return { state, response: { decision: "allow" } };
   }
   if (info.payload.error || info.payload.terminationReason && /error/i.test(info.payload.terminationReason)) {
@@ -2377,10 +2323,7 @@ function handleStop(info, state) {
       response: { decision: "allow" }
     };
   }
-  if (state.stepPending === false) {
-    return { state, response: { decision: "allow" } };
-  }
-  const currentStep = state.workflow.flatSteps[state.currentStepIndex];
+  const currentStep = state.workflow.flatSteps[state.step];
   if (!currentStep) {
     return { state, response: { decision: "allow" } };
   }
@@ -2782,21 +2725,11 @@ ${firstStep.instruction}`;
         writeErr(err2);
         return { exitCode: 1, output: err2 };
       }
-      const result = stepPausedWorkflow(state);
-      if (result.error === "already_finished") {
-        const msg2 = "[WORKFLOW RUNNER] Workflow has already completed all steps.";
-        writeOut(msg2);
-        return { exitCode: 0, output: msg2 };
-      }
-      if (result.error === "no_workflow" || !result.state || result.state.currentStepIndex === void 0) {
-        const err2 = "No workflow is loaded. Start a workflow with 'wf start <workflow-file>'.";
-        writeErr(err2);
-        return { exitCode: 1, output: err2 };
-      }
-      saveState(conversationId, result.state);
-      const currentStep = result.state.workflow.flatSteps[result.state.currentStepIndex];
-      const stepNum = result.state.currentStepIndex + 1;
-      const total = result.state.workflow.flatSteps.length;
+      const nextState = resumeWorkflow(state);
+      saveState(conversationId, nextState);
+      const currentStep = nextState.workflow.flatSteps[nextState.step];
+      const stepNum = nextState.step + 1;
+      const total = nextState.workflow.flatSteps.length;
       const title = currentStep?.title || `Step ${stepNum}`;
       const msg = `[STEP ${stepNum}/${total}] ${title}
 ${currentStep?.instruction || ""}`;
@@ -2810,10 +2743,9 @@ ${currentStep?.instruction || ""}`;
         writeOut(msg);
         return { exitCode: 0, output: msg };
       }
-      const currentStepIndex = state.currentStepIndex ?? 0;
-      const currentStep = state.workflow.flatSteps[currentStepIndex];
+      const currentStep = state.workflow.flatSteps[state.step];
       const currentLevel = currentStep?.level ?? 0;
-      const stepInfo = state.currentStepIndex !== void 0 ? `Step: ${state.currentStepIndex + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})` : "All steps completed";
+      const stepInfo = state.status !== "finished" ? `Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})` : "All steps completed";
       const statusHeader = `[WORKFLOW STATUS: ${state.status.toUpperCase()}]
 Workflow: ${state.workflow.name}
 ${stepInfo}`;
@@ -2821,7 +2753,7 @@ ${stepInfo}`;
         state.workflow.name,
         state.workflow,
         state.workflow.filePath,
-        state.status === "active" || state.status === "paused" ? state.currentStepIndex : void 0,
+        state.status === "active" || state.status === "paused" ? state.step : void 0,
         statusHeader
       );
       writeOut(prompt);
