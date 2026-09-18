@@ -1,13 +1,13 @@
 import { describe, expect, test } from "vitest";
-import type { WorkflowState } from "../state.ts";
+import type { ActiveWorkflow } from "../state.ts";
 import {
 	type FlatStep,
 	flattenWorkflow,
-	type WorkflowDef,
+	type WorkflowAst,
 } from "../workflow.ts";
 import { nextPre, nextStop } from "./next.ts";
 
-const sampleDef: WorkflowDef = {
+const sampleDef: WorkflowAst = {
 	name: "Flow",
 	steps: [
 		{ type: "step", title: "Step 1", instruction: "Do 1" },
@@ -18,23 +18,52 @@ const sampleDef: WorkflowDef = {
 describe("actions/next.ts", () => {
 	test("nextPre resumes active mode and injects current step", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
-		const state: WorkflowState = {
-			status: "paused",
-			step: 0,
-			iterationCount: 0,
-			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+		const active: ActiveWorkflow = {
+			state: {
+				status: "paused",
+				step: 0,
+				iterationCount: 0,
+			},
+			workflow: {
+				name: "Flow",
+				filePath: "wf.json",
+				steps: sampleDef.steps,
+				flatSteps: flat,
+			},
 		};
 
 		const res = nextPre(
 			{ type: "pre", payload: { conversationId: "c1" } },
-			state,
+			active,
 		);
-		expect(res.state?.status).toBe("active");
-		expect(res.response.injectSteps).toBeDefined();
-		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(
-			/\[WORKFLOW ACTIVE: Flow\]/,
-		);
-		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatch(/Do 1/);
+		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "injectSteps": [
+			      {
+			        "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
+
+			[WORKFLOW ACTIVE: Flow]
+			Step 1 of 2: Step 1
+
+			INSTRUCTION:
+			Do 1
+
+			RULES:
+			1. Execute this specific step now.
+			2. Do NOT jump ahead to subsequent steps.
+			3. Conclude your response when this step is complete.
+			4. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
+			      },
+			    ],
+			  },
+			  "state": {
+			    "iterationCount": 0,
+			    "status": "active",
+			    "step": 0,
+			  },
+			}
+		`);
 	});
 
 	test("nextPre throws when workflow is uninitialized or completed", () => {
@@ -47,10 +76,17 @@ describe("actions/next.ts", () => {
 			nextPre(
 				{ type: "pre", payload: { conversationId: "c1" } },
 				{
-					status: "finished",
-					step: 2,
-					iterationCount: 2,
-					workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+					state: {
+						status: "finished",
+						step: 2,
+						iterationCount: 2,
+					},
+					workflow: {
+						name: "Flow",
+						filePath: "wf.json",
+						steps: sampleDef.steps,
+						flatSteps: flat,
+					},
 				},
 			),
 		).toThrow("No workflow is running");
@@ -58,21 +94,42 @@ describe("actions/next.ts", () => {
 
 	test("nextStop advances to next step and signals continue in active mode", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
-		const state: WorkflowState = {
-			status: "active",
-			step: 0,
-			iterationCount: 0,
-			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: 0,
+			},
+			workflow: {
+				name: "Flow",
+				filePath: "wf.json",
+				steps: sampleDef.steps,
+				flatSteps: flat,
+			},
 		};
 
 		const res = nextStop(
 			{ type: "stop", payload: { conversationId: "c1" } },
-			state,
+			active,
 		);
-		expect(res.state?.step).toBe(1);
-		expect(res.state?.status).toBe("active");
-		expect(res.response.decision).toBe("continue");
-		expect(res.response.reason).toMatch(/Do 2/);
+		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "continue",
+			    "reason": "[wf] Executing next step: Step 2
+
+			INSTRUCTION:
+			Do 2
+
+			Continue immediately and execute this step.",
+			  },
+			  "state": {
+			    "iterationCount": 1,
+			    "status": "active",
+			    "step": 1,
+			  },
+			}
+		`);
 	});
 
 	test("nextStop asserts precondition when workflow is not active", () => {
@@ -81,33 +138,57 @@ describe("actions/next.ts", () => {
 		).toThrow("nextStop requires an active workflow");
 
 		const flat = flattenWorkflow(sampleDef.steps);
-		const state: WorkflowState = {
-			status: "paused",
-			step: 0,
-			iterationCount: 0,
-			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+		const active: ActiveWorkflow = {
+			state: {
+				status: "paused",
+				step: 0,
+				iterationCount: 0,
+			},
+			workflow: {
+				name: "Flow",
+				filePath: "wf.json",
+				steps: sampleDef.steps,
+				flatSteps: flat,
+			},
 		};
 
 		expect(() =>
-			nextStop({ type: "stop", payload: { conversationId: "c1" } }, state),
+			nextStop({ type: "stop", payload: { conversationId: "c1" } }, active),
 		).toThrow("nextStop requires an active workflow");
 	});
 
 	test("nextStop completes workflow when reaching the end", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
-		const state: WorkflowState = {
-			status: "active",
-			step: 1, // last step
-			iterationCount: 0,
-			workflow: { name: "Flow", filePath: "wf.json", flatSteps: flat },
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 1, // last step
+				iterationCount: 0,
+			},
+			workflow: {
+				name: "Flow",
+				filePath: "wf.json",
+				steps: sampleDef.steps,
+				flatSteps: flat,
+			},
 		};
 
 		const res = nextStop(
 			{ type: "stop", payload: { conversationId: "c1" } },
-			state,
+			active,
 		);
-		expect(res.state?.status).toBe("finished");
-		expect(res.response.decision).toBe("allow");
+		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "allow",
+			  },
+			  "state": {
+			    "iterationCount": 1,
+			    "status": "finished",
+			    "step": 2,
+			  },
+			}
+		`);
 	});
 
 	test("nextStop injects workflow preamble and step instruction into reason", () => {
@@ -129,13 +210,16 @@ describe("actions/next.ts", () => {
 				nextIndex: 2,
 			},
 		];
-		const state: WorkflowState = {
-			status: "active",
-			step: 0,
-			iterationCount: 0,
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: 0,
+			},
 			workflow: {
 				name: "Flow",
 				filePath: "wf.json",
+				steps: [],
 				preamble: "Global flow context",
 				flatSteps: flat,
 			},
@@ -143,12 +227,28 @@ describe("actions/next.ts", () => {
 
 		const res = nextStop(
 			{ type: "stop", payload: { conversationId: "c1" } },
-			state,
+			active,
 		);
-		expect(res.state?.step).toBe(1);
-		const reason = res.response.reason;
-		expect(reason).toContain("CONTEXT:");
-		expect(reason).toContain("Global flow context");
-		expect(reason).toContain("Step 2 instruction");
+		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "continue",
+			    "reason": "[wf] Executing next step: Step 2 (Level 1)
+
+			CONTEXT:
+			Global flow context
+
+			INSTRUCTION:
+			Step 2 instruction
+
+			Continue immediately and execute this step.",
+			  },
+			  "state": {
+			    "iterationCount": 1,
+			    "status": "active",
+			    "step": 1,
+			  },
+			}
+		`);
 	});
 });

@@ -5,8 +5,12 @@ import {
 	getDebugLogPath,
 	getStatePath,
 	getStorageBaseDir,
+	getWorkflowPath,
+	loadActiveWorkflow,
 	loadState,
+	loadWorkflow,
 	saveState,
+	saveWorkflow,
 	type WorkflowState,
 } from "./state.ts";
 import {
@@ -15,13 +19,13 @@ import {
 	isGateStep,
 	isStep,
 	nextStep,
-	type WorkflowDef,
+	type WorkflowAst,
 	type WorkflowStep,
 } from "./workflow.ts";
 
 describe("state.ts", () => {
 	test("flattenWorkflow flattens linear actions", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
 			name: "Linear",
 			steps: [
 				{ type: "step", title: "Step 1", instruction: "Do step 1" },
@@ -52,7 +56,8 @@ describe("state.ts", () => {
 	});
 
 	test("flattenWorkflow compiles single-level condition with yes and no branches", () => {
-		const condWf: WorkflowDef = {
+		const condWf: WorkflowAst = {
+			name: "Condition",
 			steps: [
 				{ type: "step", title: "Init", instruction: "Init" },
 				{
@@ -118,7 +123,8 @@ describe("state.ts", () => {
 	});
 
 	test("flattenWorkflow compiles nested conditions and sets levels correctly", () => {
-		const nestedWf: WorkflowDef = {
+		const nestedWf: WorkflowAst = {
+			name: "Nested",
 			steps: [
 				{ type: "step", title: "Init", instruction: "Init" },
 				{
@@ -325,20 +331,32 @@ describe("state.ts", () => {
 			status: "active",
 			step: 1,
 			iterationCount: 1,
-			workflow: {
-				name: "TestFlow",
-				filePath: "/mock/path.json",
-				flatSteps: [],
-			},
 		};
 
 		saveState(testConvId, sampleState);
 		const loaded = loadState(testConvId);
 		expect(loaded).toEqual(sampleState);
 
+		const sampleWorkflow = {
+			name: "TestFlow",
+			filePath: "/mock/path.json",
+			steps: [],
+			flatSteps: [],
+		};
+		saveWorkflow(testConvId, sampleWorkflow);
+		const loadedWf = loadWorkflow(testConvId);
+		expect(loadedWf).toEqual(sampleWorkflow);
+
+		const loadedActive = loadActiveWorkflow(testConvId);
+		expect(loadedActive).toEqual({
+			state: sampleState,
+			workflow: sampleWorkflow,
+		});
+
 		// Corrupted JSON returns null
 		fs.writeFileSync(getStatePath(testConvId), "{ corrupt json", "utf-8");
 		expect(loadState(testConvId)).toBeNull();
+		expect(loadActiveWorkflow(testConvId)).toBeNull();
 
 		// Clean up
 		try {

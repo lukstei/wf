@@ -1,6 +1,6 @@
 import { handlePre } from "./handlers/pre.ts";
 import { handleStop } from "./handlers/stop.ts";
-import type { WorkflowState } from "./state.ts";
+import type { ActiveWorkflow } from "./state.ts";
 import type { HandleResult, HookInfo } from "./types.ts";
 
 /**
@@ -9,12 +9,12 @@ import type { HandleResult, HookInfo } from "./types.ts";
  */
 export function handle(
 	info: HookInfo,
-	state: WorkflowState | null,
+	active: ActiveWorkflow | null,
 ): HandleResult {
 	if (info.type === "stop") {
-		return handleStop(info, state);
+		return handleStop(info, active);
 	} else if (info.type === "pre") {
-		return handlePre(info, state);
+		return handlePre(info, active);
 	}
 	throw new Error(`Unknown hook type: ${info.type}`);
 }

@@ -1,7 +1,7 @@
 import { conditionStop } from "../actions/condition.ts";
 import { nextStop } from "../actions/next.ts";
 import { logDebug } from "../lib/logDebug.ts";
-import type { WorkflowState } from "../state.ts";
+import type { ActiveWorkflow } from "../state.ts";
 import { failWorkflow, pauseWorkflow } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 
@@ -11,11 +11,11 @@ import type { HandleResult, HookInfo } from "../types.ts";
  */
 export function handleStop(
 	info: HookInfo,
-	state: WorkflowState | null,
+	active: ActiveWorkflow | null,
 ): HandleResult {
 	// If no workflow is active, allow stop
-	if (!state || state.status !== "active") {
-		return { state: state, response: { decision: "allow" } };
+	if (!active || active.state.status !== "active") {
+		return { active, response: { decision: "allow" } };
 	}
 
 	// If stopped due to error, transition to error status
@@ -28,8 +28,11 @@ export function handleStop(
 			info.payload.error ||
 			`Stopped with reason: ${info.payload.terminationReason}`;
 		logDebug("Setting error state due to error termination", info.payload);
+		const errorState = failWorkflow(active.state, errorMsg);
 		return {
-			state: failWorkflow(state, errorMsg),
+			active: errorState
+				? { workflow: active.workflow, state: errorState }
+				: active,
 			response: { decision: "allow" },
 		};
 	}
@@ -40,19 +43,20 @@ export function handleStop(
 		/cancel|abort|interrupt/i.test(info.payload.terminationReason)
 	) {
 		logDebug("Allowing stop due to interruption", info.payload);
+		const paused = pauseWorkflow(active.state);
 		return {
-			state: pauseWorkflow(state),
+			active: paused ? { workflow: active.workflow, state: paused } : active,
 			response: { decision: "allow" },
 		};
 	}
 
-	const currentStep = state.workflow.flatSteps[state.step];
+	const currentStep = active.workflow.flatSteps[active.state.step];
 	if (!currentStep) {
-		return { state: state, response: { decision: "allow" } };
+		return { active, response: { decision: "allow" } };
 	}
 
 	if (currentStep.type === "condition") {
-		return conditionStop(info, state);
+		return conditionStop(info, active);
 	}
-	return nextStop(info, state);
+	return nextStop(info, active);
 }

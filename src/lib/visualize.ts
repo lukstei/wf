@@ -1,29 +1,23 @@
 import {
+	type CompiledWorkflow,
 	type FlatStep,
 	flattenWorkflow,
 	isConditionalStep,
 	isGateStep,
-	type WorkflowDef,
-	type WorkflowInfo,
+	type WorkflowAst,
 	type WorkflowStep,
 } from "../workflow.ts";
 
-export type VisualizableWorkflow =
-	| WorkflowDef
-	| WorkflowInfo
-	| { steps?: WorkflowStep[]; flatSteps?: FlatStep[] };
+export type VisualizableWorkflow = WorkflowAst | CompiledWorkflow;
 
 function escapeLabel(text: string): string {
 	return text.replace(/"/g, "#quot;").replace(/\r?\n/g, "<br/>");
 }
 
 function getFlatSteps(workflow: VisualizableWorkflow): FlatStep[] {
-	if ("flatSteps" in workflow && Array.isArray(workflow.flatSteps)) {
-		return workflow.flatSteps;
-	}
-	const steps =
-		"steps" in workflow && Array.isArray(workflow.steps) ? workflow.steps : [];
-	return flattenWorkflow(steps);
+	return "flatSteps" in workflow
+		? workflow.flatSteps
+		: flattenWorkflow(workflow.steps);
 }
 
 /**
@@ -93,34 +87,10 @@ export function visualize(
  * Converts a workflow definition into a hierarchical plain text outline.
  */
 export function visualizePlainText(
-	workflow: VisualizableWorkflow,
+	workflow: WorkflowAst,
 	activeStepIndex?: number,
 ): string {
-	const steps =
-		"steps" in workflow && Array.isArray(workflow.steps) ? workflow.steps : [];
-
-	if (steps.length === 0) {
-		const flatSteps =
-			"flatSteps" in workflow && Array.isArray(workflow.flatSteps)
-				? workflow.flatSteps
-				: [];
-		if (flatSteps.length === 0) return "";
-		return flatSteps
-			.map((step) => {
-				const indent = "  ".repeat(step.level);
-				const isActive =
-					activeStepIndex !== undefined && step.index === activeStepIndex;
-				const marker = isActive ? "▶ [CURRENT] " : "";
-				if (step.type === "condition") {
-					return `${indent}${marker}- If: ${step.title}`;
-				}
-				if (step.type === "gate") {
-					return `${indent}${marker}- Gate: ${step.title} [Approval Required]`;
-				}
-				return `${indent}${marker}- Step: ${step.title}`;
-			})
-			.join("\n");
-	}
+	if (workflow.steps.length === 0) return "";
 
 	const lines: string[] = [];
 	let stepIndex = 0;
@@ -152,7 +122,7 @@ export function visualizePlainText(
 		}
 	}
 
-	walk(steps, "");
+	walk(workflow.steps, "");
 	return lines.join("\n");
 }
 

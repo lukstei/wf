@@ -1,6 +1,6 @@
 import { assert } from "../lib/assert.ts";
 import { logDebug } from "../lib/logDebug.ts";
-import type { WorkflowState } from "../state.ts";
+import type { ActiveWorkflow } from "../state.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import { formatStepPrompt, injectSystemMessage } from "./formatters.ts";
 
@@ -10,29 +10,29 @@ import { formatStepPrompt, injectSystemMessage } from "./formatters.ts";
  */
 export function step(
 	_info: HookInfo,
-	state: WorkflowState | null,
+	active: ActiveWorkflow | null,
 ): HandleResult {
 	assert(
-		state && (state.status === "active" || state.status === "paused"),
+		active && (active.state.status === "active" || active.state.status === "paused"),
 		"Cannot execute step: workflow must be active or paused",
 	);
 
-	const currentStep = state.workflow.flatSteps[state.step];
+	const currentStep = active.workflow.flatSteps[active.state.step];
 	assert(currentStep, "Current step does not exist");
 
-	const stepNum = state.step + 1;
-	const totalSteps = state.workflow.flatSteps.length;
-	const prompt = formatStepPrompt(state, currentStep, stepNum, totalSteps);
+	const stepNum = active.state.step + 1;
+	const totalSteps = active.workflow.flatSteps.length;
+	const prompt = formatStepPrompt(active, currentStep, stepNum, totalSteps);
 
 	logDebug("Injecting step", {
 		stepNum,
 		totalSteps,
 		level: currentStep.level,
-		status: state.status,
+		status: active.state.status,
 	});
 
 	return {
-		state: state,
+		active,
 		response: injectSystemMessage(prompt),
 	};
 }

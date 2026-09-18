@@ -1,4 +1,4 @@
-import type { ExtractWorkflowState } from "../state.ts";
+import type { ActiveWorkflow } from "../state.ts";
 import type { FlatStep } from "../workflow.ts";
 
 export const OVERRIDE_HEADER =
@@ -23,28 +23,28 @@ export function parseDecision(modelText: string): "YES" | "NO" {
 }
 
 export function formatStepPrompt(
-	state: ExtractWorkflowState<"active" | "paused">,
+	active: ActiveWorkflow,
 	currentStep: FlatStep,
 	stepNum: number,
 	totalSteps: number,
 ): string {
-	const wfName = state.workflow.name || "Workflow";
+	const wfName = active.workflow.name;
 	const stepTitle = `: ${currentStep.title}`;
 	const levelStr =
 		currentStep.level > 0 ? ` (Nesting Level ${currentStep.level})` : "";
-	const fileRef = state.workflow.filePath
-		? ` ("${state.workflow.filePath}")`
+	const fileRef = active.workflow.filePath
+		? ` ("${active.workflow.filePath}")`
 		: "";
 
 	if (currentStep.type === "condition") {
 		const lines: string[] = [
-			`[WORKFLOW ${state.status.toUpperCase()}: ${wfName}]`,
+			`[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
 			`Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr} (Condition Evaluation)`,
 			`Condition: "${currentStep.condition}"`,
 		];
 
-		if (state.workflow.preamble) {
-			lines.push("", "CONTEXT:", state.workflow.preamble);
+		if (active.workflow.preamble) {
+			lines.push("", "CONTEXT:", active.workflow.preamble);
 		}
 
 		lines.push("", "INSTRUCTION:");
@@ -69,12 +69,12 @@ export function formatStepPrompt(
 
 	const isGate = currentStep.type === "gate";
 	const promptParts: string[] = [
-		`[WORKFLOW ${state.status.toUpperCase()}: ${wfName}]`,
+		`[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
 		`Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr}`,
 	];
 
-	if (state.workflow.preamble) {
-		promptParts.push("", "CONTEXT:", state.workflow.preamble);
+	if (active.workflow.preamble) {
+		promptParts.push("", "CONTEXT:", active.workflow.preamble);
 	}
 
 	promptParts.push("", "INSTRUCTION:", currentStep.instruction || "");

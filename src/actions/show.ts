@@ -1,8 +1,7 @@
-import * as path from "node:path";
 import { getHelpText, type ShowCommand } from "../lib/parseCommand.ts";
 import { visualizeWorkflowPrompt } from "../lib/visualize.ts";
 import { defaultWorkflowResolver } from "../resolver.ts";
-import type { WorkflowState } from "../state.ts";
+import type { ActiveWorkflow } from "../state.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import { injectSystemMessage } from "./formatters.ts";
 
@@ -11,53 +10,54 @@ import { injectSystemMessage } from "./formatters.ts";
  */
 export function show(
 	info: HookInfo,
-	state: WorkflowState | null,
+	active: ActiveWorkflow | null,
 	command?: ShowCommand,
 ): HandleResult {
 	const targetPath = command?.args.path?.trim() ?? "";
 
 	// 1. Invoked without parameter: inspect currently active/loaded workflow state
 	if (!targetPath) {
-		if (!state) {
+		if (!active) {
 			return {
-				state,
+				active,
 				response: injectSystemMessage(
 					"[WORKFLOW STATUS]\nNo workflow is currently loaded. Run /wf <workflow-file> to start a workflow, or /wf-show <workflow-file> to inspect one.",
 				),
 			};
 		}
 
-		if (state.status === "finished") {
+		if (active.state.status === "finished") {
 			return {
-				state,
+				active,
 				response: injectSystemMessage(
-					`[WORKFLOW STATUS: FINISHED]\nWorkflow "${state.workflow.name}" completed successfully.`,
+					`[WORKFLOW STATUS: FINISHED]\nWorkflow "${active.workflow.name}" completed successfully.`,
 				),
 			};
 		}
 
-		if (state.status === "error") {
+		if (active.state.status === "error") {
 			return {
-				state,
+				active,
 				response: injectSystemMessage(
-					`[WORKFLOW STATUS: ERROR]\nWorkflow: ${state.workflow.name}\nError: ${state.error}`,
+					`[WORKFLOW STATUS: ERROR]\nWorkflow: ${active.workflow.name}\nError: ${active.state.error}`,
 				),
 			};
 		}
 
 		// Active or paused state: show diagram with active step highlighted + status header
-		const currentLevel = state.workflow.flatSteps[state.step]?.level ?? 0;
-		const statusHeader = `[WORKFLOW STATUS: ${state.status.toUpperCase()}]\nWorkflow: ${state.workflow.name}\nStep: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})`;
+		const currentLevel =
+			active.workflow.flatSteps[active.state.step]?.level ?? 0;
+		const statusHeader = `[WORKFLOW STATUS: ${active.state.status.toUpperCase()}]\nWorkflow: ${active.workflow.name}\nStep: ${active.state.step + 1} of ${active.workflow.flatSteps.length} (Nesting Level ${currentLevel})`;
 		const prompt = visualizeWorkflowPrompt(
-			state.workflow.name,
-			state.workflow,
-			state.workflow.filePath,
-			state.step,
+			active.workflow.name,
+			active.workflow,
+			active.workflow.filePath,
+			active.state.step,
 			statusHeader,
 		);
 
 		return {
-			state,
+			active,
 			response: injectSystemMessage(prompt),
 		};
 	}
@@ -68,7 +68,7 @@ export function show(
 
 	if (!resolved) {
 		return {
-			state,
+			active,
 			response: injectSystemMessage(
 				getHelpText(
 					`Workflow file not found: "${targetPath}". Please check the path and try again.`,
@@ -79,22 +79,22 @@ export function show(
 
 	if ("error" in resolved) {
 		return {
-			state,
+			active,
 			response: injectSystemMessage(getHelpText(resolved.error)),
 		};
 	}
 
 	const isActiveWorkflow =
-		state &&
-		(state.status === "active" || state.status === "paused") &&
-		state.workflow.filePath === resolved.filePath;
+		active &&
+		(active.state.status === "active" || active.state.status === "paused") &&
+		active.workflow.filePath === resolved.filePath;
 
-	const activeStepIndex = isActiveWorkflow ? state.step : undefined;
+	const activeStepIndex = isActiveWorkflow ? active.state.step : undefined;
 	const statusHeader = isActiveWorkflow
-		? `[WORKFLOW STATUS: ${state.status.toUpperCase()}]\nWorkflow: ${state.workflow.name}\nStep: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${state.workflow.flatSteps[state.step]?.level ?? 0})`
+		? `[WORKFLOW STATUS: ${active.state.status.toUpperCase()}]\nWorkflow: ${active.workflow.name}\nStep: ${active.state.step + 1} of ${active.workflow.flatSteps.length} (Nesting Level ${active.workflow.flatSteps[active.state.step]?.level ?? 0})`
 		: undefined;
 
-	const wfName = resolved.workflow.name || path.basename(resolved.filePath);
+	const wfName = resolved.workflow.name;
 	const prompt = visualizeWorkflowPrompt(
 		wfName,
 		resolved.workflow,
@@ -104,7 +104,7 @@ export function show(
 	);
 
 	return {
-		state,
+		active,
 		response: injectSystemMessage(prompt),
 	};
 }

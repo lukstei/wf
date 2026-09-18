@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
-import type { WorkflowState } from "../state.ts";
-import { flattenWorkflow, type WorkflowDef } from "../workflow.ts";
+import type { ActiveWorkflow } from "../state.ts";
+import { flattenWorkflow, type WorkflowAst } from "../workflow.ts";
 import { conditionPre, conditionStop } from "./condition.ts";
 
-const condDef: WorkflowDef = {
+const condDef: WorkflowAst = {
 	name: "CondFlow",
 	steps: [
 		{
@@ -28,27 +28,26 @@ const condDef: WorkflowDef = {
 describe("actions/condition.ts", () => {
 	test("conditionPre injects formatted condition prompt", () => {
 		const flat = flattenWorkflow(condDef.steps);
-		const state: WorkflowState = {
-			status: "active",
-			step: 0,
-			iterationCount: 0,
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: 0,
+			},
 			workflow: {
 				name: "CondFlow",
 				filePath: "wf.json",
+				steps: condDef.steps,
 				flatSteps: flat,
 			},
 		};
 
 		const res = conditionPre(
 			{ type: "pre", payload: { conversationId: "c1" } },
-			state,
+			active,
 		);
-		expect(res).toMatchInlineSnapshot(`
-			{
-			  "response": {
-			    "injectSteps": [
-			      {
-			        "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
+		expect(res.response.injectSteps?.[0]?.ephemeralMessage).toMatchInlineSnapshot(`
+			"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
 			[WORKFLOW ACTIVE: CondFlow]
 			Step 1 of 4: Check Database (Condition Evaluation)
@@ -61,67 +60,22 @@ describe("actions/condition.ts", () => {
 			[DECISION: YES] or [DECISION: NO]
 
 			RULES:
-			1. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner.",
-			      },
-			    ],
-			  },
-			  "state": {
-			    "iterationCount": 0,
-			    "status": "active",
-			    "step": 0,
-			    "workflow": {
-			      "filePath": "wf.json",
-			      "flatSteps": [
-			        {
-			          "condition": "is db healthy?",
-			          "index": 0,
-			          "level": 0,
-			          "nextIndex": 1,
-			          "skipIndex": 2,
-			          "title": "Check Database",
-			          "type": "condition",
-			        },
-			        {
-			          "index": 1,
-			          "instruction": "Run queries",
-			          "level": 1,
-			          "nextIndex": 3,
-			          "title": "Run queries",
-			          "type": "step",
-			        },
-			        {
-			          "index": 2,
-			          "instruction": "Restart db",
-			          "level": 1,
-			          "nextIndex": 3,
-			          "title": "Restart db",
-			          "type": "step",
-			        },
-			        {
-			          "index": 3,
-			          "instruction": "Finish",
-			          "level": 0,
-			          "nextIndex": 4,
-			          "title": "Finish",
-			          "type": "step",
-			        },
-			      ],
-			      "name": "CondFlow",
-			    },
-			  },
-			}
+			1. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner."
 		`);
 	});
 
 	test("conditionStop parses YES decision and jumps to yes branch", () => {
 		const flat = flattenWorkflow(condDef.steps);
-		const state: WorkflowState = {
-			status: "active",
-			step: 0,
-			iterationCount: 0,
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: 0,
+			},
 			workflow: {
 				name: "CondFlow",
 				filePath: "wf.json",
+				steps: condDef.steps,
 				flatSteps: flat,
 			},
 		};
@@ -136,15 +90,14 @@ describe("actions/condition.ts", () => {
 					content: "DB connection is good. [DECISION: YES]",
 				},
 			},
-			state,
+			active,
 		);
 
 		expect({
-			nextStepIndex: res.state?.step,
+			state: res.active?.state,
 			response: res.response,
 		}).toMatchInlineSnapshot(`
 			{
-			  "nextStepIndex": 1,
 			  "response": {
 			    "decision": "continue",
 			    "reason": "[wf] Executing next step: Run queries (Level 1)
@@ -154,19 +107,27 @@ describe("actions/condition.ts", () => {
 
 			Continue immediately and execute this step.",
 			  },
+			  "state": {
+			    "iterationCount": 1,
+			    "status": "active",
+			    "step": 1,
+			  },
 			}
 		`);
 	});
 
 	test("conditionStop parses NO decision and jumps to no branch", () => {
 		const flat = flattenWorkflow(condDef.steps);
-		const state: WorkflowState = {
-			status: "active",
-			step: 0,
-			iterationCount: 0,
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: 0,
+			},
 			workflow: {
 				name: "CondFlow",
 				filePath: "wf.json",
+				steps: condDef.steps,
 				flatSteps: flat,
 			},
 		};
@@ -181,15 +142,14 @@ describe("actions/condition.ts", () => {
 					content: "DB connection timed out. [DECISION: NO]",
 				},
 			},
-			state,
+			active,
 		);
 
 		expect({
-			nextStepIndex: res.state?.step,
+			state: res.active?.state,
 			response: res.response,
 		}).toMatchInlineSnapshot(`
 			{
-			  "nextStepIndex": 2,
 			  "response": {
 			    "decision": "continue",
 			    "reason": "[wf] Executing next step: Restart db (Level 1)
@@ -199,12 +159,18 @@ describe("actions/condition.ts", () => {
 
 			Continue immediately and execute this step.",
 			  },
+			  "state": {
+			    "iterationCount": 1,
+			    "status": "active",
+			    "step": 2,
+			  },
 			}
 		`);
 	});
 
 	test("conditionStop completes workflow if branch leads past end of steps", () => {
-		const singleCond: WorkflowDef = {
+		const singleCond: WorkflowAst = {
+			name: "SkipCondition",
 			steps: [
 				{
 					type: "condition",
@@ -216,13 +182,16 @@ describe("actions/condition.ts", () => {
 			],
 		};
 		const flat = flattenWorkflow(singleCond.steps);
-		const state: WorkflowState = {
-			status: "active",
-			step: 0,
-			iterationCount: 0,
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: 0,
+			},
 			workflow: {
 				name: "Single",
 				filePath: "wf.json",
+				steps: singleCond.steps,
 				flatSteps: flat,
 			},
 		};
@@ -237,15 +206,28 @@ describe("actions/condition.ts", () => {
 					content: "[DECISION: YES]",
 				},
 			},
-			state,
+			active,
 		);
 
-		expect(res.state?.status).toBe("finished");
-		expect(res.response).toEqual({ decision: "allow" });
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "allow",
+			  },
+			  "state": {
+			    "iterationCount": 1,
+			    "status": "finished",
+			    "step": 1,
+			  },
+			}
+		`);
 	});
 
 	test("conditionStop injects workflow preamble and step instruction into continuation reason", () => {
-		const flat = flattenWorkflow([
+		const steps: WorkflowAst["steps"] = [
 			{
 				type: "condition",
 				title: "is ready?",
@@ -260,14 +242,18 @@ describe("actions/condition.ts", () => {
 					],
 				},
 			},
-		]);
-		const state: WorkflowState = {
-			status: "active",
-			step: 0,
-			iterationCount: 0,
+		];
+		const flat = flattenWorkflow(steps);
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: 0,
+			},
 			workflow: {
 				name: "Flow",
 				filePath: "wf.json",
+				steps,
 				preamble: "Global preamble",
 				flatSteps: flat,
 			},
@@ -283,13 +269,32 @@ describe("actions/condition.ts", () => {
 					content: "Ready. [DECISION: YES]",
 				},
 			},
-			state,
+			active,
 		);
-		expect(res.state?.step).toBe(1);
-		const reason = res.response.reason;
-		expect(reason).toContain("CONTEXT:");
-		expect(reason).toContain("Global preamble");
-		expect(reason).toContain("Deploy step instruction");
+		expect({
+			state: res.active?.state,
+			response: res.response,
+		}).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "continue",
+			    "reason": "[wf] Executing next step: Deploy (Level 1)
+
+			CONTEXT:
+			Global preamble
+
+			INSTRUCTION:
+			Deploy step instruction
+
+			Continue immediately and execute this step.",
+			  },
+			  "state": {
+			    "iterationCount": 1,
+			    "status": "active",
+			    "step": 1,
+			  },
+			}
+		`);
 	});
 
 	test("conditionStop asserts precondition when state is not active", () => {
@@ -297,28 +302,33 @@ describe("actions/condition.ts", () => {
 			conditionStop({ type: "stop", payload: { conversationId: "c1" } }, null),
 		).toThrow("conditionStop requires an active workflow");
 
-		const pausedState: WorkflowState = {
-			status: "paused",
-			step: 0,
-			iterationCount: 0,
-			workflow: { name: "Paused", filePath: "wf.json", flatSteps: [] },
+		const pausedActive: ActiveWorkflow = {
+			state: {
+				status: "paused",
+				step: 0,
+				iterationCount: 0,
+			},
+			workflow: { name: "Paused", filePath: "wf.json", steps: [], flatSteps: [] },
 		};
 		expect(() =>
 			conditionStop(
 				{ type: "stop", payload: { conversationId: "c1" } },
-				pausedState,
+				pausedActive,
 			),
 		).toThrow("conditionStop requires an active workflow");
 	});
 
 	test("conditionStop asserts precondition when current step is not a condition", () => {
-		const state: WorkflowState = {
-			status: "active",
-			step: 0,
-			iterationCount: 0,
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: 0,
+			},
 			workflow: {
 				name: "Flow",
 				filePath: "wf.json",
+				steps: [],
 				flatSteps: [
 					{
 						id: "s1",
@@ -334,7 +344,7 @@ describe("actions/condition.ts", () => {
 		};
 
 		expect(() =>
-			conditionStop({ type: "stop", payload: { conversationId: "c1" } }, state),
+			conditionStop({ type: "stop", payload: { conversationId: "c1" } }, active),
 		).toThrow("conditionStop requires current step to be a condition");
 	});
 });

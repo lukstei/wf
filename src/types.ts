@@ -1,5 +1,5 @@
-import type { WorkflowState } from "./state.ts";
-import type { WorkflowDef } from "./workflow.ts";
+import type { ActiveWorkflow } from "./state.ts";
+import type { WorkflowAst } from "./workflow.ts";
 
 interface HookPayload {
 	conversationId: string;
@@ -30,7 +30,7 @@ export interface HookInfo {
 	workflowResolver?: (
 		targetPath: string,
 		workspacePaths?: string[],
-	) => { filePath: string; workflow: WorkflowDef } | { error: string } | null;
+	) => { filePath: string; workflow: WorkflowAst } | { error: string } | null;
 }
 
 export interface HookResponse {
@@ -43,6 +43,6 @@ export interface HookResponse {
 }
 
 export interface HandleResult {
-	state: WorkflowState | null;
+	active: ActiveWorkflow | null;
 	response: HookResponse;
 }

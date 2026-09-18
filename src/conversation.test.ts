@@ -2,11 +2,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, test } from "vitest";
 import { defaultWorkflowResolver } from "./resolver.ts";
-import type { WorkflowState } from "./state.ts";
+import type { ActiveWorkflow } from "./state.ts";
 import { stripAbsolutePath } from "./test-utils.ts";
 import type { LatestMessage } from "./types.ts";
 import { handle } from "./wf.ts";
-import type { WorkflowDef } from "./workflow.ts";
+import type { WorkflowAst } from "./workflow.ts";
 
 const workspaceRoot = path.resolve(import.meta.dirname, "..");
 const fixturesDir = path.resolve(
@@ -40,20 +40,8 @@ interface ConversationStep {
 interface ConversationFile {
 	name: string;
 	description?: string;
-	workflow?: WorkflowDef;
+	workflow?: WorkflowAst;
 	steps: ConversationStep[];
-}
-
-/**
- * Normalizes state for portable assertions across environments,
- * omitting the static workflow definition.
- */
-function sanitizeState(
-	state: WorkflowState | null,
-): Record<string, unknown> | null {
-	if (!state) return null;
-	const { workflow, ...rest } = state;
-	return rest;
 }
 
 function sanitizeOutput(
@@ -93,7 +81,7 @@ describe("Conversation Integration Tests", () => {
 		);
 
 		describe(`Conversation: ${conversation.name || file}`, () => {
-			let state: WorkflowState | null = null;
+			let active: ActiveWorkflow | null = null;
 			const conversationId = `conv-${conversation.name || path.basename(file, ".json")}`;
 
 			const resolver = (targetPath: string) => {
@@ -121,14 +109,16 @@ describe("Conversation Integration Tests", () => {
 							: undefined,
 					};
 
-					const preRes = handle(preInfo, state);
-					state = preRes.state;
+					const preRes = handle(preInfo, active);
+					active = preRes.active;
 
 					if (step.expectedPre) {
 						expect(sanitizeOutput(preRes.response)).toEqual(
 							step.expectedPre.output,
 						);
-						expect(sanitizeState(preRes.state)).toEqual(step.expectedPre.state);
+						expect(preRes.active?.state ?? null).toEqual(
+							step.expectedPre.state,
+						);
 					}
 
 					// 2. Stop hook (if step has a model response)
@@ -144,14 +134,14 @@ describe("Conversation Integration Tests", () => {
 							latestMessage: toLatestMessage(step.model, "PLANNER_RESPONSE"),
 						};
 
-						const stopRes = handle(stopInfo, state);
-						state = stopRes.state;
+						const stopRes = handle(stopInfo, active);
+						active = stopRes.active;
 
 						if (step.expectedStop) {
 							expect(sanitizeOutput(stopRes.response)).toEqual(
 								step.expectedStop.output,
 							);
-							expect(sanitizeState(stopRes.state)).toEqual(
+							expect(stopRes.active?.state ?? null).toEqual(
 								step.expectedStop.state,
 							);
 						}

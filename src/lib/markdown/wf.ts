@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import type { WorkflowDef, WorkflowStep } from "../../workflow.ts";
+import type { WorkflowAst, WorkflowStep } from "../../workflow.ts";
 import type { MarkdownNode } from "./ast.ts";
 import { parse } from "./parsing.ts";
 
@@ -349,7 +349,7 @@ function parseFrontmatter(markdown: string): {
 export function parseWorkflowMarkdown(
 	content: string,
 	filePath?: string,
-): WorkflowDef {
+): WorkflowAst {
 	const { frontmatter, content: mdContent } = parseFrontmatter(content);
 	const ast = parse(mdContent);
 	const nodes = ast.type === "fragment" ? ast.children : [ast];

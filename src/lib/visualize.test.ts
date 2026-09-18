@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { WorkflowDef } from "../workflow.ts";
+import type { CompiledWorkflow, WorkflowAst } from "../workflow.ts";
 import {
 	visualize,
 	visualizePlainText,
@@ -10,11 +10,12 @@ import {
 
 describe("visualize", () => {
 	it("handles empty workflow", () => {
-		expect(visualize({ steps: [] })).toMatchInlineSnapshot(`"flowchart TD"`);
+		expect(visualize({ name: "Empty", steps: [] })).toMatchInlineSnapshot(`"flowchart TD"`);
 	});
 
 	it("converts linear action steps", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
+			name: "Linear",
 			steps: [
 				{ type: "step", title: "Step A", instruction: "Do A" },
 				{ type: "step", title: "Step B", instruction: "Do B" },
@@ -34,7 +35,7 @@ describe("visualize", () => {
 			import.meta.dirname,
 			"../../examples/sample-wf.json",
 		);
-		const sampleDef: WorkflowDef = JSON.parse(
+		const sampleDef: WorkflowAst = JSON.parse(
 			fs.readFileSync(samplePath, "utf-8"),
 		);
 
@@ -54,7 +55,8 @@ describe("visualize", () => {
 	});
 
 	it("escapes quotes and newlines in node labels", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
+			name: "Escape",
 			steps: [
 				{ type: "step", title: 'Say "Hello"', instruction: "line 1\nline 2" },
 				{
@@ -79,7 +81,8 @@ describe("visualize", () => {
 	});
 
 	it("handles condition without no-branch skipping to subsequent step", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
+			name: "ConditionSkip",
 			steps: [
 				{
 					type: "condition",
@@ -107,7 +110,8 @@ describe("visualize", () => {
 	});
 
 	it("handles deeply nested conditions with wrapped labels and subgraphs", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
+			name: "Nested",
 			steps: [
 				{ type: "step", title: "Step 1: Start", instruction: "start" },
 				{
@@ -199,11 +203,12 @@ describe("visualize", () => {
 
 describe("visualizePlainText", () => {
 	it("handles empty workflow", () => {
-		expect(visualizePlainText({ steps: [] })).toMatchInlineSnapshot(`""`);
+		expect(visualizePlainText({ name: "Empty", steps: [] })).toMatchInlineSnapshot(`""`);
 	});
 
 	it("converts linear action steps", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
+			name: "Linear",
 			steps: [
 				{ type: "step", title: "echo XX", instruction: "echo XX" },
 				{ type: "step", title: "Show current time", instruction: "date" },
@@ -217,7 +222,7 @@ describe("visualizePlainText", () => {
 	});
 
 	it("converts conditional workflow matching user example format", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
 			name: "friday-check",
 			steps: [
 				{ type: "step", title: "echo XX", instruction: "echo XX" },
@@ -250,7 +255,8 @@ describe("visualizePlainText", () => {
 	});
 
 	it("handles else branches and nested conditions", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
+			name: "WeekendCheck",
 			steps: [
 				{
 					type: "condition",
@@ -306,7 +312,7 @@ describe("visualizePlainText", () => {
 
 describe("visualizeWorkflowPrompt", () => {
 	it("formats visualization prompt with mermaid and plain text", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
 			name: "Simple",
 			steps: [{ type: "step", title: "Step 1", instruction: "Do 1" }],
 		};
@@ -332,7 +338,7 @@ describe("visualizeWorkflowPrompt", () => {
 	});
 
 	it("formats visualization prompt with active step highlight and status header", () => {
-		const wf: WorkflowDef = {
+		const wf: WorkflowAst = {
 			name: "Sample",
 			steps: [
 				{ type: "step", title: "Step 1", instruction: "Do 1" },
@@ -356,20 +362,35 @@ describe("visualizeWorkflowPrompt", () => {
 		expect(res).toContain("▶ [CURRENT] - Step: Step 2");
 	});
 
-	it("works with FlatStep[] workflow info when steps array is omitted", () => {
-		const wfInfo = {
+	it("works with CompiledWorkflow", () => {
+		const wfInfo: CompiledWorkflow = {
+			name: "TestWf",
+			filePath: "test.json",
+			steps: [
+				{
+					type: "step",
+					title: "Start",
+					instruction: "Start",
+				},
+				{
+					type: "condition",
+					title: "Check",
+					condition: "Check",
+					yes: { steps: [] },
+				},
+			],
 			flatSteps: [
 				{
 					index: 0,
 					level: 0,
-					type: "step" as const,
+					type: "step",
 					title: "Start",
 					nextIndex: 1,
 				},
 				{
 					index: 1,
 					level: 0,
-					type: "condition" as const,
+					type: "condition",
 					title: "Check",
 					nextIndex: 2,
 				},

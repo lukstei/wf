@@ -1,18 +1,17 @@
-import * as path from "node:path";
 import { parseArgs } from "node:util";
 import { resolveConversationIdFromHarnesses } from "./harnesses/index.ts";
 import { logDebug } from "./lib/logDebug.ts";
 import { visualizeWorkflowPrompt } from "./lib/visualize.ts";
 import { defaultWorkflowResolver } from "./resolver.ts";
 import { runShim } from "./shim/runtime-shim.ts";
-import { loadState, saveState } from "./state.ts";
+import { loadActiveWorkflow, saveState, saveWorkflow } from "./state.ts";
 import {
 	resumeWorkflow,
 	startWorkflow,
 	stopWorkflowState,
 } from "./transitions.ts";
 import { validateWorkflow } from "./validator.ts";
-import { flattenWorkflow } from "./workflow.ts";
+import { compileWorkflow } from "./workflow.ts";
 
 export interface ParsedCli {
 	command?: string;
@@ -137,7 +136,7 @@ export async function runCli(
 
 		if (!result.valid) {
 			const lines = [
-				`[WORKFLOW INVALID] Validation failed for "${resolved.workflow.name || path.basename(resolved.filePath)}":`,
+				`[WORKFLOW INVALID] Validation failed for "${resolved.workflow.name}":`,
 			];
 			for (const e of errors) {
 				lines.push(`  - [ERROR] ${e.description}`);
@@ -155,7 +154,7 @@ export async function runCli(
 
 		if (parsed.options.check) {
 			const lines = [
-				`[WORKFLOW VALID] "${resolved.workflow.name || path.basename(resolved.filePath)}" is valid.`,
+				`[WORKFLOW VALID] "${resolved.workflow.name}" is valid.`,
 				`Steps: ${result.stats.totalSteps} (${result.stats.linearSteps} linear, ${result.stats.conditions} condition, ${result.stats.gates} gate)`,
 				`File: ${resolved.filePath}`,
 			];
@@ -192,7 +191,7 @@ export async function runCli(
 			return { exitCode: 1, output: err };
 		}
 		const prompt = visualizeWorkflowPrompt(
-			resolved.workflow.name || path.basename(resolved.filePath),
+			resolved.workflow.name,
 			resolved.workflow,
 			resolved.filePath,
 		);
@@ -212,8 +211,11 @@ export async function runCli(
 		logDebug.conversationId = conversationId;
 
 		if (parsed.command === "stop") {
-			const state = loadState(conversationId, env);
-			const result = stopWorkflowState(state);
+			const active = loadActiveWorkflow(conversationId, env);
+			const result = stopWorkflowState(
+				active?.state ?? null,
+				active?.workflow.name,
+			);
 			if (result.state !== null) {
 				saveState(conversationId, result.state, env);
 			}
@@ -240,44 +242,39 @@ export async function runCli(
 				writeErr(err);
 				return { exitCode: 1, output: err };
 			}
-			const flatSteps = flattenWorkflow(resolved.workflow.steps);
-			if (flatSteps.length === 0) {
+			const compiled = compileWorkflow(resolved.workflow, resolved.filePath);
+			if (compiled.flatSteps.length === 0) {
 				const err = `Workflow file "${filePath}" contains no executable steps.`;
 				writeErr(err);
 				return { exitCode: 1, output: err };
 			}
-			const nextState = startWorkflow({
-				name: resolved.workflow.name || path.basename(resolved.filePath),
-				description: resolved.workflow.description,
-				...(resolved.workflow.preamble
-					? { preamble: resolved.workflow.preamble }
-					: {}),
-				filePath: resolved.filePath,
-				steps: resolved.workflow.steps,
-				flatSteps,
-			});
-			saveState(conversationId, nextState, env);
-			const firstStep = flatSteps[0];
-			const msg = `[WORKFLOW STARTED] "${nextState.workflow.name}"\nStep 1/${flatSteps.length}: ${firstStep.title}\n${firstStep.instruction}`;
+			const nextActive = startWorkflow(compiled);
+			saveWorkflow(conversationId, nextActive.workflow, env);
+			saveState(conversationId, nextActive.state, env);
+			const firstStep = compiled.flatSteps[0];
+			const msg = `[WORKFLOW STARTED] "${nextActive.workflow.name}"\nStep 1/${compiled.flatSteps.length}: ${firstStep.title}\n${firstStep.instruction}`;
 			writeOut(msg);
 			return { exitCode: 0, output: msg };
 		}
 
 		if (parsed.command === "next") {
-			const state = loadState(conversationId, env);
+			const active = loadActiveWorkflow(conversationId, env);
 
-			if (!state || (state.status !== "active" && state.status !== "paused")) {
+			if (
+				!active ||
+				(active.state.status !== "active" && active.state.status !== "paused")
+			) {
 				const err =
 					"No workflow is loaded. Start a workflow with 'wf start <workflow-file>'.";
 				writeErr(err);
 				return { exitCode: 1, output: err };
 			}
 
-			const nextState = resumeWorkflow(state);
+			const nextState = resumeWorkflow(active.state);
 			saveState(conversationId, nextState, env);
-			const currentStep = nextState.workflow.flatSteps[nextState.step];
+			const currentStep = active.workflow.flatSteps[nextState.step];
 			const stepNum = nextState.step + 1;
-			const total = nextState.workflow.flatSteps.length;
+			const total = active.workflow.flatSteps.length;
 			const title = currentStep?.title || `Step ${stepNum}`;
 			const msg = `[STEP ${stepNum}/${total}] ${title}\n${currentStep?.instruction || ""}`;
 			writeOut(msg);
@@ -285,26 +282,26 @@ export async function runCli(
 		}
 
 		if (parsed.command === "show") {
-			const state = loadState(conversationId, env);
+			const active = loadActiveWorkflow(conversationId, env);
 
-			if (!state) {
+			if (!active) {
 				const msg = "[WORKFLOW STATUS]\nNo workflow is currently loaded.";
 				writeOut(msg);
 				return { exitCode: 0, output: msg };
 			}
-			const currentStep = state.workflow.flatSteps[state.step];
+			const currentStep = active.workflow.flatSteps[active.state.step];
 			const currentLevel = currentStep?.level ?? 0;
 			const stepInfo =
-				state.status !== "finished"
-					? `Step: ${state.step + 1} of ${state.workflow.flatSteps.length} (Nesting Level ${currentLevel})`
+				active.state.status !== "finished"
+					? `Step: ${active.state.step + 1} of ${active.workflow.flatSteps.length} (Nesting Level ${currentLevel})`
 					: "All steps completed";
-			const statusHeader = `[WORKFLOW STATUS: ${state.status.toUpperCase()}]\nWorkflow: ${state.workflow.name}\n${stepInfo}`;
+			const statusHeader = `[WORKFLOW STATUS: ${active.state.status.toUpperCase()}]\nWorkflow: ${active.workflow.name}\n${stepInfo}`;
 			const prompt = visualizeWorkflowPrompt(
-				state.workflow.name,
-				state.workflow,
-				state.workflow.filePath,
-				state.status === "active" || state.status === "paused"
-					? state.step
+				active.workflow.name,
+				active.workflow,
+				active.workflow.filePath,
+				active.state.status === "active" || active.state.status === "paused"
+					? active.state.step
 					: undefined,
 				statusHeader,
 			);

@@ -230,30 +230,46 @@ describe("parseCommand.ts", () => {
 			parseCommand("/wf <workflow-file>"),
 		];
 
-		expect(cases[0].command).toEqual({
-			name: "run",
-			args: { path: "examples/sample-wf.json" },
-		});
-		expect(cases[1].command).toEqual({
-			name: "run",
-			args: { path: "examples/sample-wf.json" },
-		});
-		expect(cases[2].command).toEqual({
-			name: "run",
-			args: { path: "examples/sample-wf.json" },
-		});
-		expect(cases[3].command).toEqual({
-			name: "run",
-			args: { path: "examples/sample-wf.json" },
-		});
-		expect(cases[4].command).toEqual({
-			name: "run",
-			args: { path: "examples/sample-wf.json" },
-		});
-		expect(cases[5].command).toEqual({
-			name: "run",
-			args: { path: "<workflow-file>" },
-		});
+		expect(cases.map((c) => c.command)).toMatchInlineSnapshot(`
+			[
+			  {
+			    "args": {
+			      "path": "examples/sample-wf.json",
+			    },
+			    "name": "run",
+			  },
+			  {
+			    "args": {
+			      "path": "examples/sample-wf.json",
+			    },
+			    "name": "run",
+			  },
+			  {
+			    "args": {
+			      "path": "examples/sample-wf.json",
+			    },
+			    "name": "run",
+			  },
+			  {
+			    "args": {
+			      "path": "examples/sample-wf.json",
+			    },
+			    "name": "run",
+			  },
+			  {
+			    "args": {
+			      "path": "examples/sample-wf.json",
+			    },
+			    "name": "run",
+			  },
+			  {
+			    "args": {
+			      "path": "<workflow-file>",
+			    },
+			    "name": "run",
+			  },
+			]
+		`);
 	});
 
 	test("parseCommand passes through non-runner skills", () => {
@@ -271,19 +287,31 @@ describe("parseCommand.ts", () => {
 	});
 
 	test("parseCommand handles /wf-show with and without arguments", () => {
-		const validWithArg = parseCommand("/wf-show examples/sample-wf.md");
-		expect(validWithArg.command).toEqual({
-			name: "show",
-			args: { path: "examples/sample-wf.md" },
-		});
-
-		const validWithoutArg = parseCommand("/wf-show");
-		expect(validWithoutArg.command).toEqual({ name: "show", args: {} });
-
-		const withMetadata = parseCommand(
-			"<USER_REQUEST>\n/wf-show \n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nSome metadata\n</ADDITIONAL_METADATA>",
-		);
-		expect(withMetadata.command).toEqual({ name: "show", args: {} });
+		const cases = [
+			parseCommand("/wf-show examples/sample-wf.md"),
+			parseCommand("/wf-show"),
+			parseCommand(
+				"<USER_REQUEST>\n/wf-show \n</USER_REQUEST>\n<ADDITIONAL_METADATA>\nSome metadata\n</ADDITIONAL_METADATA>",
+			),
+		];
+		expect(cases.map((c) => c.command)).toMatchInlineSnapshot(`
+			[
+			  {
+			    "args": {
+			      "path": "examples/sample-wf.md",
+			    },
+			    "name": "show",
+			  },
+			  {
+			    "args": {},
+			    "name": "show",
+			  },
+			  {
+			    "args": {},
+			    "name": "show",
+			  },
+			]
+		`);
 	});
 
 	test("getHelpText returns usage and command listing", () => {

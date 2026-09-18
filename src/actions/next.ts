@@ -1,6 +1,6 @@
 import { assert } from "../lib/assert.ts";
 import { logDebug } from "../lib/logDebug.ts";
-import type { WorkflowState } from "../state.ts";
+import type { ActiveWorkflow } from "../state.ts";
 import { advanceStep, resumeWorkflow } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import { formatAdvanceReason } from "./formatters.ts";
@@ -12,15 +12,15 @@ import { step } from "./step.ts";
  */
 export function nextPre(
 	info: HookInfo,
-	state: WorkflowState | null,
+	active: ActiveWorkflow | null,
 ): HandleResult {
 	assert(
-		state && (state.status === "active" || state.status === "paused"),
+		active && (active.state.status === "active" || active.state.status === "paused"),
 		"No workflow is running",
 	);
 
-	const nextState = resumeWorkflow(state);
-	return step(info, nextState);
+	const nextState = resumeWorkflow(active.state);
+	return step(info, { ...active, state: nextState });
 }
 
 /**
@@ -29,18 +29,19 @@ export function nextPre(
  */
 export function nextStop(
 	_info: HookInfo,
-	state: WorkflowState | null,
+	active: ActiveWorkflow | null,
 ): HandleResult {
-	assert(state?.status === "active", "nextStop requires an active workflow");
+	assert(active?.state.status === "active", "nextStop requires an active workflow");
 
-	const nextState = advanceStep(state);
+	const nextState = advanceStep(active.workflow.flatSteps, active.state);
+	const nextActive = nextState ? { ...active, state: nextState } : null;
 
 	if (nextState?.status === "finished") {
 		logDebug("All workflow steps complete", {
-			totalSteps: state.workflow.flatSteps.length,
+			totalSteps: active.workflow.flatSteps.length,
 		});
 		return {
-			state: nextState,
+			active: nextActive,
 			response: { decision: "allow" },
 		};
 	}
@@ -48,18 +49,18 @@ export function nextStop(
 	if (nextState?.status === "error") {
 		logDebug("Workflow terminated on error", { error: nextState.error });
 		return {
-			state: nextState,
+			active: nextActive,
 			response: { decision: "allow" },
 		};
 	}
 
 	if (nextState?.status === "active") {
-		const nextTargetStep = nextState.workflow.flatSteps[nextState.step];
+		const nextTargetStep = active.workflow.flatSteps[nextState.step];
 		const stepNum = nextState.step + 1;
-		const totalSteps = nextState.workflow.flatSteps.length;
+		const totalSteps = active.workflow.flatSteps.length;
 		const reason = formatAdvanceReason(
 			nextTargetStep,
-			nextState.workflow.preamble,
+			active.workflow.preamble,
 		);
 
 		logDebug("Advancing to step (auto)", {
@@ -69,7 +70,7 @@ export function nextStop(
 		});
 
 		return {
-			state: nextState,
+			active: nextActive,
 			response: {
 				decision: "continue",
 				reason,
@@ -82,7 +83,7 @@ export function nextStop(
 		nextStep: (nextState?.step ?? 0) + 1,
 	});
 	return {
-		state: nextState,
+		active: nextActive,
 		response: { decision: "allow" },
 	};
 }

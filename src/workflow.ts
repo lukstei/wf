@@ -51,20 +51,27 @@ export interface FlatStep {
 	skipIndex?: number;
 }
 
-export interface WorkflowDef {
-	name?: string;
+export interface WorkflowAst {
+	name: string;
 	description?: string;
 	preamble?: string;
 	steps: WorkflowStep[];
 }
 
-export interface WorkflowInfo {
-	name: string;
+export interface CompiledWorkflow extends WorkflowAst {
 	filePath: string;
-	description?: string;
-	preamble?: string;
-	steps?: WorkflowStep[];
 	flatSteps: FlatStep[];
+}
+
+export function compileWorkflow(
+	ast: WorkflowAst,
+	filePath: string,
+): CompiledWorkflow {
+	return {
+		...ast,
+		filePath,
+		flatSteps: flattenWorkflow(ast.steps),
+	};
 }
 
 /**

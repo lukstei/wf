@@ -1,7 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, test } from "vitest";
-import type { WorkflowState } from "../../state.ts";
+import type { ActiveWorkflow } from "../../state.ts";
+import { stripAbsolutePath } from "../../test-utils.ts";
 import { handle } from "../../wf.ts";
 import { flattenWorkflow } from "../../workflow.ts";
 import { parseHeading, parseWorkflowMarkdown } from "./wf.ts";
@@ -256,7 +257,7 @@ Start server.
 
 	test("full lifecycle execution of sample-wf.md through handle()", () => {
 		const workspaceRoot = path.resolve(import.meta.dirname, "../../..");
-		let state: WorkflowState | null = null;
+		let active: ActiveWorkflow | null = null;
 
 		// Turn 1: User runs /wf examples/sample-wf.md
 		const t1Pre = handle(
@@ -272,11 +273,9 @@ Start server.
 					content: "/wf examples/sample-wf.md",
 				},
 			},
-			state,
+			active,
 		);
-		expect(t1Pre.state?.status).toBe("active");
-		expect(t1Pre.state?.step).toBe(0);
-		state = t1Pre.state;
+		active = t1Pre.active;
 
 		// Turn 1 Stop: Model completes step 0 ("record")
 		const t1Stop = handle(
@@ -289,11 +288,9 @@ Start server.
 					content: "Hello to workflow test!",
 				},
 			},
-			state,
+			active,
 		);
-		expect(t1Stop.response.decision).toBe("continue");
-		expect(t1Stop.state?.step).toBe(1);
-		state = t1Stop.state;
+		active = t1Stop.active;
 
 		// Turn 2 Stop: Model evaluates condition as NO
 		const t2Stop = handle(
@@ -306,17 +303,9 @@ Start server.
 					content: "Today is Wednesday. [DECISION: NO]",
 				},
 			},
-			state,
+			active,
 		);
-		expect(t2Stop.response.decision).toBe("continue");
-		expect(t2Stop.state?.step).toBe(3);
-		const t2Reason = t2Stop.response.reason;
-		expect(t2Reason).toContain("CONTEXT:");
-		expect(t2Reason).toContain(
-			"This is a workflow to test the worfklow funcitions.",
-		);
-		expect(t2Reason).toContain("echo hello monday");
-		state = t2Stop.state;
+		active = t2Stop.active;
 
 		// Turn 3 Stop: Model executes step 3 ("it is friday? no" / "echo hello monday")
 		const t3Stop = handle(
@@ -329,17 +318,9 @@ Start server.
 					content: "Hello Monday!",
 				},
 			},
-			state,
+			active,
 		);
-		expect(t3Stop.response.decision).toBe("continue");
-		expect(t3Stop.state?.step).toBe(4);
-		const t3Reason = t3Stop.response.reason;
-		expect(t3Reason).toContain("CONTEXT:");
-		expect(t3Reason).toContain(
-			"This is a workflow to test the worfklow funcitions.",
-		);
-		expect(t3Reason).toContain("report how many days until friday");
-		state = t3Stop.state;
+		active = t3Stop.active;
 
 		// Turn 4 Stop: Model executes step 4 ("report")
 		const t4Stop = handle(
@@ -352,17 +333,9 @@ Start server.
 					content: "There are 2 days until Friday.",
 				},
 			},
-			state,
+			active,
 		);
-		expect(t4Stop.response.decision).toBe("continue");
-		expect(t4Stop.state?.step).toBe(5);
-		const t4Reason = t4Stop.response.reason;
-		expect(t4Reason).toContain("CONTEXT:");
-		expect(t4Reason).toContain(
-			"This is a workflow to test the worfklow funcitions.",
-		);
-		expect(t4Reason).toContain("report end of workflow - have a nice day");
-		state = t4Stop.state;
+		active = t4Stop.active;
 
 		// Turn 5 Stop: Model completes step 5 ("gg")
 		const t5Stop = handle(
@@ -375,9 +348,141 @@ Start server.
 					content: "Workflow finished - have a nice day!",
 				},
 			},
-			state,
+			active,
 		);
-		expect(t5Stop.state?.status).toBe("finished");
-		expect(t5Stop.response.decision).toBe("allow");
+
+		const turns = [
+			{
+				turn: "t1Pre",
+				state: t1Pre.active?.state,
+				message: stripAbsolutePath(
+					t1Pre.response.injectSteps?.[0]?.ephemeralMessage ?? "",
+				),
+			},
+			{ turn: "t1Stop", state: t1Stop.active?.state, response: t1Stop.response },
+			{ turn: "t2Stop", state: t2Stop.active?.state, response: t2Stop.response },
+			{ turn: "t3Stop", state: t3Stop.active?.state, response: t3Stop.response },
+			{ turn: "t4Stop", state: t4Stop.active?.state, response: t4Stop.response },
+			{ turn: "t5Stop", state: t5Stop.active?.state, response: t5Stop.response },
+		];
+
+		expect(turns).toMatchInlineSnapshot(`
+			[
+			  {
+			    "message": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
+
+			[WORKFLOW ACTIVE: Derive an API client from a recorded session]
+			Step 1 of 6: record
+
+			CONTEXT:
+			This is a workflow to test the worfklow funcitions.
+
+			INSTRUCTION:
+			say "Hello to workflow test"
+
+			RULES:
+			1. Execute this specific step now.
+			2. Do NOT jump ahead to subsequent steps.
+			3. Conclude your response when this step is complete.
+			4. Do NOT read or inspect the workflow file ("examples/sample-wf.md") or SKILL.md — steps are already loaded by the runner.",
+			    "state": {
+			      "iterationCount": 0,
+			      "status": "active",
+			      "step": 0,
+			    },
+			    "turn": "t1Pre",
+			  },
+			  {
+			    "response": {
+			      "decision": "continue",
+			      "reason": "[wf] Executing next step: it is friday?
+
+			CONTEXT:
+			This is a workflow to test the worfklow funcitions.
+
+			Evaluate condition: "it is friday?"
+
+			Continue immediately and execute this step.",
+			    },
+			    "state": {
+			      "iterationCount": 1,
+			      "status": "active",
+			      "step": 1,
+			    },
+			    "turn": "t1Stop",
+			  },
+			  {
+			    "response": {
+			      "decision": "continue",
+			      "reason": "[wf] Executing next step: it is friday? no (Level 1)
+
+			CONTEXT:
+			This is a workflow to test the worfklow funcitions.
+
+			INSTRUCTION:
+			echo hello monday
+
+			Continue immediately and execute this step.",
+			    },
+			    "state": {
+			      "iterationCount": 2,
+			      "status": "active",
+			      "step": 3,
+			    },
+			    "turn": "t2Stop",
+			  },
+			  {
+			    "response": {
+			      "decision": "continue",
+			      "reason": "[wf] Executing next step: report (Level 1)
+
+			CONTEXT:
+			This is a workflow to test the worfklow funcitions.
+
+			INSTRUCTION:
+			report how many days until friday
+
+			Continue immediately and execute this step.",
+			    },
+			    "state": {
+			      "iterationCount": 3,
+			      "status": "active",
+			      "step": 4,
+			    },
+			    "turn": "t3Stop",
+			  },
+			  {
+			    "response": {
+			      "decision": "continue",
+			      "reason": "[wf] Executing next step: gg
+
+			CONTEXT:
+			This is a workflow to test the worfklow funcitions.
+
+			INSTRUCTION:
+			report end of workflow - have a nice day
+
+			Continue immediately and execute this step.",
+			    },
+			    "state": {
+			      "iterationCount": 4,
+			      "status": "active",
+			      "step": 5,
+			    },
+			    "turn": "t4Stop",
+			  },
+			  {
+			    "response": {
+			      "decision": "allow",
+			    },
+			    "state": {
+			      "iterationCount": 5,
+			      "status": "finished",
+			      "step": 6,
+			    },
+			    "turn": "t5Stop",
+			  },
+			]
+		`);
 	});
 });

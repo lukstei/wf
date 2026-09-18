@@ -1,7 +1,7 @@
 import { detectHarness, getHarness } from "../harnesses/index.ts";
 import type { EgressOutput } from "../harnesses/types.ts";
 import { logDebug } from "../lib/logDebug.ts";
-import { loadState, saveState } from "../state.ts";
+import { loadActiveWorkflow, saveState, saveWorkflow } from "../state.ts";
 import type { HookInfo } from "../types.ts";
 import { handle } from "../wf.ts";
 import { parseJsonSafe, readStdin } from "./stdin.ts";
@@ -46,17 +46,20 @@ export async function runShim(
 		latestMessage: event.latestMessage,
 	};
 
-	const state = loadState(event.conversationId, env);
-	const { state: nextState, response } = handle(hookInfo, state);
+	const active = loadActiveWorkflow(event.conversationId, env);
+	const { active: nextActive, response } = handle(hookInfo, active);
 
-	if (nextState !== null && nextState !== state) {
+	if (nextActive !== null && nextActive !== active) {
 		logDebug(`> Handled ${hookInfo.type}`, {
 			payload: event.rawPayload,
-			state: { ...state, workflow: undefined },
-			nextState: { ...nextState, workflow: undefined },
+			state: active?.state,
+			nextState: nextActive.state,
 			response,
 		});
-		saveState(event.conversationId, nextState, env);
+		if (!active || active.workflow !== nextActive.workflow) {
+			saveWorkflow(event.conversationId, nextActive.workflow, env);
+		}
+		saveState(event.conversationId, nextActive.state, env);
 	}
 
 	return adapter.formatEgress(event, response);

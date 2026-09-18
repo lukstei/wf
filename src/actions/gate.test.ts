@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { WorkflowState } from "../state.ts";
+import type { ActiveWorkflow } from "../state.ts";
 import { advanceStep } from "../transitions.ts";
 import { flattenWorkflow } from "../workflow.ts";
 import { nextPre, nextStop } from "./next.ts";
@@ -22,50 +22,65 @@ describe("Gate Semantics", () => {
 	const flat = flattenWorkflow(sampleGateWorkflow.steps);
 
 	test("gate step execution, transition, and approval snapshots", () => {
-		const activeGateState: WorkflowState = {
-			status: "active",
-			step: 1,
-			iterationCount: 0,
+		const activeGate: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 1,
+				iterationCount: 0,
+			},
 			workflow: {
 				name: "GateTestFlow",
 				filePath: "gate.json",
+				steps: sampleGateWorkflow.steps,
 				flatSteps: flat,
 			},
 		};
 
 		const stepInjectionResult = step(
 			{ type: "pre", payload: { conversationId: "c1" } },
-			activeGateState,
+			activeGate,
 		);
 
-		const advanceResult = advanceStep(activeGateState);
+		const advanceResult = advanceStep(flat, activeGate.state);
 
 		const stopResult = nextStop(
 			{ type: "stop", payload: { conversationId: "c1" } },
-			activeGateState,
+			activeGate,
 		);
 
-		const pausedAfterGateState: WorkflowState = {
-			status: "paused",
-			step: 2,
-			iterationCount: 0,
+		const pausedAfterGate: ActiveWorkflow = {
+			state: {
+				status: "paused",
+				step: 2,
+				iterationCount: 0,
+			},
 			workflow: {
 				name: "GateTestFlow",
 				filePath: "gate.json",
+				steps: sampleGateWorkflow.steps,
 				flatSteps: flat,
 			},
 		};
 
 		const nextPreResult = nextPre(
 			{ type: "pre", payload: { conversationId: "c1" } },
-			pausedAfterGateState,
+			pausedAfterGate,
 		);
 
 		const assertions = {
-			stepInjectionResult,
+			stepInjectionResult: {
+				state: stepInjectionResult.active?.state,
+				response: stepInjectionResult.response,
+			},
 			advanceResult,
-			stopResult,
-			nextPreResult,
+			stopResult: {
+				state: stopResult.active?.state,
+				response: stopResult.response,
+			},
+			nextPreResult: {
+				state: nextPreResult.active?.state,
+				response: nextPreResult.response,
+			},
 		};
 
 		expect(assertions).toMatchInlineSnapshot(`
@@ -74,36 +89,6 @@ describe("Gate Semantics", () => {
 			    "iterationCount": 1,
 			    "status": "paused",
 			    "step": 2,
-			    "workflow": {
-			      "filePath": "gate.json",
-			      "flatSteps": [
-			        {
-			          "index": 0,
-			          "instruction": "Do step 1",
-			          "level": 0,
-			          "nextIndex": 1,
-			          "title": "Step 1",
-			          "type": "step",
-			        },
-			        {
-			          "index": 1,
-			          "instruction": "Review database schema changes before applying.",
-			          "level": 0,
-			          "nextIndex": 2,
-			          "title": "Confirm Migration",
-			          "type": "gate",
-			        },
-			        {
-			          "index": 2,
-			          "instruction": "Apply schema",
-			          "level": 0,
-			          "nextIndex": 3,
-			          "title": "Step 3",
-			          "type": "step",
-			        },
-			      ],
-			      "name": "GateTestFlow",
-			    },
 			  },
 			  "nextPreResult": {
 			    "response": {
@@ -129,36 +114,6 @@ describe("Gate Semantics", () => {
 			      "iterationCount": 0,
 			      "status": "active",
 			      "step": 2,
-			      "workflow": {
-			        "filePath": "gate.json",
-			        "flatSteps": [
-			          {
-			            "index": 0,
-			            "instruction": "Do step 1",
-			            "level": 0,
-			            "nextIndex": 1,
-			            "title": "Step 1",
-			            "type": "step",
-			          },
-			          {
-			            "index": 1,
-			            "instruction": "Review database schema changes before applying.",
-			            "level": 0,
-			            "nextIndex": 2,
-			            "title": "Confirm Migration",
-			            "type": "gate",
-			          },
-			          {
-			            "index": 2,
-			            "instruction": "Apply schema",
-			            "level": 0,
-			            "nextIndex": 3,
-			            "title": "Step 3",
-			            "type": "step",
-			          },
-			        ],
-			        "name": "GateTestFlow",
-			      },
 			    },
 			  },
 			  "stepInjectionResult": {
@@ -187,36 +142,6 @@ describe("Gate Semantics", () => {
 			      "iterationCount": 0,
 			      "status": "active",
 			      "step": 1,
-			      "workflow": {
-			        "filePath": "gate.json",
-			        "flatSteps": [
-			          {
-			            "index": 0,
-			            "instruction": "Do step 1",
-			            "level": 0,
-			            "nextIndex": 1,
-			            "title": "Step 1",
-			            "type": "step",
-			          },
-			          {
-			            "index": 1,
-			            "instruction": "Review database schema changes before applying.",
-			            "level": 0,
-			            "nextIndex": 2,
-			            "title": "Confirm Migration",
-			            "type": "gate",
-			          },
-			          {
-			            "index": 2,
-			            "instruction": "Apply schema",
-			            "level": 0,
-			            "nextIndex": 3,
-			            "title": "Step 3",
-			            "type": "step",
-			          },
-			        ],
-			        "name": "GateTestFlow",
-			      },
 			    },
 			  },
 			  "stopResult": {
@@ -227,36 +152,6 @@ describe("Gate Semantics", () => {
 			      "iterationCount": 1,
 			      "status": "paused",
 			      "step": 2,
-			      "workflow": {
-			        "filePath": "gate.json",
-			        "flatSteps": [
-			          {
-			            "index": 0,
-			            "instruction": "Do step 1",
-			            "level": 0,
-			            "nextIndex": 1,
-			            "title": "Step 1",
-			            "type": "step",
-			          },
-			          {
-			            "index": 1,
-			            "instruction": "Review database schema changes before applying.",
-			            "level": 0,
-			            "nextIndex": 2,
-			            "title": "Confirm Migration",
-			            "type": "gate",
-			          },
-			          {
-			            "index": 2,
-			            "instruction": "Apply schema",
-			            "level": 0,
-			            "nextIndex": 3,
-			            "title": "Step 3",
-			            "type": "step",
-			          },
-			        ],
-			        "name": "GateTestFlow",
-			      },
 			    },
 			  },
 			}

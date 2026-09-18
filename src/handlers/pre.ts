@@ -10,18 +10,18 @@ import {
 	type ParseResult,
 	parseCommand,
 } from "../lib/parseCommand.ts";
-import type { ExtractWorkflowState, WorkflowState } from "../state.ts";
+import type { ActiveWorkflow } from "../state.ts";
 import { failWorkflow, pauseWorkflow } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 
 function handleCommand(
 	info: HookInfo,
-	state: WorkflowState | null,
+	active: ActiveWorkflow | null,
 	parsedCmd: ParseResult,
 ): HandleResult {
 	if (parsedCmd.error) {
 		return {
-			state,
+			active,
 			response: injectSystemMessage(
 				"CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER: " +
 					(parsedCmd.helpText || `[Workflow Error] ${parsedCmd.error}`),
@@ -30,44 +30,48 @@ function handleCommand(
 	}
 
 	if (!parsedCmd.command) {
-		return { state, response: {} };
+		return { active, response: {} };
 	}
 
 	switch (parsedCmd.command.name) {
 		case "help": {
-			const paused = pauseWorkflow(state);
+			const paused = pauseWorkflow(active?.state ?? null);
+			const nextActive =
+				active && paused ? { workflow: active.workflow, state: paused } : active;
 			return {
-				state: paused,
+				active: nextActive,
 				response: injectSystemMessage(parsedCmd.helpText || getHelpText()),
 			};
 		}
 
 		case "show": {
-			const paused = pauseWorkflow(state);
-			return show(info, paused, parsedCmd.command);
+			const paused = pauseWorkflow(active?.state ?? null);
+			const nextActive =
+				active && paused ? { workflow: active.workflow, state: paused } : active;
+			return show(info, nextActive, parsedCmd.command);
 		}
 
 		case "next":
-			return nextPre(info, state);
+			return nextPre(info, active);
 
 		case "stop":
-			return stopWorkflow(info, state);
+			return stopWorkflow(info, active);
 
 		case "run":
-			return run(info, state, parsedCmd.command);
+			return run(info, active, parsedCmd.command);
 	}
 }
 
 function dispatchStep(
 	info: HookInfo,
-	state: ExtractWorkflowState<"active">,
+	active: ActiveWorkflow,
 ): HandleResult {
-	const currentStep = state.workflow.flatSteps[state.step];
+	const currentStep = active.workflow.flatSteps[active.state.step];
 	if (!currentStep) {
-		return { state, response: {} };
+		return { active, response: {} };
 	}
 
-	return step(info, state);
+	return step(info, active);
 }
 
 /**
@@ -77,48 +81,51 @@ function dispatchStep(
  */
 export function handlePre(
 	info: HookInfo,
-	state: WorkflowState | null,
+	active: ActiveWorkflow | null,
 ): HandleResult {
 	// Process any new user input
 	if (info.latestMessage && info.latestMessage.type === "USER_INPUT") {
 		const parsedCmd = parseCommand(info.latestMessage.content);
 
 		if (parsedCmd.isWfCommand) {
-			return handleCommand(info, state, parsedCmd);
+			return handleCommand(info, active, parsedCmd);
 		}
 
-		if (state?.status === "active") {
+		if (active?.state.status === "active") {
 			logDebug("User message received, pausing workflow", {
 				text: info.latestMessage.content.slice(0, 50),
 			});
+			const paused = pauseWorkflow(active.state);
 			return {
-				state: pauseWorkflow(state),
+				active: paused ? { workflow: active.workflow, state: paused } : active,
 				response: {},
 			};
 		}
 
-		return { state, response: {} };
+		return { active, response: {} };
 	}
 
 	// If no workflow is active, do nothing
-	if (state?.status !== "active") {
-		return { state, response: {} };
+	if (active?.state.status !== "active") {
+		return { active, response: {} };
 	}
 
 	// Safeguard against runaway loops
-	const maxIterations = state.workflow.flatSteps.length * 5;
-	if (state.iterationCount >= maxIterations) {
+	const maxIterations = active.workflow.flatSteps.length * 5;
+	if (active.state.iterationCount >= maxIterations) {
 		const errorState = failWorkflow(
-			state,
+			active.state,
 			`Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
 		);
 		return {
-			state: errorState,
+			active: errorState
+				? { workflow: active.workflow, state: errorState }
+				: active,
 			response: injectSystemMessage(
 				`[WORKFLOW RUNNER] Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
 			),
 		};
 	}
 
-	return dispatchStep(info, state);
+	return dispatchStep(info, active);
 }

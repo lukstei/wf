@@ -1,6 +1,6 @@
 import { assert } from "../lib/assert.ts";
 import { logDebug } from "../lib/logDebug.ts";
-import type { WorkflowState } from "../state.ts";
+import type { ActiveWorkflow } from "../state.ts";
 import { advanceStep } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import { formatAdvanceReason, parseDecision } from "./formatters.ts";
@@ -18,20 +18,20 @@ export const conditionPre = step;
  */
 export function conditionStop(
 	info: HookInfo,
-	state: WorkflowState | null,
+	active: ActiveWorkflow | null,
 ): HandleResult {
 	assert(
-		state?.status === "active",
+		active?.state.status === "active",
 		"conditionStop requires an active workflow",
 	);
 
-	const currentStep = state.workflow.flatSteps[state.step];
+	const currentStep = active.workflow.flatSteps[active.state.step];
 	assert(
 		currentStep?.type === "condition",
 		"conditionStop requires current step to be a condition",
 	);
 
-	const totalSteps = state.workflow.flatSteps.length;
+	const totalSteps = active.workflow.flatSteps.length;
 	const modelText = info.latestMessage?.content ?? "";
 	const decision = parseDecision(modelText);
 	logDebug("Condition evaluated (Stop)", {
@@ -39,12 +39,17 @@ export function conditionStop(
 		decision,
 	});
 
-	const nextState = advanceStep(state, decision);
+	const nextState = advanceStep(
+		active.workflow.flatSteps,
+		active.state,
+		decision,
+	);
+	const nextActive = nextState ? { ...active, state: nextState } : null;
 
 	if (nextState?.status === "finished") {
 		logDebug("All workflow steps complete after condition", { totalSteps });
 		return {
-			state: nextState,
+			active: nextActive,
 			response: { decision: "allow" },
 		};
 	}
@@ -54,17 +59,17 @@ export function conditionStop(
 			error: nextState.error,
 		});
 		return {
-			state: nextState,
+			active: nextActive,
 			response: { decision: "allow" },
 		};
 	}
 
 	if (nextState?.status === "active") {
-		const nextTargetStep = nextState.workflow.flatSteps[nextState.step];
+		const nextTargetStep = active.workflow.flatSteps[nextState.step];
 		const nextStepNum = nextState.step + 1;
 		const reason = formatAdvanceReason(
 			nextTargetStep,
-			nextState.workflow.preamble,
+			active.workflow.preamble,
 		);
 
 		logDebug("Advancing after condition (auto)", {
@@ -74,7 +79,7 @@ export function conditionStop(
 		});
 
 		return {
-			state: nextState,
+			active: nextActive,
 			response: {
 				decision: "continue",
 				reason,
@@ -87,7 +92,7 @@ export function conditionStop(
 		nextStep: (nextState?.step ?? 0) + 1,
 	});
 	return {
-		state: nextState,
+		active: nextActive,
 		response: { decision: "allow" },
 	};
 }

@@ -5,7 +5,7 @@ import {
 	type ProblemId,
 	type ProblemSource,
 } from "./validator-checks.ts";
-import type { ConditionalStep, WorkflowDef, WorkflowStep } from "./workflow.ts";
+import type { ConditionalStep, WorkflowAst, WorkflowStep } from "./workflow.ts";
 
 export * from "./validator-checks.ts";
 
@@ -43,7 +43,7 @@ export interface ValidationResult {
 	problems: ValidationProblem[];
 }
 
-export function validateWorkflow(def: WorkflowDef): ValidationResult {
+export function validateWorkflow(def: WorkflowAst): ValidationResult {
 	const problems: ValidationProblem[] = [];
 
 	for (const check of WORKFLOW_CHECKS) {

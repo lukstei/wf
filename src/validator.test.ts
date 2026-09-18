@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { validateWorkflow } from "./validator.ts";
-import type { WorkflowDef } from "./workflow.ts";
+import type { WorkflowAst } from "./workflow.ts";
 
 describe("validateWorkflow", () => {
 	it("validates a well-formed workflow with snapshot", () => {
-		const validDef: WorkflowDef = {
+		const validDef: WorkflowAst = {
 			name: "Deploy Service",
 			description: "Continuous deployment pipeline",
 			steps: [

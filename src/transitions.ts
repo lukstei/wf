@@ -1,14 +1,14 @@
 import { assert } from "./lib/assert.ts";
-import type { ExtractWorkflowState, WorkflowState } from "./state.ts";
-import { nextStep, type WorkflowInfo } from "./workflow.ts";
+import type { ActiveWorkflow, ExtractWorkflowState, WorkflowState } from "./state.ts";
+import { type CompiledWorkflow, type FlatStep, nextStep } from "./workflow.ts";
 
 /**
  * Initializes and starts a workflow in active mode.
  * Sets the execution pointer to step 0 with iterationCount 0.
  */
 export function startWorkflow(
-	workflow: WorkflowInfo,
-): ExtractWorkflowState<"active"> {
+	workflow: CompiledWorkflow,
+): ActiveWorkflow {
 	if (workflow.flatSteps.length === 0) {
 		throw new Error(
 			`Cannot start workflow "${workflow.name}": contains no executable steps.`,
@@ -16,9 +16,11 @@ export function startWorkflow(
 	}
 
 	return {
-		status: "active",
-		step: 0,
-		iterationCount: 0,
+		state: {
+			status: "active",
+			step: 0,
+			iterationCount: 0,
+		},
 		workflow,
 	};
 }
@@ -69,6 +71,7 @@ export function resumeWorkflow(
  * Otherwise keeps status as "active".
  */
 export function advanceStep(
+	flatSteps: FlatStep[],
 	state: WorkflowState | null,
 	decision?: "YES" | "NO",
 ): WorkflowState | null {
@@ -77,23 +80,22 @@ export function advanceStep(
 	}
 
 	const nextIterationCount = state.iterationCount + 1;
-	const maxIterations = state.workflow.flatSteps.length * 5;
+	const maxIterations = flatSteps.length * 5;
 
 	if (nextIterationCount > maxIterations) {
 		return {
-			...state,
 			status: "error",
+			step: state.step,
 			error: `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
 			iterationCount: nextIterationCount,
 		};
 	}
 
-	const currentStep = state.workflow.flatSteps[state.step];
-	const targetIndex = nextStep(state.workflow.flatSteps, state.step, decision);
+	const currentStep = flatSteps[state.step];
+	const targetIndex = nextStep(flatSteps, state.step, decision);
 
-	if (targetIndex >= state.workflow.flatSteps.length) {
+	if (targetIndex >= flatSteps.length) {
 		return {
-			...state,
 			status: "finished",
 			step: targetIndex,
 			iterationCount: nextIterationCount,
@@ -103,7 +105,6 @@ export function advanceStep(
 	const isGate = currentStep?.type === "gate";
 
 	return {
-		...state,
 		step: targetIndex,
 		status: isGate ? "paused" : "active",
 		iterationCount: nextIterationCount,
@@ -123,8 +124,9 @@ export function failWorkflow(
 	}
 
 	return {
-		...state,
 		status: "error",
+		step: state.step,
+		iterationCount: state.iterationCount,
 		error,
 	};
 }
@@ -141,6 +143,7 @@ export interface StopWorkflowResult {
  */
 export function stopWorkflowState(
 	state: WorkflowState | null,
+	workflowName?: string,
 ): StopWorkflowResult {
 	if (!state || (state.status !== "active" && state.status !== "paused")) {
 		return { state: null, wasRunning: false };
@@ -148,10 +151,11 @@ export function stopWorkflowState(
 
 	return {
 		state: {
-			...state,
 			status: "finished",
+			step: state.step,
+			iterationCount: state.iterationCount,
 		},
 		wasRunning: true,
-		workflowName: state.workflow.name,
+		workflowName,
 	};
 }

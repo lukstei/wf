@@ -1,4 +1,4 @@
-import type { ConditionalStep, WorkflowDef, WorkflowStep } from "./workflow.ts";
+import type { ConditionalStep, WorkflowAst, WorkflowStep } from "./workflow.ts";
 
 export type ProblemId =
 	| "workflow-missing-name"
@@ -21,7 +21,7 @@ export interface CheckProblem {
 	source: ProblemSource;
 }
 
-export function checkWorkflowName(def: WorkflowDef): CheckProblem[] {
+export function checkWorkflowName(def: WorkflowAst): CheckProblem[] {
 	if (!def.name || def.name.trim().length === 0) {
 		return [
 			{
@@ -35,7 +35,7 @@ export function checkWorkflowName(def: WorkflowDef): CheckProblem[] {
 	return [];
 }
 
-export function checkWorkflowDescription(def: WorkflowDef): CheckProblem[] {
+export function checkWorkflowDescription(def: WorkflowAst): CheckProblem[] {
 	if (!def.description || def.description.trim().length === 0) {
 		return [
 			{
@@ -48,7 +48,7 @@ export function checkWorkflowDescription(def: WorkflowDef): CheckProblem[] {
 	return [];
 }
 
-export function checkWorkflowSteps(def: WorkflowDef): CheckProblem[] {
+export function checkWorkflowSteps(def: WorkflowAst): CheckProblem[] {
 	if (!Array.isArray(def.steps) || def.steps.length === 0) {
 		return [
 			{

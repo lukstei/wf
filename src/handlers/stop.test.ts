@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
-import type { WorkflowState } from "../state.ts";
-import { flattenWorkflow, type WorkflowDef } from "../workflow.ts";
+import type { ActiveWorkflow } from "../state.ts";
+import { flattenWorkflow, type WorkflowAst } from "../workflow.ts";
 import { handleStop } from "./stop.ts";
 
-const sampleDef: WorkflowDef = {
+const sampleDef: WorkflowAst = {
 	name: "Sample",
 	steps: [
 		{ type: "step", title: "Task 1", instruction: "Do task" },
@@ -25,45 +25,91 @@ describe("handlers/stop.ts", () => {
 			{ type: "stop", payload: { conversationId: "c1" } },
 			null,
 		);
-		expect(res.response.decision).toBe("allow");
+		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "allow",
+			  },
+			  "state": undefined,
+			}
+		`);
 	});
 
 	test("handleStop allows stop on error or cancellation termination reasons", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
-		const state: WorkflowState = {
-			status: "active",
-			step: 0,
-			iterationCount: 0,
-			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0,
+				iterationCount: 0,
+			},
+			workflow: {
+				name: "Sample",
+				filePath: "wf.json",
+				steps: sampleDef.steps,
+				flatSteps: flat,
+			},
 		};
 		const errRes = handleStop(
 			{
 				type: "stop",
 				payload: { conversationId: "c1", error: "Fatal error" },
 			},
-			state,
+			active,
 		);
-		expect(errRes.response.decision).toBe("allow");
-		expect(errRes.state?.status).toBe("error");
 
 		const abortRes = handleStop(
 			{
 				type: "stop",
 				payload: { conversationId: "c1", terminationReason: "user_interrupt" },
 			},
-			state,
+			active,
 		);
-		expect(abortRes.response.decision).toBe("allow");
-		expect(abortRes.state?.status).toBe("paused");
+
+		expect({
+			errRes: { state: errRes.active?.state, response: errRes.response },
+			abortRes: { state: abortRes.active?.state, response: abortRes.response },
+		}).toMatchInlineSnapshot(`
+			{
+			  "abortRes": {
+			    "response": {
+			      "decision": "allow",
+			    },
+			    "state": {
+			      "iterationCount": 0,
+			      "status": "paused",
+			      "step": 0,
+			    },
+			  },
+			  "errRes": {
+			    "response": {
+			      "decision": "allow",
+			    },
+			    "state": {
+			      "error": "Fatal error",
+			      "iterationCount": 0,
+			      "status": "error",
+			      "step": 0,
+			    },
+			  },
+			}
+		`);
 	});
 
 	test("handleStop does not advance step if status is paused", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
-		const state: WorkflowState = {
-			status: "paused",
-			step: 1,
-			iterationCount: 0,
-			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
+		const active: ActiveWorkflow = {
+			state: {
+				status: "paused",
+				step: 1,
+				iterationCount: 0,
+			},
+			workflow: {
+				name: "Sample",
+				filePath: "wf.json",
+				steps: sampleDef.steps,
+				flatSteps: flat,
+			},
 		};
 		const res = handleStop(
 			{
@@ -75,42 +121,77 @@ describe("handlers/stop.ts", () => {
 					content: "Just chatting with user",
 				},
 			},
-			state,
+			active,
 		);
-		expect(res.response.decision).toBe("allow");
-		expect(res.state?.step).toBe(1);
-		expect(res.state?.status).toBe("paused");
+		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "allow",
+			  },
+			  "state": {
+			    "iterationCount": 0,
+			    "status": "paused",
+			    "step": 1,
+			  },
+			}
+		`);
 	});
 
 	test("handleStop dispatches action steps to nextStop", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
-		const state: WorkflowState = {
-			status: "active",
-			step: 0, // s1 action
-			iterationCount: 0,
-			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 0, // s1 action
+				iterationCount: 0,
+			},
+			workflow: {
+				name: "Sample",
+				filePath: "wf.json",
+				steps: sampleDef.steps,
+				flatSteps: flat,
+			},
 		};
 		const res = handleStop(
 			{
 				type: "stop",
 				payload: { conversationId: "c1", terminationReason: "model_stop" },
 			},
-			state,
+			active,
 		);
-		expect(res.state?.step).toBe(1);
-		expect(res.response.decision).toBe("continue");
-		expect(res.response.reason).toMatch(
-			/^\[wf\] Executing next step: is ready\?/,
-		);
+		expect({ state: res.active?.state, response: res.response }).toMatchInlineSnapshot(`
+			{
+			  "response": {
+			    "decision": "continue",
+			    "reason": "[wf] Executing next step: is ready?
+
+			Evaluate condition: "is ready?"
+
+			Continue immediately and execute this step.",
+			  },
+			  "state": {
+			    "iterationCount": 1,
+			    "status": "active",
+			    "step": 1,
+			  },
+			}
+		`);
 	});
 
 	test("handleStop dispatches condition steps to conditionStop", () => {
 		const flat = flattenWorkflow(sampleDef.steps);
-		const state: WorkflowState = {
-			status: "active",
-			step: 1, // c1 condition
-			iterationCount: 0,
-			workflow: { name: "Sample", filePath: "wf.json", flatSteps: flat },
+		const active: ActiveWorkflow = {
+			state: {
+				status: "active",
+				step: 1, // c1 condition
+				iterationCount: 0,
+			},
+			workflow: {
+				name: "Sample",
+				filePath: "wf.json",
+				steps: sampleDef.steps,
+				flatSteps: flat,
+			},
 		};
 		const resYes = handleStop(
 			{
@@ -122,12 +203,8 @@ describe("handlers/stop.ts", () => {
 					content: "Ready! [DECISION: YES]",
 				},
 			},
-			state,
+			active,
 		);
-		// YES branch should jump to y1 (index 2)
-		expect(resYes.state?.step).toBe(2);
-		expect(resYes.response.decision).toBe("continue");
-		expect(resYes.response.reason).toContain("Deploy");
 
 		const resNo = handleStop(
 			{
@@ -139,11 +216,46 @@ describe("handlers/stop.ts", () => {
 					content: "Not ready yet. [DECISION: NO]",
 				},
 			},
-			state,
+			active,
 		);
-		// NO branch should jump to n1 (index 3)
-		expect(resNo.state?.step).toBe(3);
-		expect(resNo.response.decision).toBe("continue");
-		expect(resNo.response.reason).toContain("Fix");
+		expect({
+			resYes: { state: resYes.active?.state, response: resYes.response },
+			resNo: { state: resNo.active?.state, response: resNo.response },
+		}).toMatchInlineSnapshot(`
+			{
+			  "resNo": {
+			    "response": {
+			      "decision": "continue",
+			      "reason": "[wf] Executing next step: Fix (Level 1)
+
+			INSTRUCTION:
+			Fix
+
+			Continue immediately and execute this step.",
+			    },
+			    "state": {
+			      "iterationCount": 1,
+			      "status": "active",
+			      "step": 3,
+			    },
+			  },
+			  "resYes": {
+			    "response": {
+			      "decision": "continue",
+			      "reason": "[wf] Executing next step: Deploy (Level 1)
+
+			INSTRUCTION:
+			Deploy
+
+			Continue immediately and execute this step.",
+			    },
+			    "state": {
+			      "iterationCount": 1,
+			      "status": "active",
+			      "step": 2,
+			    },
+			  },
+			}
+		`);
 	});
 });

@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { parseWorkflowMarkdown } from "./lib/markdown/wf.ts";
-import type { WorkflowDef } from "./workflow.ts";
+import type { WorkflowAst } from "./workflow.ts";
 
 export function resolveWorkflowPath(
 	userPath: string,
@@ -61,7 +61,7 @@ export function resolveWorkflowPath(
 export function defaultWorkflowResolver(
 	targetPath: string,
 	workspacePaths?: string[],
-): { filePath: string; workflow: WorkflowDef } | { error: string } | null {
+): { filePath: string; workflow: WorkflowAst } | { error: string } | null {
 	const resolved = resolveWorkflowPath(targetPath, workspacePaths);
 	if (!resolved) return null;
 
@@ -84,7 +84,8 @@ export function defaultWorkflowResolver(
 			}
 		}
 
-		const parsed = JSON.parse(content) as WorkflowDef;
+		const parsed = JSON.parse(content) as WorkflowAst;
+		parsed.name = parsed.name || path.basename(resolved, path.extname(resolved));
 		if (!Array.isArray(parsed.steps) || parsed.steps.length === 0) {
 			return {
 				error: `Workflow file "${targetPath}" does not contain any steps.`,

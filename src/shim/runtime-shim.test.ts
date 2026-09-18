@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { saveState } from "../state.ts";
+import { saveState, saveWorkflow } from "../state.ts";
 import { runShim } from "./runtime-shim.ts";
 
 describe("runShim End-to-End Simulation", () => {
@@ -70,30 +70,35 @@ describe("runShim End-to-End Simulation", () => {
 	it("advances active workflow in Codex stop hook with block decision", async () => {
 		const sessionId = "codex-active-wf-1";
 		const env = { PLUGIN_DATA: "/tmp/codex-data" };
+		saveWorkflow(
+			sessionId,
+			{
+				name: "Sample Workflow",
+				filePath: "sample.md",
+				steps: [],
+				flatSteps: [
+					{
+						index: 0,
+						level: 1,
+						type: "step",
+						instruction: "Step 1 instruction",
+						nextIndex: 1,
+					},
+					{
+						index: 1,
+						level: 1,
+						type: "step",
+						instruction: "Step 2 instruction",
+						nextIndex: 2,
+					},
+				],
+			},
+			env,
+		);
 		saveState(
 			sessionId,
 			{
 				status: "active",
-				workflow: {
-					name: "Sample Workflow",
-					filePath: "sample.md",
-					flatSteps: [
-						{
-							index: 0,
-							level: 1,
-							type: "step",
-							instruction: "Step 1 instruction",
-							nextIndex: 1,
-						},
-						{
-							index: 1,
-							level: 1,
-							type: "step",
-							instruction: "Step 2 instruction",
-							nextIndex: 2,
-						},
-					],
-				},
 				step: 0,
 				iterationCount: 0,
 			},
