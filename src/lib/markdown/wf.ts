@@ -24,7 +24,7 @@ function getInnerText(node?: MarkdownNode): string {
 const KEYWORDS = ["if", "else", "no", "gate"] as const;
 
 const KEYWORD_REGEX = new RegExp(
-	`^(${KEYWORDS.join("|")})(?:[:\\s]+(.*))?$`,
+	`^(${KEYWORDS.join("|")})\\s*:(?:\\s*(.*))?$`,
 	"i",
 );
 

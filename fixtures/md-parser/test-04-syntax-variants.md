@@ -8,8 +8,8 @@ Wear sunglasses
 ## Else:
 Take umbrella
 
-## if is it windy?
+## if: is it windy?
 Wear windbreaker
 
-## else
+## else:
 Wear normal jacket

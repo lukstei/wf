@@ -2,7 +2,7 @@
 
 Decide whether it is safe to clock out for the weekend.
 
-## 1. If: Is it past Friday 4:00 PM?
+## If: Is it past Friday 4:00 PM?
 Check the current day and local time.
 
 ### If: Is the git working directory clean?

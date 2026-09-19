@@ -195,7 +195,7 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
   - Enhance prefix pattern matching in `src/md-parser.ts` to recognize alphanumeric sequences (`\d+[a-zA-Z]+`) alongside optional prefix labels (`Step`, `Task`, `Schritt`).
   - Add test fixtures and unit tests in `src/md-parser.test.ts` covering `1a`, `1b`, `1a. If ...`, `1b. Gate: ...`, and regular steps with alphanumeric numbering.
 
-### [ ] 2.10 Mandatory Colon Delimiter for Control Keywords (`If:`, `Else:`, `Gate:`)
+### [x] 2.10 Mandatory Colon Delimiter for Control Keywords (`If:`, `Else:`, `Gate:`)
 - **Current State:** Heading keyword detection in `src/md-parser.ts` accepts whitespace as a keyword delimiter (`(?:[:\s]+(.*))?`). Consequently, natural language titles beginning with a keyword followed by a space (e.g., `## If is friday`, `## Gate the release`, `## No dependencies needed`) are unintentionally parsed as control-flow constructs (`if`, `gate`, `else`) rather than plain action steps.
 - **Objective:** Require a trailing colon (`:`) immediately following control keywords (`If:`, `Else:`, `Gate:`) to activate control-flow parsing. Any heading lacking a colon must be treated as a standard plain-text action step.
 - **Syntax Rules:**
@@ -257,6 +257,52 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
   - Update `WorkflowAst` and frontmatter parser in `src/lib/markdown/wf.ts` to capture `preamble_mode`.
   - Update `formatStepPrompt` and `formatAdvanceReason` in `src/actions/formatters.ts` to evaluate `preamble_mode` against the active step index.
   - Add unit tests verifying prompt generation under both modes.
+
+### [ ] 2.14 Chained Conditional Branching (`Else If:`, `Elif:`)
+- **Current State:** The parser only supports binary branching (`If:` with child steps and an optional `Else:` / `No:`). Multi-way conditional logic requires deeply nesting `If:` blocks within child branches or `Else:` sections (`###`, `####`, `#####`), which reduces readability for sequential decision chains.
+- **Objective:** Support chained conditional branching using `Else If: <condition>` or `Elif: <condition>` at the same indentation level as the initial `If:`.
+- **Syntax:**
+  ```markdown
+  ## If: Is it Monday?
+  Plan the weekly sprint.
+
+  ## Else If: Is it Friday?
+  Prepare release notes and wrap up.
+
+  ## Else:
+  Continue standard development tasks.
+  ```
+- **Execution & Graph Semantics:**
+  - Evaluated sequentially: If the initial `If:` condition evaluates to `NO`, the runner advances to evaluate the `Else If:` condition.
+  - Short-circuiting: If any condition in the chain evaluates to `YES`, its steps execute, and upon completion the execution pointer jumps past all remaining `Else If:` and `Else:` branches in the chain.
+### [ ] 2.15 Hierarchical Step Grouping / Sub-Steps (Non-Conditional Nesting)
+- **Current State:** The parser only looks for child headings under `If:` conditions. Any child headings (e.g. `###`) placed under a standard action step (e.g. `## Deploy`) are swallowed as raw markdown text in that step's instructions, executing as a single monolithic turn.
+- **Objective:** Support hierarchical step grouping (composite steps / sub-steps) where child headings under a linear step represent sequential sub-steps executed one at a time.
+- **Syntax:**
+  ```markdown
+  ## 1. Deploy Service
+  Ensure cluster credentials are valid.
+
+  ### Run pre-flight checks
+  Execute lint and test verification suites.
+
+  ### Build release containers
+  Run `docker build -t app:latest .`.
+
+  ### Deploy to cluster
+  Apply Kubernetes manifests to the target namespace.
+  ```
+- **Execution & Graph Semantics:**
+  - Parent body text (`Ensure cluster credentials are valid`) acts as a group preamble / context, injected into each child sub-step alongside the global workflow preamble.
+  - Sub-steps (`### Run pre-flight checks`, etc.) become discrete sequential step nodes in the flattened execution graph.
+  - In `/wf-show` and Mermaid diagrams, composite steps can be rendered as subgraphs (`subgraph "Deploy Service"`).
+  - Nesting level metadata (`level: 1`) is preserved in `FlatStep`, allowing prompt formatters to display structured progress (e.g., `Step 2 of 6: Deploy Service > Run pre-flight checks (Level 1)`).
+- **Changes Needed:**
+  - Update `WorkflowAst` in `src/workflow.ts` to introduce a composite step type (e.g., `GroupStep` with `title`, `preamble`, and `steps: WorkflowStep[]`).
+  - Update `parseSteps` in `src/lib/markdown/wf.ts` to detect child headings under standard action steps and parse them recursively into sequential child steps.
+  - Update `flattenWorkflow` in `src/workflow.ts` to flatten grouped steps linearly with group context.
+  - Update `src/lib/visualize.ts` to render Mermaid subgraphs for composite steps.
+  - Add test fixtures and unit tests for non-conditional nested step groups.
 
 ---
 

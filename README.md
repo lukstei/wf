@@ -128,7 +128,7 @@ See [docs/SYNTAX.md](docs/SYNTAX.md) for the complete specification.
 
 - `# Title`: Workflow title. Any text before the first `##` is global preamble context injected into every step.
 - `## Step name`: Linear step. Body text becomes step instructions.
-- `## If: Condition`: Branch point. Child `###` subheadings form the YES branch; `### No` forms the NO branch. Agent decides with `[DECISION: YES]` or `[DECISION: NO]`.
+- `## If: Condition`: Branch point. Child `###` subheadings form the YES branch; `### No:` forms the NO branch. Agent decides with `[DECISION: YES]` or `[DECISION: NO]`.
 - `## Gate: Name`: Human checkpoint. Execution halts until `/wf-next`.
 
 ## FAQ

@@ -20,7 +20,7 @@ Read the target `SKILL.md` using `view_file`. Identify the structural components
 - **Linear Actions**: Discrete commands, code edits, or sequential instructions become action steps (`## <Title>`).
 - **Decisions & Branching**: Conditions, triage questions, or checks become conditional steps (`## If: <Condition>`).
   - Child steps under YES branch: `### <Step Title>`.
-  - Alternative path: `### No` or `### Else` (must be the last child step).
+  - Alternative path: `### No:` or `### Else:` (must be the last child step).
 - **User Interaction & Human Review**: If a step's intention is to interact with the user (asking questions, soliciting decisions, or requiring approval before destructive actions), the step **must** use `## Gate: <Title>`. Otherwise, the workflow won't be stopped.
 
 ### 2. Synthesize the Workflow File
@@ -35,7 +35,7 @@ Structure rules (from `docs/SYNTAX.md`):
 - `## <Step>`: Plain action steps.
 - `## If: <Condition>`: Requires a colon after `If:`.
 - `### <Substep>`: Nested under `If:` for YES branch steps.
-- `### No` / `### Else`: Nested under `If:` for NO branch steps.
+- `### No:` / `### Else:`: Nested under `If:` for NO branch steps.
 - `## Gate: <Title>`: Requires a colon after `Gate:`. If a step's intention is to interact with the user, it must use `Gate:`—otherwise the workflow runner will not stop. The body must clearly state what to present or ask the user before pausing.
 
 Example template:
@@ -58,7 +58,7 @@ Run migration status check.
 ### Apply Migrations
 Run database migration script.
 
-### No
+### No:
 Log that database schema is up to date.
 
 ## 3. Gate: Approve Release

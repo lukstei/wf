@@ -51,7 +51,7 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 
 	test("parses numbered condition headings correctly", () => {
 		const wf = parseWorkflowMarkdown(
-			"# Numbered Workflow\n\n## 1. Prepare\nRun setup\n\n## 2. If tests pass?\nDeploy\n\n## 3. Else:\nFix tests",
+			"# Numbered Workflow\n\n## 1. Prepare\nRun setup\n\n## 2. If: tests pass?\nDeploy\n\n## 3. Else:\nFix tests",
 		);
 		expect(wf.steps).toHaveLength(2);
 		expect(wf.steps[0]).toEqual({
@@ -76,51 +76,242 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 		});
 	});
 
-	test("parses heading variations with prefix stripping and first-word fallback", () => {
-		expect(parseHeading("If: Green")).toEqual({
-			type: "if",
-			condition: "Green",
-			title: "Green",
-			depth: 2,
-		});
-		expect(parseHeading("If Green")).toEqual({
-			type: "if",
-			condition: "Green",
-			title: "Green",
-			depth: 2,
-		});
-		expect(parseHeading("Step 1: If")).toEqual({
-			type: "if",
-			condition: "",
-			title: "if",
-			depth: 2,
-		});
-		expect(parseHeading("Schritt 2 If: Green")).toEqual({
-			type: "if",
-			condition: "Green",
-			title: "Green",
-			depth: 2,
-		});
-		expect(parseHeading("Schritt 3: Else")).toEqual({
-			type: "else",
-			title: "else",
-			depth: 2,
-		});
-		expect(parseHeading("Step 1: Start")).toEqual({
-			type: "step",
-			title: "Step 1: Start",
-			depth: 2,
-		});
-		expect(parseHeading("No: Skip", 3)).toEqual({
-			type: "else",
-			title: "Skip",
-			depth: 3,
-		});
-		expect(parseHeading("No", 3)).toEqual({
-			type: "else",
-			title: "no",
-			depth: 3,
-		});
+	test("parses heading variations: recognized control steps vs normal action steps", () => {
+		const headings = [
+			// Recognized control steps (must have colon)
+			"If: Green",
+			"1. If: Green",
+			"2) If: Green",
+			"Step 1: If: Green",
+			"Schritt 2: If: Green",
+			"Gate: Confirm deploy",
+			"1. Gate: Confirm deploy",
+			"Step 1: Gate: Confirm deploy",
+			"Else: fallback",
+			"Else:",
+			"Schritt 3: Else:",
+			"No: Skip",
+			"No:",
+			// Not recognized as control steps (normal action steps)
+			"If Green",
+			"Gate release",
+			"No dependencies required",
+			"1. Run migrations",
+			"2) Prepare environment",
+			"Step 1: Start",
+			"Deploy service",
+			"Phase A: Gate: Review code",
+			"Gift for user",
+			"Iframe container",
+			"Gatekeeper status",
+		];
+
+		const results = headings.map((h) => ({
+			heading: h,
+			parsed: parseHeading(h),
+		}));
+
+		expect(results).toMatchInlineSnapshot(`
+			[
+			  {
+			    "heading": "If: Green",
+			    "parsed": {
+			      "condition": "Green",
+			      "depth": 2,
+			      "title": "Green",
+			      "type": "if",
+			    },
+			  },
+			  {
+			    "heading": "1. If: Green",
+			    "parsed": {
+			      "condition": "Green",
+			      "depth": 2,
+			      "title": "Green",
+			      "type": "if",
+			    },
+			  },
+			  {
+			    "heading": "2) If: Green",
+			    "parsed": {
+			      "condition": "Green",
+			      "depth": 2,
+			      "title": "Green",
+			      "type": "if",
+			    },
+			  },
+			  {
+			    "heading": "Step 1: If: Green",
+			    "parsed": {
+			      "condition": "Green",
+			      "depth": 2,
+			      "title": "Green",
+			      "type": "if",
+			    },
+			  },
+			  {
+			    "heading": "Schritt 2: If: Green",
+			    "parsed": {
+			      "condition": "Green",
+			      "depth": 2,
+			      "title": "Green",
+			      "type": "if",
+			    },
+			  },
+			  {
+			    "heading": "Gate: Confirm deploy",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Confirm deploy",
+			      "type": "gate",
+			    },
+			  },
+			  {
+			    "heading": "1. Gate: Confirm deploy",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Confirm deploy",
+			      "type": "gate",
+			    },
+			  },
+			  {
+			    "heading": "Step 1: Gate: Confirm deploy",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Confirm deploy",
+			      "type": "gate",
+			    },
+			  },
+			  {
+			    "heading": "Else: fallback",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "fallback",
+			      "type": "else",
+			    },
+			  },
+			  {
+			    "heading": "Else:",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "else",
+			      "type": "else",
+			    },
+			  },
+			  {
+			    "heading": "Schritt 3: Else:",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "else",
+			      "type": "else",
+			    },
+			  },
+			  {
+			    "heading": "No: Skip",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Skip",
+			      "type": "else",
+			    },
+			  },
+			  {
+			    "heading": "No:",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "no",
+			      "type": "else",
+			    },
+			  },
+			  {
+			    "heading": "If Green",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "If Green",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "Gate release",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Gate release",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "No dependencies required",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "No dependencies required",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "1. Run migrations",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "1. Run migrations",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "2) Prepare environment",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "2) Prepare environment",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "Step 1: Start",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Step 1: Start",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "Deploy service",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Deploy service",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "Phase A: Gate: Review code",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Phase A: Gate: Review code",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "Gift for user",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Gift for user",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "Iframe container",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Iframe container",
+			      "type": "step",
+			    },
+			  },
+			  {
+			    "heading": "Gatekeeper status",
+			    "parsed": {
+			      "depth": 2,
+			      "title": "Gatekeeper status",
+			      "type": "step",
+			    },
+			  },
+			]
+		`);
 	});
 
 	test("parses condition evaluation instructions and nested ### No branch", () => {
@@ -183,7 +374,7 @@ Skip to schema verification.
 		});
 	});
 
-	test("parses multi-step YES branch with ### No", () => {
+	test("parses multi-step YES branch with ### No:", () => {
 		const md = `# Multi-step
 
 ## If: Ready?
@@ -195,7 +386,7 @@ Run dry run.
 ### 2. Deploy
 Run deploy.
 
-### No
+### No:
 Skip deployment.
 `;
 		const wf = parseWorkflowMarkdown(md);

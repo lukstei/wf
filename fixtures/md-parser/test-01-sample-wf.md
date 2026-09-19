@@ -6,11 +6,11 @@ This is a workflow to test the worfklow funcitions.
 
 say "Hello to workflow test"
 
-## *if* it is friday?
+## *if:* it is friday?
 
   output is friday
 
-## *else*
+## *else:*
 
 echo hello monday
 
