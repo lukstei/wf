@@ -21,40 +21,22 @@ function createMockEvent(
 
 describe("codexHarness", () => {
 	describe("detect", () => {
-		it("detects PLUGIN_DATA environment variable", () => {
-			expect(codexHarness.detect({}, { PLUGIN_DATA: "/tmp/codex" })).toBe(true);
+		it("detects hookEventName in payload", () => {
+			expect(codexHarness.detect({ hookEventName: "Stop" }, {})).toBe(true);
+			expect(codexHarness.detect({ hookEventName: "UserPromptSubmit" }, {})).toBe(
+				true,
+			);
 		});
 
-		it("detects CODEX_SESSION_ID environment variable", () => {
+		it("detects CODEX_SESSION_ID in environment", () => {
 			expect(codexHarness.detect({}, { CODEX_SESSION_ID: "session-123" })).toBe(
 				true,
 			);
 		});
 
-		it("detects CODEX_THREAD_ID environment variable", () => {
-			expect(codexHarness.detect({}, { CODEX_THREAD_ID: "thread-456" })).toBe(
-				true,
-			);
-		});
-
-		it("detects hookEventName in payload", () => {
-			expect(codexHarness.detect({ hookEventName: "Stop" }, {})).toBe(true);
-		});
-
-		it("ignores VS Code Copilot root in CLAUDE_PLUGIN_ROOT", () => {
-			expect(
-				codexHarness.detect(
-					{},
-					{
-						CLAUDE_PLUGIN_ROOT:
-							"/Users/test/.vscode/extensions/agent-plugins/wf",
-					},
-				),
-			).toBe(false);
-		});
-
-		it("returns false for unrelated env and payload", () => {
+		it("returns false without hookEventName or CODEX_SESSION_ID", () => {
 			expect(codexHarness.detect({}, {})).toBe(false);
+			expect(codexHarness.detect({}, { UNRELATED: "true" })).toBe(false);
 		});
 	});
 

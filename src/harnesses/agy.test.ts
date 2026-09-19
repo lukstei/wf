@@ -25,18 +25,26 @@ describe("agyHarness", () => {
 			expect(agyHarness.detect({}, { AGY_HOOK_ACTIVE: "1" })).toBe(true);
 		});
 
-		it("detects workspacePaths in payload", () => {
-			expect(agyHarness.detect({ workspacePaths: ["/tmp/ws"] }, {})).toBe(true);
+		it("detects ANTIGRAVITY_CONVERSATION_ID", () => {
+			expect(
+				agyHarness.detect({}, { ANTIGRAVITY_CONVERSATION_ID: "uuid-1" }),
+			).toBe(true);
 		});
 
-		it("detects executionNum in payload", () => {
-			expect(agyHarness.detect({ executionNum: 2 }, {})).toBe(true);
+		it("detects transcriptPath ending with .system_generated/logs/transcript.jsonl", () => {
+			expect(
+				agyHarness.detect(
+					{
+						transcriptPath:
+							"/home/user/.gemini/antigravity/brain/uuid/.system_generated/logs/transcript.jsonl",
+					},
+					{},
+				),
+			).toBe(true);
 		});
 
-		it("detects conversationId with stepIdx", () => {
-			expect(agyHarness.detect({ conversationId: "c1", stepIdx: 0 }, {})).toBe(
-				true,
-			);
+		it("returns false for non-matching payload", () => {
+			expect(agyHarness.detect({ conversationId: "c1" }, {})).toBe(false);
 		});
 	});
 

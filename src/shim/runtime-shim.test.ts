@@ -106,7 +106,7 @@ describe("runShim End-to-End Simulation", () => {
 		);
 
 		const rawInput = JSON.stringify({
-			hook_event_name: "Stop",
+			hookEventName: "Stop",
 			session_id: sessionId,
 			cwd: "/test",
 			stop_hook_active: false,

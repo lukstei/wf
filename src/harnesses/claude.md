@@ -42,9 +42,8 @@ Claude Code discovers plugins via `.claude-plugin/`:
 
 ## 3. Harness Detection
 
-Claude Code is identified by:
-1. Environment variables: `CLAUDE_PLUGIN_ROOT` or `CLAUDE_PROJECT_DIR` (excluding VS Code Copilot paths).
-2. Structural markers on stdin: `hook_event_name`, `tool_name`, `stop_hook_active`, or `last_assistant_message`.
+- **Hook invocation:** `payload.hook_event_name` is defined (Source: https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/hooks)
+- **Tool invocation:** `process.env.CLAUDE_CODE_SESSION_ID` is defined (Source: https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)
 
 ---
 

@@ -11,22 +11,13 @@ export const agyHarness: HarnessAdapter = {
 	id: "agy",
 
 	detect(payload: Record<string, unknown>, env: NodeJS.ProcessEnv): boolean {
-		if (env.AGY_HOOK_ACTIVE) {
+		if (env.AGY_HOOK_ACTIVE || env.ANTIGRAVITY_CONVERSATION_ID) {
 			return true;
 		}
-		if (
-			Array.isArray(payload.workspacePaths) ||
-			payload.executionNum !== undefined ||
-			payload.stepIdx !== undefined ||
-			payload.invocationNum !== undefined ||
-			payload.artifactDirectoryPath !== undefined
-		) {
-			return true;
-		}
-		if (payload.conversationId !== undefined && !payload.session_id) {
-			return true;
-		}
-		return false;
+		return (
+			typeof payload.transcriptPath === "string" &&
+			payload.transcriptPath.endsWith(".system_generated/logs/transcript.jsonl")
+		);
 	},
 
 	normalize(
@@ -188,7 +179,7 @@ export const agyHarness: HarnessAdapter = {
 	},
 
 	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
-		return env.ANTIGRAVITY_CONVERSATION_ID || env.AGY_CONVERSATION_ID || null;
+		return env.ANTIGRAVITY_CONVERSATION_ID || null;
 	},
 
 	resolveStorageDir(env: NodeJS.ProcessEnv): string | null {

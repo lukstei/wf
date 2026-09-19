@@ -39,16 +39,14 @@ describe("copilotHarness", () => {
 			).toBe(true);
 		});
 
-		it("detects VS Code plugin root path in CLAUDE_PLUGIN_ROOT", () => {
+		it("detects COPILOT_SESSION_ID", () => {
 			expect(
-				copilotHarness.detect(
-					{},
-					{
-						CLAUDE_PLUGIN_ROOT:
-							"/Users/test/.vscode/extensions/agent-plugins/wf",
-					},
-				),
+				copilotHarness.detect({}, { COPILOT_SESSION_ID: "session-123" }),
 			).toBe(true);
+		});
+
+		it("returns false without COPILOT_PLUGIN_DATA or COPILOT_SESSION_ID", () => {
+			expect(copilotHarness.detect({}, {})).toBe(false);
 		});
 	});
 

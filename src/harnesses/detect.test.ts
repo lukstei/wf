@@ -41,16 +41,16 @@ describe("detectHarness", () => {
 			expect(harness).toBe("copilot");
 		});
 
-		it("detects Copilot when CLAUDE_PLUGIN_ROOT is under .vscode/agent-plugins", () => {
+		it("detects Copilot when COPILOT_SESSION_ID is set", () => {
 			const harness = detectHarness(
 				{},
-				{ CLAUDE_PLUGIN_ROOT: "/Users/user/.vscode/agent-plugins/wf" },
+				{ COPILOT_SESSION_ID: "copilot-s1" },
 			);
 			expect(harness).toBe("copilot");
 		});
 
-		it("detects Codex when PLUGIN_DATA is set", () => {
-			const harness = detectHarness({}, { PLUGIN_DATA: "/tmp/codex" });
+		it("detects Codex from hookEventName in payload", () => {
+			const harness = detectHarness({ hookEventName: "UserPromptSubmit" }, {});
 			expect(harness).toBe("codex");
 		});
 
@@ -59,53 +59,31 @@ describe("detectHarness", () => {
 			expect(harness).toBe("codex");
 		});
 
-		it("detects Codex when CODEX_THREAD_ID is set", () => {
-			const harness = detectHarness({}, { CODEX_THREAD_ID: "thread-123" });
-			expect(harness).toBe("codex");
-		});
-
-		it("detects Codex from hookEventName in payload", () => {
-			const harness = detectHarness({ hookEventName: "UserPromptSubmit" }, {});
-			expect(harness).toBe("codex");
-		});
-
 		it("detects AGY when AGY_HOOK_ACTIVE is set", () => {
 			const harness = detectHarness({}, { AGY_HOOK_ACTIVE: "1" });
 			expect(harness).toBe("agy");
 		});
 
-		it("detects AGY from AGY payload envelope with conversationId and transcriptPath", () => {
+		it("detects AGY when ANTIGRAVITY_CONVERSATION_ID is set", () => {
+			const harness = detectHarness(
+				{},
+				{ ANTIGRAVITY_CONVERSATION_ID: "conv-123" },
+			);
+			expect(harness).toBe("agy");
+		});
+
+		it("detects AGY from transcriptPath ending with .system_generated/logs/transcript.jsonl", () => {
 			const harness = detectHarness(
 				{
-					conversationId: "conv-123",
-					transcriptPath: "/path/to/transcript.jsonl",
+					transcriptPath:
+						"/Users/test/.gemini/antigravity/brain/uuid/.system_generated/logs/transcript.jsonl",
 				},
 				{},
 			);
 			expect(harness).toBe("agy");
 		});
 
-		it("detects AGY from AGY payload with stepIdx or toolCall", () => {
-			const harness = detectHarness(
-				{
-					conversationId: "conv-123",
-					stepIdx: 5,
-					toolCall: { name: "run_command" },
-				},
-				{},
-			);
-			expect(harness).toBe("agy");
-		});
-
-		it("detects Claude Code from CLAUDE_PLUGIN_ROOT", () => {
-			const harness = detectHarness(
-				{},
-				{ CLAUDE_PLUGIN_ROOT: "/home/user/.claude/plugins/wf" },
-			);
-			expect(harness).toBe("claude");
-		});
-
-		it("detects Claude Code from Claude Code snake_case payload", () => {
+		it("detects Claude Code from hook_event_name", () => {
 			const harness = detectHarness(
 				{
 					hook_event_name: "PreToolUse",
@@ -113,6 +91,14 @@ describe("detectHarness", () => {
 					tool_name: "Bash",
 				},
 				{},
+			);
+			expect(harness).toBe("claude");
+		});
+
+		it("detects Claude Code when CLAUDE_CODE_SESSION_ID is set", () => {
+			const harness = detectHarness(
+				{},
+				{ CLAUDE_CODE_SESSION_ID: "session-claude-1" },
 			);
 			expect(harness).toBe("claude");
 		});
@@ -130,50 +116,30 @@ describe("detectHarness", () => {
 					ANTIGRAVITY_CONVERSATION_ID: "agy-uuid-1",
 				}),
 			).toBe("agy-uuid-1");
-			expect(
-				resolveConversationIdFromHarnesses({
-					AGY_CONVERSATION_ID: "agy-uuid-2",
-				}),
-			).toBe("agy-uuid-2");
 		});
 
 		it("resolves conversation ID for Claude Code", () => {
 			expect(
 				resolveConversationIdFromHarnesses({
-					CLAUDE_CONVERSATION_ID: "claude-uuid-1",
+					CLAUDE_CODE_SESSION_ID: "claude-uuid-1",
 				}),
 			).toBe("claude-uuid-1");
-			expect(
-				resolveConversationIdFromHarnesses({
-					CLAUDE_SESSION_ID: "claude-uuid-2",
-				}),
-			).toBe("claude-uuid-2");
 		});
 
 		it("resolves conversation ID for Codex", () => {
 			expect(
 				resolveConversationIdFromHarnesses({
-					CODEX_CONVERSATION_ID: "codex-uuid-1",
+					CODEX_SESSION_ID: "codex-uuid-1",
 				}),
 			).toBe("codex-uuid-1");
-			expect(
-				resolveConversationIdFromHarnesses({
-					CODEX_SESSION_ID: "codex-uuid-2",
-				}),
-			).toBe("codex-uuid-2");
 		});
 
 		it("resolves conversation ID for Copilot", () => {
 			expect(
 				resolveConversationIdFromHarnesses({
-					COPILOT_CONVERSATION_ID: "copilot-uuid-1",
+					COPILOT_SESSION_ID: "copilot-uuid-1",
 				}),
 			).toBe("copilot-uuid-1");
-			expect(
-				resolveConversationIdFromHarnesses({
-					VSCODE_COPILOT_SESSION_ID: "copilot-uuid-2",
-				}),
-			).toBe("copilot-uuid-2");
 		});
 
 		it("returns null when no harness environment variables are set", () => {

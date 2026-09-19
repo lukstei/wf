@@ -8,14 +8,9 @@ export const codexHarness: HarnessAdapter = {
 	id: "codex",
 
 	detect(payload: Record<string, unknown>, env: NodeJS.ProcessEnv): boolean {
-		if (isVsCodeCopilotRoot(env.CLAUDE_PLUGIN_ROOT)) {
-			return false;
-		}
-		return Boolean(
-			env.PLUGIN_DATA ||
-				env.CODEX_SESSION_ID ||
-				env.CODEX_THREAD_ID ||
-				payload.hookEventName !== undefined,
+		return (
+			payload.hookEventName !== undefined ||
+			Boolean(env.CODEX_SESSION_ID)
 		);
 	},
 
@@ -172,7 +167,7 @@ export const codexHarness: HarnessAdapter = {
 	},
 
 	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
-		return env.CODEX_CONVERSATION_ID || env.CODEX_SESSION_ID || null;
+		return env.CODEX_SESSION_ID || null;
 	},
 
 	resolveStorageDir(env: NodeJS.ProcessEnv): string | null {

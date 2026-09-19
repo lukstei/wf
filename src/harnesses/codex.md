@@ -45,9 +45,8 @@ OpenAI Codex CLI discovers plugins via `.codex-plugin/` in a project or global d
 
 ## 3. Harness Detection
 
-Codex CLI is identified by:
-1. Environment variables: `PLUGIN_DATA`, `CODEX_SESSION_ID`, or `CODEX_THREAD_ID`.
-2. Structural markers on stdin: `payload.hookEventName !== undefined`.
+- **Hook invocation:** `payload.hookEventName` is defined (Source: https://github.com/openai/codex)
+- **Tool invocation:** `process.env.CODEX_SESSION_ID` is defined (Source: https://github.com/openai/codex)
 
 ---
 

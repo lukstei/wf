@@ -29,9 +29,8 @@ VS Code Copilot loads plugins via `.vscode/agent-plugins/`. It sets `CLAUDE_PLUG
 
 ## 3. Harness Detection
 
-Identified by:
-1. `process.env.COPILOT_PLUGIN_DATA`
-2. `process.env.CLAUDE_PLUGIN_ROOT` path containing both `agent-plugins` and `.vscode`.
+- **Hook invocation:** `process.env.COPILOT_PLUGIN_DATA` is defined (Source: https://code.visualstudio.com/api/advanced-topics/using-proposed-api)
+- **Tool invocation:** `process.env.COPILOT_SESSION_ID` is defined (Source: https://code.visualstudio.com/docs/copilot/copilot-extensibility-overview)
 
 ---
 

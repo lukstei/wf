@@ -21,36 +21,22 @@ function createMockEvent(
 
 describe("claudeHarness", () => {
 	describe("detect", () => {
-		it("detects CLAUDE_PLUGIN_ROOT", () => {
-			expect(
-				claudeHarness.detect({}, { CLAUDE_PLUGIN_ROOT: "/tmp/claude" }),
-			).toBe(true);
-		});
-
-		it("detects CLAUDE_PROJECT_DIR", () => {
-			expect(
-				claudeHarness.detect({}, { CLAUDE_PROJECT_DIR: "/tmp/project" }),
-			).toBe(true);
-		});
-
-		it("detects session_id in payload", () => {
-			expect(claudeHarness.detect({ session_id: "s1" }, {})).toBe(true);
-		});
-
 		it("detects hook_event_name in payload", () => {
 			expect(claudeHarness.detect({ hook_event_name: "Stop" }, {})).toBe(true);
+			expect(claudeHarness.detect({ hook_event_name: "PreToolUse" }, {})).toBe(
+				true,
+			);
 		});
 
-		it("ignores VS Code Copilot root in CLAUDE_PLUGIN_ROOT", () => {
+		it("detects CLAUDE_CODE_SESSION_ID in environment", () => {
 			expect(
-				claudeHarness.detect(
-					{},
-					{
-						CLAUDE_PLUGIN_ROOT:
-							"/Users/test/.vscode/extensions/agent-plugins/wf",
-					},
-				),
-			).toBe(false);
+				claudeHarness.detect({}, { CLAUDE_CODE_SESSION_ID: "session-123" }),
+			).toBe(true);
+		});
+
+		it("returns false without hook_event_name or CLAUDE_CODE_SESSION_ID", () => {
+			expect(claudeHarness.detect({}, {})).toBe(false);
+			expect(claudeHarness.detect({ session_id: "s1" }, {})).toBe(false);
 		});
 	});
 

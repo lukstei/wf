@@ -40,15 +40,9 @@ export const claudeHarness: HarnessAdapter = {
 	id: "claude",
 
 	detect(payload: Record<string, unknown>, env: NodeJS.ProcessEnv): boolean {
-		if (isVsCodeCopilotRoot(env.CLAUDE_PLUGIN_ROOT)) {
-			return false;
-		}
-		return Boolean(
-			env.CLAUDE_PROJECT_DIR ||
-				(env.CLAUDE_PLUGIN_ROOT && !env.PLUGIN_DATA) ||
-				payload.hook_event_name !== undefined ||
-				payload.stop_hook_active !== undefined ||
-				payload.session_id !== undefined,
+		return (
+			payload.hook_event_name !== undefined ||
+			Boolean(env.CLAUDE_CODE_SESSION_ID)
 		);
 	},
 
@@ -185,7 +179,7 @@ export const claudeHarness: HarnessAdapter = {
 	},
 
 	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
-		return env.CLAUDE_CONVERSATION_ID || env.CLAUDE_SESSION_ID || null;
+		return env.CLAUDE_CODE_SESSION_ID || null;
 	},
 
 	resolveStorageDir(env: NodeJS.ProcessEnv): string | null {

@@ -16,9 +16,7 @@ export const copilotHarness: HarnessAdapter = {
 	id: "copilot",
 
 	detect(_payload: Record<string, unknown>, env: NodeJS.ProcessEnv): boolean {
-		return Boolean(
-			env.COPILOT_PLUGIN_DATA || isVsCodeCopilotRoot(env.CLAUDE_PLUGIN_ROOT),
-		);
+		return Boolean(env.COPILOT_PLUGIN_DATA || env.COPILOT_SESSION_ID);
 	},
 
 	normalize(
@@ -168,7 +166,7 @@ export const copilotHarness: HarnessAdapter = {
 	},
 
 	resolveConversationId(env: NodeJS.ProcessEnv): string | null {
-		return env.COPILOT_CONVERSATION_ID || env.VSCODE_COPILOT_SESSION_ID || null;
+		return env.COPILOT_SESSION_ID || null;
 	},
 
 	resolveStorageDir(env: NodeJS.ProcessEnv): string | null {

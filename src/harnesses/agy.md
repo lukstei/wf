@@ -47,10 +47,8 @@ Antigravity passes hook context on standard input rather than injecting shell en
 
 ## 3. Harness Detection
 
-AGY is identified by:
-1. Environment markers: `process.env.AGY_HOOK_ACTIVE`.
-2. Antigravity payload signatures: `Array.isArray(payload.workspacePaths)`, `payload.executionNum`, `payload.stepIdx`, `payload.invocationNum`, or `payload.artifactDirectoryPath`.
-3. Fallback: `conversationId` present without Claude/Codex/Copilot markers.
+- **Hook invocation:** `payload.transcriptPath` ends with `.system_generated/logs/transcript.jsonl` (Source: https://antigravity.google/docs/hooks/#hook-handler-configuration)
+- **Tool invocation:** `process.env.ANTIGRAVITY_CONVERSATION_ID` is defined (Source: https://antigravity.google/docs/)
 
 ---
 
