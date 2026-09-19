@@ -1,29 +1,12 @@
 - Prefer snapshot testing instead of a list of assertions
 - Always place workflow state transitions and status mutations in `src/transitions.ts`
 - Run `npm run verify` when completing a task (not after every intermediate edit)
-- Token efficiency:
-  - Bound `view_file` with `StartLine` and `EndLine` (avoid whole-file reads)
-  - Never re-read a file immediately after editing it (the edit tool response already contains the diff)
-  - Batch multiple edits to the same file into a single replacement chunk
-- Keep the code as clean and pure as possible
-  - always use /ponytail and /ponytail-review
-  - no unnecessary condition checking
-  - no over-defensive programming (instead assert preconditions at the start of functions using `assert` from `src/lib/assert.ts`)
-  - no unnecessary optional types
-  - No unnecessary exporting of internal types
-  - Especially no unnecessary states, always think about how to keep the state minimal
-  - Prefer inline types, if the type is not reused
-  - Prefer discriminated unions
-  - Never add any backwards compatibility regarding the code, there is no external consumer of the code
-  - Be careful when chaging the state schema, syntax definitions, and all external facing stuff, that might affect users
-- No use of any or unjustified type castings
-- Never change the git state without confirmation
-- Use /no-ai-slop for all texts intended for humans
+- Never add any backwards compatibility regarding the code, there is no external consumer of the code
+- Be careful when chaging the state schema, syntax definitions, and all external facing stuff, that might affect users
 - Reference implementations for cross-agent integrations:
   - Universal packaging & shims: `ponytail` (`~/.gemini/config/plugins/ponytail/`, analyzed in `docs/packaging.md`)
   - Loop interception (`Stop` hook): `ralph-loop` (`~/.claude/plugins/marketplaces/claude-plugins-official/plugins/ralph-loop/`)
   - Skill discovery: `superpowers` (`~/.claude/plugins/cache/claude-plugins-official/superpowers/4.3.0/`)
-- Use /find-docs ctx-7 for docs for external libs
 
 ## Source File Map (`src/`)
 
