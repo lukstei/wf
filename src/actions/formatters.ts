@@ -22,6 +22,73 @@ export function parseDecision(modelText: string): "YES" | "NO" {
 	return match && (match[1] || match[2]).toUpperCase() === "YES" ? "YES" : "NO";
 }
 
+function formatStepBody(
+	step: FlatStep,
+	isPrompt: boolean,
+	title: string,
+	fileRef = "",
+): string[] {
+	if (step.type === "condition") {
+		const conditionText = step.condition || title;
+		const evalText =
+			step.instruction ||
+			(isPrompt
+				? `Evaluate whether the following condition is true or false: "${step.condition}".\nIf needed, use tools to inspect the environment, files, date/time, or git state.`
+				: `Evaluate condition: "${step.condition}"`);
+
+		const parts: string[] = [];
+		if (isPrompt) {
+			parts.push("INSTRUCTION:", evalText);
+		} else {
+			parts.push(evalText);
+		}
+
+		parts.push(
+			"",
+			`Start your response with: "Checking condition: ${conditionText}"`,
+			"At the very end of your response, output strictly either:",
+			"[DECISION: YES] or [DECISION: NO]",
+		);
+
+		if (isPrompt) {
+			parts.push(
+				"",
+				"RULES:",
+				`1. Do NOT read or inspect the workflow file${fileRef} or SKILL.md — steps are already loaded by the runner.`,
+			);
+		}
+		return parts;
+	}
+
+	const isGate = step.type === "gate";
+	const gateNote =
+		"NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'.";
+	const startPrefix = isGate
+		? `Start your response with: "Waiting at Gate: ${title}"`
+		: `Start your response with: "Executing Step: ${title}"`;
+
+	const parts: string[] = ["INSTRUCTION:", step.instruction || ""];
+
+	if (isPrompt) {
+		if (isGate) parts.push("", gateNote);
+		parts.push(
+			"",
+			"RULES:",
+			`1. ${startPrefix}`,
+			"2. Execute this specific step now.",
+			"3. Do NOT jump ahead to subsequent steps.",
+			"4. Conclude your response when this step is complete.",
+			`5. Do NOT read or inspect the workflow file${fileRef} or SKILL.md — steps are already loaded by the runner.`,
+		);
+	} else if (isGate) {
+		parts.push("", startPrefix, gateNote);
+	} else {
+		parts.push("", startPrefix, "Continue immediately and execute this step.");
+	}
+
+	return parts;
+}
+
 export function formatStepPrompt(
 	active: ActiveWorkflow,
 	currentStep: FlatStep,
@@ -37,115 +104,33 @@ export function formatStepPrompt(
 		? ` ("${active.workflow.filePath}")`
 		: "";
 
-	if (currentStep.type === "condition") {
-		const conditionText = currentStep.condition || title;
-		const lines: string[] = [
-			`[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
-			`Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr} (Condition Evaluation)`,
-			`Condition: "${currentStep.condition}"`,
-		];
-
-		if (active.workflow.preamble) {
-			lines.push("", "CONTEXT:", active.workflow.preamble);
-		}
-
-		lines.push("", "INSTRUCTION:");
-		if (currentStep.instruction) {
-			lines.push(currentStep.instruction);
-		} else {
-			lines.push(
-				`Evaluate whether the following condition is true or false: "${currentStep.condition}".`,
-				"If needed, use tools to inspect the environment, files, date/time, or git state.",
-			);
-		}
-		lines.push(
-			"",
-			`Start your response with: "Checking condition: ${conditionText}"`,
-			"At the very end of your response, output strictly either:",
-			"[DECISION: YES] or [DECISION: NO]",
-			"",
-			"RULES:",
-			`1. Do NOT read or inspect the workflow file${fileRef} or SKILL.md — steps are already loaded by the runner.`,
-		);
-
-		return lines.join("\n");
-	}
-
-	const isGate = currentStep.type === "gate";
-	const promptParts: string[] = [
+	const lines: string[] = [
 		`[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
-		`Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr}`,
+		`Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr}${currentStep.type === "condition" ? " (Condition Evaluation)" : ""}`,
 	];
 
+	if (currentStep.type === "condition") {
+		lines.push(`Condition: "${currentStep.condition}"`);
+	}
+
 	if (active.workflow.preamble) {
-		promptParts.push("", "CONTEXT:", active.workflow.preamble);
+		lines.push("", "CONTEXT:", active.workflow.preamble);
 	}
 
-	promptParts.push("", "INSTRUCTION:", currentStep.instruction || "");
-
-	if (isGate) {
-		promptParts.push(
-			"",
-			"NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'.",
-		);
-	}
-
-	promptParts.push(
-		"",
-		"RULES:",
-		isGate
-			? `1. Start your response with: "Waiting at Gate: ${title}"`
-			: `1. Start your response with: "Executing Step: ${title}"`,
-		"2. Execute this specific step now.",
-		"3. Do NOT jump ahead to subsequent steps.",
-		"4. Conclude your response when this step is complete.",
-		`5. Do NOT read or inspect the workflow file${fileRef} or SKILL.md — steps are already loaded by the runner.`,
-	);
-
-	return promptParts.join("\n");
+	lines.push("", ...formatStepBody(currentStep, true, title, fileRef));
+	return lines.join("\n");
 }
 
 export function formatAdvanceReason(step: FlatStep, preamble?: string): string {
-	const isCondition = step.type === "condition";
-	const isGate = step.type === "gate";
 	const title = step.title || `Step ${step.index + 1}`;
 	const levelStr = step.level > 0 ? ` (Level ${step.level})` : "";
 
-	const reasonParts: string[] = [
-		`[wf] Executing next step: ${title}${levelStr}`,
-	];
+	const lines: string[] = [`[wf] Executing next step: ${title}${levelStr}`];
 
 	if (preamble) {
-		reasonParts.push("", "CONTEXT:", preamble);
+		lines.push("", "CONTEXT:", preamble);
 	}
 
-	if (isCondition) {
-		const conditionText = step.condition || title;
-		reasonParts.push(
-			"",
-			step.instruction || `Evaluate condition: "${step.condition}"`,
-			"",
-			`Start your response with: "Checking condition: ${conditionText}"`,
-			"At the very end of your response, output strictly either:",
-			"[DECISION: YES] or [DECISION: NO]",
-		);
-	} else {
-		reasonParts.push("", "INSTRUCTION:", step.instruction ?? "");
-	}
-
-	if (isGate) {
-		reasonParts.push(
-			"",
-			`Start your response with: "Waiting at Gate: ${title}"`,
-			"NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'.",
-		);
-	} else if (!isCondition) {
-		reasonParts.push(
-			"",
-			`Start your response with: "Executing Step: ${title}"`,
-			"Continue immediately and execute this step.",
-		);
-	}
-
-	return reasonParts.join("\n");
+	lines.push("", ...formatStepBody(step, false, title));
+	return lines.join("\n");
 }

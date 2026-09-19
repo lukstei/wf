@@ -64,14 +64,10 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 			title: "tests pass?",
 			condition: "tests pass?",
 			yes: {
-				steps: [
-					{ type: "step", title: "Deploy", instruction: "Deploy" },
-				],
+				steps: [{ type: "step", title: "Deploy", instruction: "Deploy" }],
 			},
 			no: {
-				steps: [
-					{ type: "step", title: "Fix", instruction: "Fix tests" },
-				],
+				steps: [{ type: "step", title: "Fix", instruction: "Fix tests" }],
 			},
 		});
 	});

@@ -1,16 +1,9 @@
-import { assert } from "../lib/assert.ts";
+import assert from "node:assert/strict";
 import { logDebug } from "../lib/logDebug.ts";
 import type { ActiveWorkflow } from "../state.ts";
 import { advanceStep } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import { formatAdvanceReason, parseDecision } from "./formatters.ts";
-import { step } from "./step.ts";
-
-/**
- * conditionPre: Injects the prompt asking the model to evaluate the condition.
- * Re-uses the unified step action.
- */
-export const conditionPre = step;
 
 /**
  * conditionStop: Evaluates model response, branches YES or NO, and advances.

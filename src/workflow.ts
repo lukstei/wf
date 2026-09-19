@@ -26,18 +26,6 @@ export type GateStep = BaseStep & {
 
 export type WorkflowStep = Step | ConditionalStep | GateStep;
 
-export function isConditionalStep(step: WorkflowStep): step is ConditionalStep {
-	return step.type === "condition";
-}
-
-export function isGateStep(step: WorkflowStep): step is GateStep {
-	return step.type === "gate";
-}
-
-export function isStep(step: WorkflowStep): step is Step {
-	return step.type === "step";
-}
-
 export interface FlatStep {
 	index: number;
 	level: number;
@@ -96,7 +84,7 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 
 			const afterThisStep = isLast ? exitTarget : () => stepStartIndices[i + 1];
 
-			if (isConditionalStep(step)) {
+			if (step.type === "condition") {
 				const title = step.title || step.condition || "Condition";
 				const condStep: FlatStep = {
 					index: myIndex,
@@ -132,7 +120,7 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 					condStep.skipIndex = noSteps.length > 0 ? noStartIndex : afterCond;
 				});
 			} else {
-				const type = isGateStep(step) ? "gate" : "step";
+				const type = step.type === "gate" ? "gate" : "step";
 				const title =
 					step.title || step.instruction || (type === "gate" ? "Gate" : "Step");
 				const flatStep: FlatStep = {

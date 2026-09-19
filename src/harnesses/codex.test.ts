@@ -23,9 +23,9 @@ describe("codexHarness", () => {
 	describe("detect", () => {
 		it("detects hookEventName in payload", () => {
 			expect(codexHarness.detect({ hookEventName: "Stop" }, {})).toBe(true);
-			expect(codexHarness.detect({ hookEventName: "UserPromptSubmit" }, {})).toBe(
-				true,
-			);
+			expect(
+				codexHarness.detect({ hookEventName: "UserPromptSubmit" }, {}),
+			).toBe(true);
 		});
 
 		it("detects CODEX_SESSION_ID in environment", () => {

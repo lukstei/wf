@@ -1,17 +1,13 @@
 import { getLatestMessage } from "../lib/getLatestMessage.ts";
 import type { HookResponse, LatestMessage } from "../types.ts";
 import { parseClaudeMessage } from "./claude.ts";
-import { isVsCodeCopilotRoot } from "./copilot.ts";
 import type { EgressOutput, HarnessAdapter, NormalizedEvent } from "./types.ts";
 
 export const codexHarness: HarnessAdapter = {
 	id: "codex",
 
 	detect(payload: Record<string, unknown>, env: NodeJS.ProcessEnv): boolean {
-		return (
-			payload.hookEventName !== undefined ||
-			Boolean(env.CODEX_SESSION_ID)
-		);
+		return payload.hookEventName !== undefined || Boolean(env.CODEX_SESSION_ID);
 	},
 
 	normalize(

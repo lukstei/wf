@@ -3,15 +3,6 @@ import type { HookResponse, LatestMessage } from "../types.ts";
 import { parseClaudeMessage } from "./claude.ts";
 import type { EgressOutput, HarnessAdapter, NormalizedEvent } from "./types.ts";
 
-export function isVsCodeCopilotRoot(pluginRoot?: string): boolean {
-	if (!pluginRoot) return false;
-	const segments = pluginRoot.split(/[\\/]+/);
-	return (
-		segments.includes("agent-plugins") &&
-		pluginRoot.toLowerCase().includes(".vscode")
-	);
-}
-
 export const copilotHarness: HarnessAdapter = {
 	id: "copilot",
 

@@ -1,4 +1,4 @@
-import { assert } from "./lib/assert.ts";
+import assert from "node:assert/strict";
 import type { ActiveWorkflow, WorkflowState } from "./state.ts";
 import type { CompiledWorkflow, FlatStep } from "./workflow.ts";
 

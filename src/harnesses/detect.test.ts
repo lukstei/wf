@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { isVsCodeCopilotRoot } from "./copilot.ts";
 import {
 	detectHarness,
 	resolveConversationIdFromHarnesses,
@@ -7,31 +6,6 @@ import {
 } from "./index.ts";
 
 describe("detectHarness", () => {
-	describe("isVsCodeCopilotRoot", () => {
-		it("returns false for undefined or empty paths", () => {
-			expect(isVsCodeCopilotRoot()).toBe(false);
-			expect(isVsCodeCopilotRoot("")).toBe(false);
-		});
-
-		it("returns true for VS Code agent plugin paths on Unix", () => {
-			expect(isVsCodeCopilotRoot("/home/user/.vscode/agent-plugins/wf")).toBe(
-				true,
-			);
-		});
-
-		it("returns true for VS Code agent plugin paths on Windows", () => {
-			expect(
-				isVsCodeCopilotRoot("C:\\Users\\user\\.vscode\\agent-plugins\\wf"),
-			).toBe(true);
-		});
-
-		it("returns false for standard Claude plugin paths", () => {
-			expect(isVsCodeCopilotRoot("/home/user/.claude/plugins/cache/wf")).toBe(
-				false,
-			);
-		});
-	});
-
 	describe("Harness Detection Matrix", () => {
 		it("detects Copilot when COPILOT_PLUGIN_DATA is set", () => {
 			const harness = detectHarness(
@@ -42,10 +16,7 @@ describe("detectHarness", () => {
 		});
 
 		it("detects Copilot when COPILOT_SESSION_ID is set", () => {
-			const harness = detectHarness(
-				{},
-				{ COPILOT_SESSION_ID: "copilot-s1" },
-			);
+			const harness = detectHarness({}, { COPILOT_SESSION_ID: "copilot-s1" });
 			expect(harness).toBe("copilot");
 		});
 

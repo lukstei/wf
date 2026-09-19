@@ -1,4 +1,4 @@
-import { assert } from "../lib/assert.ts";
+import assert from "node:assert/strict";
 import { logDebug } from "../lib/logDebug.ts";
 import type { ActiveWorkflow } from "../state.ts";
 import type { HandleResult, HookInfo } from "../types.ts";

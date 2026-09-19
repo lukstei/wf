@@ -2,8 +2,6 @@ import {
 	type CompiledWorkflow,
 	type FlatStep,
 	flattenWorkflow,
-	isConditionalStep,
-	isGateStep,
 	type WorkflowAst,
 	type WorkflowStep,
 } from "../workflow.ts";
@@ -102,7 +100,7 @@ export function visualizePlainText(
 				activeStepIndex !== undefined && myIndex === activeStepIndex;
 			const marker = isActive ? "▶ [CURRENT] " : "";
 
-			if (isConditionalStep(step)) {
+			if (step.type === "condition") {
 				const label = step.title || step.condition || "Condition";
 				lines.push(`${indent}${marker}- If: ${label}`);
 				if (step.yes && step.yes.steps.length > 0) {
@@ -112,7 +110,7 @@ export function visualizePlainText(
 					lines.push(`${indent}- Else:`);
 					walk(step.no.steps, `${indent}  `);
 				}
-			} else if (isGateStep(step)) {
+			} else if (step.type === "gate") {
 				const label = step.title || step.instruction || "Gate";
 				lines.push(`${indent}${marker}- Gate: ${label} [Approval Required]`);
 			} else {

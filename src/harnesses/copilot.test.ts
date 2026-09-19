@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { copilotHarness, isVsCodeCopilotRoot } from "./copilot.ts";
+import { copilotHarness } from "./copilot.ts";
 import type { NormalizedEvent } from "./types.ts";
 
 function createMockEvent(
@@ -20,18 +20,6 @@ function createMockEvent(
 }
 
 describe("copilotHarness", () => {
-	describe("isVsCodeCopilotRoot", () => {
-		it("identifies VS Code Copilot root paths", () => {
-			expect(
-				isVsCodeCopilotRoot(
-					"/Users/test/.vscode/extensions/agent-plugins/plugin",
-				),
-			).toBe(true);
-			expect(isVsCodeCopilotRoot("/Users/test/.claude/plugins")).toBe(false);
-			expect(isVsCodeCopilotRoot(undefined)).toBe(false);
-		});
-	});
-
 	describe("detect", () => {
 		it("detects COPILOT_PLUGIN_DATA", () => {
 			expect(

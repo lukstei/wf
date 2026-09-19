@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import type { ActiveWorkflow } from "../state.ts";
 import { flattenWorkflow, type WorkflowAst } from "../workflow.ts";
-import { conditionPre, conditionStop } from "./condition.ts";
+import { conditionStop } from "./condition.ts";
 
 const condDef: WorkflowAst = {
 	name: "CondFlow",
@@ -26,48 +26,6 @@ const condDef: WorkflowAst = {
 };
 
 describe("actions/condition.ts", () => {
-	test("conditionPre injects formatted condition prompt", () => {
-		const flat = flattenWorkflow(condDef.steps);
-		const active: ActiveWorkflow = {
-			state: {
-				status: "active",
-				step: 0,
-				iterationCount: 0,
-			},
-			workflow: {
-				name: "CondFlow",
-				filePath: "wf.json",
-				steps: condDef.steps,
-				flatSteps: flat,
-			},
-		};
-
-		const res = conditionPre(
-			{ type: "pre", payload: { conversationId: "c1" } },
-			active,
-		);
-		expect(
-			res.response.injectSteps?.[0]?.ephemeralMessage,
-		).toMatchInlineSnapshot(`
-			"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
-
-			[WORKFLOW ACTIVE: CondFlow]
-			Step 1 of 4: Check Database (Condition Evaluation)
-			Condition: "is db healthy?"
-
-			INSTRUCTION:
-			Evaluate whether the following condition is true or false: "is db healthy?".
-			If needed, use tools to inspect the environment, files, date/time, or git state.
-
-			Start your response with: "Checking condition: is db healthy?"
-			At the very end of your response, output strictly either:
-			[DECISION: YES] or [DECISION: NO]
-
-			RULES:
-			1. Do NOT read or inspect the workflow file ("wf.json") or SKILL.md — steps are already loaded by the runner."
-		`);
-	});
-
 	test("conditionStop parses YES decision and jumps to yes branch", () => {
 		const flat = flattenWorkflow(condDef.steps);
 		const active: ActiveWorkflow = {

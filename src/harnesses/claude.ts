@@ -1,6 +1,5 @@
 import { getLatestMessage } from "../lib/getLatestMessage.ts";
 import type { HookResponse, LatestMessage } from "../types.ts";
-import { isVsCodeCopilotRoot } from "./copilot.ts";
 import type { EgressOutput, HarnessAdapter, NormalizedEvent } from "./types.ts";
 
 export function parseClaudeMessage(

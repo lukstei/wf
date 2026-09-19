@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { ExtractWorkflowState, WorkflowState } from "./state.ts";
+import type { WorkflowState } from "./state.ts";
 import {
 	advanceStep,
 	failWorkflow,
@@ -312,12 +312,12 @@ describe("transitions.ts", () => {
 
 	test("advanceStep safety limits transition to error when exceeded", () => {
 		// linearWf has 2 steps -> limit is 2 * 5 = 10
-		const atBoundaryActive: ExtractWorkflowState<"active"> = {
+		const atBoundaryActive: WorkflowState = {
 			status: "active",
 			step: 0,
 			iterationCount: 9, // next will be 10 === limit -> allowed
 		};
-		const exceededActive: ExtractWorkflowState<"active"> = {
+		const exceededActive: WorkflowState = {
 			status: "active",
 			step: 0,
 			iterationCount: 10, // next will be 11 > 10 -> exceeded

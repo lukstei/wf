@@ -16,11 +16,6 @@ export type WorkflowState =
 	| ({ status: "finished" } & RunningWorkflowState)
 	| ({ status: "error"; error: string } & RunningWorkflowState);
 
-export type ExtractWorkflowState<T extends WorkflowState["status"]> = Extract<
-	WorkflowState,
-	{ status: T }
->;
-
 export interface ActiveWorkflow {
 	state: WorkflowState;
 	workflow: CompiledWorkflow;
