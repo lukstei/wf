@@ -1,7 +1,12 @@
 - Prefer snapshot testing instead of a list of assertions
 - Always place workflow state transitions and status mutations in `src/transitions.ts`
-- Run `npm run verify` after each change
+- Run `npm run verify` when completing a task (not after every intermediate edit)
+- Token efficiency:
+  - Bound `view_file` with `StartLine` and `EndLine` (avoid whole-file reads)
+  - Never re-read a file immediately after editing it (the edit tool response already contains the diff)
+  - Batch multiple edits to the same file into a single replacement chunk
 - Keep the code as clean and pure as possible
+  - always use /ponytail and /ponytail-review
   - no unnecessary condition checking
   - no over-defensive programming (instead assert preconditions at the start of functions using `assert` from `src/lib/assert.ts`)
   - no unnecessary optional types
