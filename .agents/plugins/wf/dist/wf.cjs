@@ -816,17 +816,6 @@ function flattenWorkflow(workflowSteps) {
   }
   return flat;
 }
-function nextStep(flatSteps, currentIndex, decision) {
-  const current = flatSteps[currentIndex];
-  if (!current) return flatSteps.length;
-  if (current.type === "condition") {
-    if (decision === "YES") {
-      return current.nextIndex;
-    }
-    return current.skipIndex ?? current.nextIndex;
-  }
-  return current.nextIndex;
-}
 
 // src/lib/visualize.ts
 function escapeLabel(text) {
@@ -850,7 +839,7 @@ function visualize(workflow, activeStepIndex) {
     } else if (step2.type === "gate") {
       const rawLabel = `${prefix}${step2.title}`;
       const label = escapeLabel(rawLabel);
-      lines.push(`    ${id}{{"\u{1F6D1} <b>${label}</b>"}}`);
+      lines.push(`    ${id}[["\u{1F6D1} ${label}"]]`);
     } else {
       const rawLabel = `${prefix}${step2.title}`;
       const label = escapeLabel(rawLabel);
@@ -1252,7 +1241,7 @@ function getInnerText(node) {
 }
 var KEYWORDS = ["if", "else", "no", "gate"];
 var KEYWORD_REGEX = new RegExp(
-  `^(${KEYWORDS.join("|")})(?:[:\\s]+(.*))?$`,
+  `^(${KEYWORDS.join("|")})\\s*:(?:\\s*(.*))?$`,
   "i"
 );
 function stripLeading(str) {
@@ -1603,10 +1592,12 @@ function parseDecision(modelText) {
 }
 function formatStepPrompt(active, currentStep, stepNum, totalSteps) {
   const wfName = active.workflow.name;
+  const title = currentStep.title || `Step ${stepNum}`;
   const stepTitle = `: ${currentStep.title}`;
   const levelStr = currentStep.level > 0 ? ` (Nesting Level ${currentStep.level})` : "";
   const fileRef = active.workflow.filePath ? ` ("${active.workflow.filePath}")` : "";
   if (currentStep.type === "condition") {
+    const conditionText = currentStep.condition || title;
     const lines = [
       `[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
       `Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr} (Condition Evaluation)`,
@@ -1625,6 +1616,8 @@ function formatStepPrompt(active, currentStep, stepNum, totalSteps) {
       );
     }
     lines.push(
+      "",
+      `Start your response with: "Checking condition: ${conditionText}"`,
       "At the very end of your response, output strictly either:",
       "[DECISION: YES] or [DECISION: NO]",
       "",
@@ -1651,10 +1644,11 @@ function formatStepPrompt(active, currentStep, stepNum, totalSteps) {
   promptParts.push(
     "",
     "RULES:",
-    "1. Execute this specific step now.",
-    "2. Do NOT jump ahead to subsequent steps.",
-    "3. Conclude your response when this step is complete.",
-    `4. Do NOT read or inspect the workflow file${fileRef} or SKILL.md \u2014 steps are already loaded by the runner.`
+    isGate ? `1. Start your response with: "Waiting at Gate: ${title}"` : `1. Start your response with: "Executing Step: ${title}"`,
+    "2. Execute this specific step now.",
+    "3. Do NOT jump ahead to subsequent steps.",
+    "4. Conclude your response when this step is complete.",
+    `5. Do NOT read or inspect the workflow file${fileRef} or SKILL.md \u2014 steps are already loaded by the runner.`
   );
   return promptParts.join("\n");
 }
@@ -1670,9 +1664,14 @@ function formatAdvanceReason(step2, preamble) {
     reasonParts.push("", "CONTEXT:", preamble);
   }
   if (isCondition) {
+    const conditionText = step2.condition || title;
     reasonParts.push(
       "",
-      step2.instruction || `Evaluate condition: "${step2.condition}"`
+      step2.instruction || `Evaluate condition: "${step2.condition}"`,
+      "",
+      `Start your response with: "Checking condition: ${conditionText}"`,
+      "At the very end of your response, output strictly either:",
+      "[DECISION: YES] or [DECISION: NO]"
     );
   } else {
     reasonParts.push("", "INSTRUCTION:", step2.instruction ?? "");
@@ -1680,10 +1679,15 @@ function formatAdvanceReason(step2, preamble) {
   if (isGate) {
     reasonParts.push(
       "",
+      `Start your response with: "Waiting at Gate: ${title}"`,
       "NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'."
     );
-  } else {
-    reasonParts.push("", "Continue immediately and execute this step.");
+  } else if (!isCondition) {
+    reasonParts.push(
+      "",
+      `Start your response with: "Executing Step: ${title}"`,
+      "Continue immediately and execute this step."
+    );
   }
   return reasonParts.join("\n");
 }
@@ -1696,6 +1700,17 @@ function assert(condition, message) {
 }
 
 // src/transitions.ts
+function advanceTo(flatSteps, state, iterationCount, decision) {
+  const current = flatSteps[state.step];
+  const targetIndex = current?.type === "condition" ? decision === "YES" ? current.nextIndex : current.skipIndex ?? current.nextIndex : current?.nextIndex;
+  const isFinished = targetIndex === void 0 || targetIndex >= flatSteps.length;
+  return {
+    ...state,
+    step: isFinished ? flatSteps.length : targetIndex,
+    status: isFinished ? "finished" : "active",
+    iterationCount
+  };
+}
 function startWorkflow(workflow) {
   if (workflow.flatSteps.length === 0) {
     throw new Error(
@@ -1720,11 +1735,15 @@ function pauseWorkflow(state) {
   }
   return state;
 }
-function resumeWorkflow(state) {
+function resumeWorkflow(flatSteps, state) {
   assert(
     state && (state.status === "active" || state.status === "paused"),
     "Cannot resume workflow: no active or paused workflow is loaded"
   );
+  const currentStep = flatSteps[state.step];
+  if (state.status === "paused" && currentStep?.type === "gate") {
+    return advanceTo(flatSteps, state, state.iterationCount);
+  }
   return {
     ...state,
     status: "active"
@@ -1745,20 +1764,14 @@ function advanceStep(flatSteps, state, decision) {
     };
   }
   const currentStep = flatSteps[state.step];
-  const targetIndex = nextStep(flatSteps, state.step, decision);
-  if (targetIndex >= flatSteps.length) {
+  if (currentStep?.type === "gate") {
     return {
-      status: "finished",
-      step: targetIndex,
+      step: state.step,
+      status: "paused",
       iterationCount: nextIterationCount
     };
   }
-  const isGate = currentStep?.type === "gate";
-  return {
-    step: targetIndex,
-    status: isGate ? "paused" : "active",
-    iterationCount: nextIterationCount
-  };
+  return advanceTo(flatSteps, state, nextIterationCount, decision);
 }
 function failWorkflow(state, error) {
   if (!state || state.status !== "active" && state.status !== "paused") {
@@ -1815,8 +1828,18 @@ function nextPre(info, active) {
     active && (active.state.status === "active" || active.state.status === "paused"),
     "No workflow is running"
   );
-  const nextState = resumeWorkflow(active.state);
-  return step(info, { ...active, state: nextState });
+  const nextState = resumeWorkflow(active.workflow.flatSteps, active.state);
+  const nextActive = { ...active, state: nextState };
+  if (nextState.status === "finished") {
+    return {
+      active: nextActive,
+      response: injectSystemMessage(
+        `[WORKFLOW STATUS: FINISHED]
+Workflow "${active.workflow.name}" completed successfully.`
+      )
+    };
+  }
+  return step(info, nextActive);
 }
 function nextStop(_info, active) {
   assert(
@@ -2477,18 +2500,6 @@ function checkWorkflowName(def) {
   }
   return [];
 }
-function checkWorkflowDescription(def) {
-  if (!def.description || def.description.trim().length === 0) {
-    return [
-      {
-        id: "workflow-missing-description",
-        description: "Workflow lacks a description in YAML frontmatter.",
-        source: { type: "workflow" }
-      }
-    ];
-  }
-  return [];
-}
 function checkWorkflowSteps(def) {
   if (!Array.isArray(def.steps) || def.steps.length === 0) {
     return [
@@ -2575,7 +2586,7 @@ function checkConditionStepYes(step2) {
 function checkConditionStepNo(step2) {
   if (step2.type === "condition") {
     const condStep = step2;
-    if (condStep.no && (!condStep.no.steps || condStep.no.steps.length === 0) && !condStep.no.preamble) {
+    if (condStep.no && (!condStep.no.steps || condStep.no.steps.length === 0)) {
       const title = step2.title?.trim() || "untitled";
       return [
         {
@@ -2588,11 +2599,7 @@ function checkConditionStepNo(step2) {
   }
   return [];
 }
-var WORKFLOW_CHECKS = [
-  checkWorkflowName,
-  checkWorkflowDescription,
-  checkWorkflowSteps
-];
+var WORKFLOW_CHECKS = [checkWorkflowName, checkWorkflowSteps];
 var STEP_CHECKS = [
   checkStepTitle,
   checkActionStepInstruction,
@@ -2605,7 +2612,6 @@ var STEP_CHECKS = [
 // src/validator.ts
 var PROBLEM_SEVERITY = {
   "workflow-missing-name": "error",
-  "workflow-missing-description": "warning",
   "workflow-no-steps": "error",
   "step-missing-title": "error",
   "step-action-empty-instruction": "error",
@@ -2872,8 +2878,14 @@ ${firstStep.instruction}`;
         writeErr(err2);
         return { exitCode: 1, output: err2 };
       }
-      const nextState = resumeWorkflow(active.state);
+      const nextState = resumeWorkflow(active.workflow.flatSteps, active.state);
       saveState(conversationId, nextState, env);
+      if (nextState.status === "finished") {
+        const msg2 = `[WORKFLOW STATUS: FINISHED]
+Workflow "${active.workflow.name}" completed successfully.`;
+        writeOut(msg2);
+        return { exitCode: 0, output: msg2 };
+      }
       const currentStep = active.workflow.flatSteps[nextState.step];
       const stepNum = nextState.step + 1;
       const total = active.workflow.flatSteps.length;
