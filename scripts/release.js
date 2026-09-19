@@ -74,7 +74,7 @@ try {
 
 console.log("→ Watching release workflow run...");
 try {
-	run("gh run watch");
+	run("gh run watch --exit-status");
 } catch {
 	abort("GitHub Actions release workflow failed or was cancelled.");
 }
