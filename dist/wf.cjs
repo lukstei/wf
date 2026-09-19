@@ -86,16 +86,10 @@ function getLatestMessage(transcriptPath, parseItem = defaultTranscriptParser) {
 var agyHarness = {
   id: "agy",
   detect(payload, env) {
-    if (env.AGY_HOOK_ACTIVE) {
+    if (env.AGY_HOOK_ACTIVE || env.ANTIGRAVITY_CONVERSATION_ID) {
       return true;
     }
-    if (Array.isArray(payload.workspacePaths) || payload.executionNum !== void 0 || payload.stepIdx !== void 0 || payload.invocationNum !== void 0 || payload.artifactDirectoryPath !== void 0) {
-      return true;
-    }
-    if (payload.conversationId !== void 0 && !payload.session_id) {
-      return true;
-    }
-    return false;
+    return typeof payload.transcriptPath === "string" && payload.transcriptPath.endsWith(".system_generated/logs/transcript.jsonl");
   },
   normalize(payload, modeArg, env = process.env) {
     const conversationId = String(payload.conversationId ?? "default");
@@ -208,128 +202,10 @@ var agyHarness = {
     return { exitCode: 0, stdout: JSON.stringify(response) };
   },
   resolveConversationId(env) {
-    return env.ANTIGRAVITY_CONVERSATION_ID || env.AGY_CONVERSATION_ID || null;
+    return env.ANTIGRAVITY_CONVERSATION_ID || null;
   },
   resolveStorageDir(env) {
     return env.AGY_PLUGIN_DATA || null;
-  }
-};
-
-// src/harnesses/copilot.ts
-function isVsCodeCopilotRoot(pluginRoot) {
-  if (!pluginRoot) return false;
-  const segments = pluginRoot.split(/[\\/]+/);
-  return segments.includes("agent-plugins") && pluginRoot.toLowerCase().includes(".vscode");
-}
-var copilotHarness = {
-  id: "copilot",
-  detect(_payload, env) {
-    return Boolean(
-      env.COPILOT_PLUGIN_DATA || isVsCodeCopilotRoot(env.CLAUDE_PLUGIN_ROOT)
-    );
-  },
-  normalize(payload, modeArg, env = process.env) {
-    const conversationId = String(
-      payload.sessionId ?? payload.session_id ?? payload.conversationId ?? "default"
-    );
-    const workspacePath = String(payload.cwd ?? env.PWD ?? ".");
-    const eventName = payload.hook_event_name ?? payload.hookEventName;
-    const isStop = modeArg === "stop" || eventName === "Stop" || payload.stop_hook_active !== void 0 || payload.stopHookActive !== void 0;
-    const isTool = modeArg === "tool" || eventName === "PreToolUse" || payload.tool_name !== void 0 || payload.toolName !== void 0;
-    const type = isStop ? "stop" : isTool ? "tool" : "pre";
-    const prompt = typeof payload.prompt === "string" ? payload.prompt : typeof payload.initial_prompt === "string" ? payload.initial_prompt : typeof payload.initialPrompt === "string" ? payload.initialPrompt : void 0;
-    const stopHookActive = Boolean(
-      payload.stop_hook_active ?? payload.stopHookActive
-    );
-    const rawToolName = payload.tool_name ?? payload.toolName;
-    const rawToolArgs = payload.tool_input ?? payload.toolArgs;
-    const toolCall = isTool && rawToolName ? {
-      name: String(rawToolName),
-      args: rawToolArgs ?? {}
-    } : void 0;
-    const partialEvent = {
-      type,
-      harness: "copilot",
-      conversationId,
-      workspacePath,
-      prompt,
-      toolCall,
-      isStop,
-      stopHookActive,
-      isInterrupted: false,
-      latestMessage: null,
-      rawPayload: payload
-    };
-    partialEvent.latestMessage = this.extractLatestMessage(partialEvent);
-    return partialEvent;
-  },
-  extractLatestMessage(event) {
-    if (event.type === "stop") {
-      const raw = event.rawPayload.last_assistant_message ?? event.rawPayload.lastAssistantMessage;
-      if (typeof raw === "string" && raw.length > 0) {
-        return {
-          stepIndex: 0,
-          type: "PLANNER_RESPONSE",
-          content: raw
-        };
-      }
-      const transcript = event.rawPayload.transcript_path ?? event.rawPayload.transcriptPath;
-      if (typeof transcript === "string") {
-        return getLatestMessage(transcript, parseClaudeMessage);
-      }
-      return null;
-    }
-    if (event.prompt) {
-      return {
-        stepIndex: 0,
-        type: "USER_INPUT",
-        content: event.prompt
-      };
-    }
-    return null;
-  },
-  formatEgress(event, response) {
-    if (event.type === "stop") {
-      if (response.decision === "continue" && response.reason) {
-        return {
-          exitCode: 0,
-          stdout: JSON.stringify({
-            decision: "block",
-            reason: response.reason
-          })
-        };
-      }
-      return { exitCode: 0, stdout: "{}" };
-    }
-    if (event.type === "pre") {
-      const ephemeralMessage = response.injectSteps?.[0]?.ephemeralMessage || response.message || "";
-      if (!ephemeralMessage) {
-        return { exitCode: 0, stdout: "{}" };
-      }
-      return {
-        exitCode: 0,
-        stdout: JSON.stringify({
-          additionalContext: ephemeralMessage
-        })
-      };
-    }
-    if (event.type === "tool") {
-      const isDeny = response.decision === "deny";
-      return {
-        exitCode: 0,
-        stdout: JSON.stringify({
-          permissionDecision: isDeny ? "deny" : "allow",
-          permissionDecisionReason: isDeny ? response.reason || "Action blocked by workflow policy." : ""
-        })
-      };
-    }
-    return { exitCode: 0, stdout: JSON.stringify(response) };
-  },
-  resolveConversationId(env) {
-    return env.COPILOT_CONVERSATION_ID || env.VSCODE_COPILOT_SESSION_ID || null;
-  },
-  resolveStorageDir(env) {
-    return env.COPILOT_PLUGIN_DATA || null;
   }
 };
 
@@ -360,12 +236,7 @@ function parseClaudeMessage(item) {
 var claudeHarness = {
   id: "claude",
   detect(payload, env) {
-    if (isVsCodeCopilotRoot(env.CLAUDE_PLUGIN_ROOT)) {
-      return false;
-    }
-    return Boolean(
-      env.CLAUDE_PROJECT_DIR || env.CLAUDE_PLUGIN_ROOT && !env.PLUGIN_DATA || payload.hook_event_name !== void 0 || payload.stop_hook_active !== void 0 || payload.session_id !== void 0
-    );
+    return payload.hook_event_name !== void 0 || Boolean(env.CLAUDE_CODE_SESSION_ID);
   },
   normalize(payload, modeArg, env = process.env) {
     const conversationId = String(payload.session_id ?? "default");
@@ -462,7 +333,7 @@ var claudeHarness = {
     return { exitCode: 0, stdout: JSON.stringify(response) };
   },
   resolveConversationId(env) {
-    return env.CLAUDE_CONVERSATION_ID || env.CLAUDE_SESSION_ID || null;
+    return env.CLAUDE_CODE_SESSION_ID || null;
   },
   resolveStorageDir(env) {
     return env.CLAUDE_PLUGIN_DATA || null;
@@ -473,12 +344,7 @@ var claudeHarness = {
 var codexHarness = {
   id: "codex",
   detect(payload, env) {
-    if (isVsCodeCopilotRoot(env.CLAUDE_PLUGIN_ROOT)) {
-      return false;
-    }
-    return Boolean(
-      env.PLUGIN_DATA || env.CODEX_SESSION_ID || env.CODEX_THREAD_ID || payload.hookEventName !== void 0
-    );
+    return payload.hookEventName !== void 0 || Boolean(env.CODEX_SESSION_ID);
   },
   normalize(payload, modeArg, env = process.env) {
     const conversationId = String(
@@ -586,10 +452,121 @@ var codexHarness = {
     return { exitCode: 0, stdout: JSON.stringify(response) };
   },
   resolveConversationId(env) {
-    return env.CODEX_CONVERSATION_ID || env.CODEX_SESSION_ID || null;
+    return env.CODEX_SESSION_ID || null;
   },
   resolveStorageDir(env) {
     return env.PLUGIN_DATA || null;
+  }
+};
+
+// src/harnesses/copilot.ts
+var copilotHarness = {
+  id: "copilot",
+  detect(_payload, env) {
+    return Boolean(env.COPILOT_PLUGIN_DATA || env.COPILOT_SESSION_ID);
+  },
+  normalize(payload, modeArg, env = process.env) {
+    const conversationId = String(
+      payload.sessionId ?? payload.session_id ?? payload.conversationId ?? "default"
+    );
+    const workspacePath = String(payload.cwd ?? env.PWD ?? ".");
+    const eventName = payload.hook_event_name ?? payload.hookEventName;
+    const isStop = modeArg === "stop" || eventName === "Stop" || payload.stop_hook_active !== void 0 || payload.stopHookActive !== void 0;
+    const isTool = modeArg === "tool" || eventName === "PreToolUse" || payload.tool_name !== void 0 || payload.toolName !== void 0;
+    const type = isStop ? "stop" : isTool ? "tool" : "pre";
+    const prompt = typeof payload.prompt === "string" ? payload.prompt : typeof payload.initial_prompt === "string" ? payload.initial_prompt : typeof payload.initialPrompt === "string" ? payload.initialPrompt : void 0;
+    const stopHookActive = Boolean(
+      payload.stop_hook_active ?? payload.stopHookActive
+    );
+    const rawToolName = payload.tool_name ?? payload.toolName;
+    const rawToolArgs = payload.tool_input ?? payload.toolArgs;
+    const toolCall = isTool && rawToolName ? {
+      name: String(rawToolName),
+      args: rawToolArgs ?? {}
+    } : void 0;
+    const partialEvent = {
+      type,
+      harness: "copilot",
+      conversationId,
+      workspacePath,
+      prompt,
+      toolCall,
+      isStop,
+      stopHookActive,
+      isInterrupted: false,
+      latestMessage: null,
+      rawPayload: payload
+    };
+    partialEvent.latestMessage = this.extractLatestMessage(partialEvent);
+    return partialEvent;
+  },
+  extractLatestMessage(event) {
+    if (event.type === "stop") {
+      const raw = event.rawPayload.last_assistant_message ?? event.rawPayload.lastAssistantMessage;
+      if (typeof raw === "string" && raw.length > 0) {
+        return {
+          stepIndex: 0,
+          type: "PLANNER_RESPONSE",
+          content: raw
+        };
+      }
+      const transcript = event.rawPayload.transcript_path ?? event.rawPayload.transcriptPath;
+      if (typeof transcript === "string") {
+        return getLatestMessage(transcript, parseClaudeMessage);
+      }
+      return null;
+    }
+    if (event.prompt) {
+      return {
+        stepIndex: 0,
+        type: "USER_INPUT",
+        content: event.prompt
+      };
+    }
+    return null;
+  },
+  formatEgress(event, response) {
+    if (event.type === "stop") {
+      if (response.decision === "continue" && response.reason) {
+        return {
+          exitCode: 0,
+          stdout: JSON.stringify({
+            decision: "block",
+            reason: response.reason
+          })
+        };
+      }
+      return { exitCode: 0, stdout: "{}" };
+    }
+    if (event.type === "pre") {
+      const ephemeralMessage = response.injectSteps?.[0]?.ephemeralMessage || response.message || "";
+      if (!ephemeralMessage) {
+        return { exitCode: 0, stdout: "{}" };
+      }
+      return {
+        exitCode: 0,
+        stdout: JSON.stringify({
+          additionalContext: ephemeralMessage
+        })
+      };
+    }
+    if (event.type === "tool") {
+      const isDeny = response.decision === "deny";
+      return {
+        exitCode: 0,
+        stdout: JSON.stringify({
+          permissionDecision: isDeny ? "deny" : "allow",
+          permissionDecisionReason: isDeny ? response.reason || "Action blocked by workflow policy." : ""
+        })
+      };
+    }
+    return { exitCode: 0, stdout: JSON.stringify(response) };
+  },
+  resolveConversationId(env) {
+    return env.COPILOT_SESSION_ID || null;
+  },
+  resolveStorageDir(env) {
+    return env.COPILOT_PLUGIN_DATA || null;
   }
 };
 
@@ -779,27 +756,14 @@ function flattenWorkflow(workflowSteps) {
           condStep.nextIndex = yesSteps.length > 0 ? yesStartIndex : afterCond;
           condStep.skipIndex = noSteps.length > 0 ? noStartIndex : afterCond;
         });
-      } else if (isGateStep(step2)) {
-        const title = step2.title || step2.instruction || "Gate";
-        const flatStep = {
-          index: myIndex,
-          level,
-          title,
-          type: "gate",
-          instruction: step2.instruction,
-          nextIndex: 0
-        };
-        flat.push(flatStep);
-        fixups.push(() => {
-          flatStep.nextIndex = afterThisStep();
-        });
       } else {
-        const title = step2.title || step2.instruction || "Step";
+        const type = isGateStep(step2) ? "gate" : "step";
+        const title = step2.title || step2.instruction || (type === "gate" ? "Gate" : "Step");
         const flatStep = {
           index: myIndex,
           level,
           title,
-          type: "step",
+          type,
           instruction: step2.instruction,
           nextIndex: 0
         };
@@ -1285,26 +1249,13 @@ function sliceNodesMarkdown(nodes) {
 }
 function parseBranchSteps(nodes, targetDepth, defaultTitle, fallback) {
   if (!nodes.length) return [];
-  const candidateHeadings = nodes.filter(
-    (n) => n.type === "heading" && typeof n.depth === "number" && n.depth >= targetDepth
-  );
-  if (candidateHeadings.length === 0) {
-    const text = sliceNodesMarkdown(nodes);
-    return [
-      {
-        type: "step",
-        title: defaultTitle,
-        instruction: text || fallback
-      }
-    ];
-  }
   const result = parseSteps(nodes, targetDepth);
   const steps = [...result.steps];
-  if (result.preamble) {
+  if (result.preamble || !steps.length) {
     steps.unshift({
       type: "step",
       title: defaultTitle,
-      instruction: result.preamble
+      instruction: result.preamble || fallback
     });
   }
   return steps;
@@ -1325,17 +1276,15 @@ function parseSteps(nodes, targetDepth) {
   );
   const preambleNodes = nodes.slice(0, headingsAtDepth[0].idx);
   const preamble = preambleNodes.length > 0 ? sliceNodesMarkdown(preambleNodes) : void 0;
-  const sections = headingsAtDepth.map((cur, i2) => ({
+  const sections = headingsAtDepth.map((cur, i) => ({
     headingNode: cur.node,
     bodyNodes: nodes.slice(
       cur.idx + 1,
-      headingsAtDepth[i2 + 1]?.idx ?? nodes.length
+      headingsAtDepth[i + 1]?.idx ?? nodes.length
     )
   }));
   const steps = [];
-  let i = 0;
-  while (i < sections.length) {
-    const sec = sections[i];
+  for (const sec of sections) {
     const parsed = parseHeading(sec.headingNode);
     if (parsed.type === "if") {
       const condition = parsed.condition || parsed.title;
@@ -1352,78 +1301,26 @@ function parseSteps(nodes, targetDepth) {
         );
         const preNodes = sec.bodyNodes.slice(0, directChildren[0].idx);
         conditionInstruction = sliceNodesMarkdown(preNodes) || void 0;
-        let balance = 0;
-        let elseChildIdx = -1;
-        for (let j = 0; j < directChildren.length; j++) {
-          const p = parseHeading(directChildren[j].node);
-          if (p.type === "if") {
-            balance++;
-          } else if (p.type === "else") {
-            if (balance === 0) {
-              elseChildIdx = j;
-              break;
-            }
-            balance--;
-          }
-        }
+        const elseChildIdx = directChildren.findIndex(
+          (child) => parseHeading(child.node).type === "else"
+        );
+        const yesEnd = elseChildIdx !== -1 ? directChildren[elseChildIdx].idx : void 0;
+        yesSteps = parseBranchSteps(
+          sec.bodyNodes.slice(directChildren[0].idx, yesEnd),
+          childDepth,
+          `${condition} yes`,
+          "Execute condition true branch"
+        );
         if (elseChildIdx !== -1) {
-          const yesNodes = sec.bodyNodes.slice(
-            directChildren[0].idx,
-            directChildren[elseChildIdx].idx
-          );
-          const noNodes = sec.bodyNodes.slice(directChildren[elseChildIdx].idx);
-          yesSteps = parseBranchSteps(
-            yesNodes,
-            childDepth,
-            `${condition} yes`,
-            "Execute condition true branch"
-          );
           noSteps = parseBranchSteps(
-            noNodes,
+            sec.bodyNodes.slice(directChildren[elseChildIdx].idx),
             childDepth,
             `${condition} no`,
             "Execute condition false branch"
           );
-        } else {
-          const yesNodes = sec.bodyNodes.slice(directChildren[0].idx);
-          yesSteps = parseBranchSteps(
-            yesNodes,
-            childDepth,
-            `${condition} yes`,
-            "Execute condition true branch"
-          );
-          if (i + 1 < sections.length && parseHeading(sections[i + 1].headingNode).type === "else") {
-            i++;
-            noSteps = parseBranchSteps(
-              sections[i].bodyNodes,
-              effectiveDepth + 1,
-              parseHeading(sections[i].headingNode).title || `${condition} no`,
-              "Execute condition false branch"
-            );
-          }
         }
       } else {
-        if (i + 1 < sections.length && parseHeading(sections[i + 1].headingNode).type === "else") {
-          const text = sliceNodesMarkdown(sec.bodyNodes);
-          yesSteps = [
-            {
-              type: "step",
-              title: `${condition} yes`,
-              instruction: text || "Execute condition true branch"
-            }
-          ];
-          i++;
-          const elseHeading = parseHeading(sections[i].headingNode);
-          noSteps = parseBranchSteps(
-            sections[i].bodyNodes,
-            effectiveDepth + 1,
-            elseHeading.title && elseHeading.title !== "else" && elseHeading.title !== "no" ? elseHeading.title : `${condition} no`,
-            "Execute condition false branch"
-          );
-        } else {
-          const text = sliceNodesMarkdown(sec.bodyNodes);
-          conditionInstruction = text || void 0;
-        }
+        conditionInstruction = sliceNodesMarkdown(sec.bodyNodes) || void 0;
       }
       steps.push({
         type: "condition",
@@ -1433,29 +1330,15 @@ function parseSteps(nodes, targetDepth) {
         yes: { steps: yesSteps },
         ...noSteps ? { no: { steps: noSteps } } : {}
       });
-    } else if (parsed.type === "else") {
-      const instruction = sliceNodesMarkdown(sec.bodyNodes);
-      steps.push({
-        type: "step",
-        title: parsed.title && parsed.title !== "else" && parsed.title !== "no" ? parsed.title : "No",
-        instruction: instruction || parsed.title
-      });
-    } else if (parsed.type === "gate") {
-      const instruction = sliceNodesMarkdown(sec.bodyNodes);
-      steps.push({
-        type: "gate",
-        title: parsed.title,
-        instruction: instruction || parsed.title
-      });
     } else {
-      const instruction = sliceNodesMarkdown(sec.bodyNodes);
-      steps.push({
-        type: "step",
-        title: parsed.title,
-        instruction: instruction || parsed.title
-      });
+      const instruction = sliceNodesMarkdown(sec.bodyNodes) || parsed.title;
+      if (parsed.type === "gate") {
+        steps.push({ type: "gate", title: parsed.title, instruction });
+      } else {
+        const title = parsed.type === "else" && (!parsed.title || parsed.title === "else" || parsed.title === "no") ? "No" : parsed.title;
+        steps.push({ type: "step", title, instruction });
+      }
     }
-    i++;
   }
   return { preamble, steps };
 }
@@ -2553,8 +2436,7 @@ function checkGateStepInstruction(step2) {
 }
 function checkConditionStepExpression(step2) {
   if (step2.type === "condition") {
-    const condStep = step2;
-    if (!condStep.condition || condStep.condition.trim().length === 0) {
+    if (!step2.condition || step2.condition.trim().length === 0) {
       const title = step2.title?.trim() || "untitled";
       return [
         {
@@ -2569,8 +2451,7 @@ function checkConditionStepExpression(step2) {
 }
 function checkConditionStepYes(step2) {
   if (step2.type === "condition") {
-    const condStep = step2;
-    if (!condStep.yes || !Array.isArray(condStep.yes.steps) || condStep.yes.steps.length === 0) {
+    if (!step2.yes || !Array.isArray(step2.yes.steps) || step2.yes.steps.length === 0) {
       const title = step2.title?.trim() || "untitled";
       return [
         {
@@ -2585,8 +2466,7 @@ function checkConditionStepYes(step2) {
 }
 function checkConditionStepNo(step2) {
   if (step2.type === "condition") {
-    const condStep = step2;
-    if (condStep.no && (!condStep.no.steps || condStep.no.steps.length === 0)) {
+    if (step2.no && (!step2.no.steps || step2.no.steps.length === 0)) {
       const title = step2.title?.trim() || "untitled";
       return [
         {
@@ -2647,14 +2527,13 @@ function validateWorkflow(def) {
         }
       }
       if (step2.type === "condition") {
-        const condStep = step2;
-        if (condStep.yes?.steps) {
-          for (const child of condStep.yes.steps) {
+        if (step2.yes?.steps) {
+          for (const child of step2.yes.steps) {
             validateStep(child);
           }
         }
-        if (condStep.no?.steps) {
-          for (const child of condStep.no.steps) {
+        if (step2.no?.steps) {
+          for (const child of step2.no.steps) {
             validateStep(child);
           }
         }
