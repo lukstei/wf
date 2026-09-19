@@ -147,26 +147,39 @@ See [docs/SYNTAX.md](docs/SYNTAX.md) for the complete specification.
 
 ## FAQ
 
-### How is this different from giving the agent a markdown checklist in the prompt?
+<details>
+<summary><b>How is this different from giving the agent a markdown checklist in the prompt?</b></summary>
 
 When an agent receives a 10-step checklist in a single prompt, it tries to execute as much as possible at once. It frequently skips tests, hallucinates that future steps already succeeded, or ignores instructions to stop for human review. `wf` reveals only step $N$. Step $N+1$ does not exist in the agent's context until step $N$ completes.
 
-### What does "deterministic workflow runner" mean?
+</details>
+
+<details>
+<summary><b>What does "deterministic workflow runner" mean?</b></summary>
 
 Deterministic means the runner controls execution boundaries and graph traversal in code, while the agent handles task logic and condition evaluation.
 
 - **Enforced by the runner:** The runner controls step order, step visibility, gates, and state transitions. The agent cannot skip ahead, hallucinate upcoming steps, or bypass review points because future steps are physically absent from its prompt.
 - **Evaluated by the agent:** Inside each step, the agent reads files, runs commands, writes code, and evaluates conditions. When evaluating a condition, the agent inspects the system state and returns `[DECISION: YES]` or `[DECISION: NO]`.
 
-### Can existing `SKILL.md` runbooks be used?
+</details>
+
+<details>
+<summary><b>Can existing <code>SKILL.md</code> runbooks be used?</b></summary>
 
 Yes. Any standard Markdown document with `##` headings works immediately. You can also run the built-in `wf-convert` skill to convert procedural instructions into deterministic step graphs.
 
-### Does `wf` require external services or API keys?
+</details>
+
+<details>
+<summary><b>Does <code>wf</code> require external services or API keys?</b></summary>
 
 No. `wf` is a single bundled script (`dist/wf.cjs`) invoked directly by agent lifecycle hooks. It stores state in `.wf/` and requires no backend, database, or network calls.
 
-### Why are `Else:` and `No:` branches nested under `If:` instead of at the same heading level?
+</details>
+
+<details>
+<summary><b>Why are <code>Else:</code> and <code>No:</code> branches nested under <code>If:</code> instead of at the same heading level?</b></summary>
 
 In programming languages (Python, JS, Go), `if` and `else` sit at the same indentation level. In Markdown, headings are container blocks scoped by depth (`H(N)` contains all `H(>N)` until the next `H(<=N)`).
 
@@ -174,6 +187,8 @@ Nesting `Else:` / `No:` one level deeper (`H(N+1)`):
 1. **Prevents nesting collisions:** When conditions nest inside conditions (e.g. `### If:` inside `## If:`), a same-level `### No:` would syntactically belong to the outer `## If:`, breaking the tree.
 2. **Defines clean rejoin points:** A subsequent heading at the parent depth (`## Next Step`) unambiguously signals that the condition block has ended and execution rejoins linear flow without requiring an `## EndIf` tag.
 3. **Preserves outline folding:** Collapsing `## If:` in any Markdown editor (VS Code, Obsidian) cleanly folds both the `Yes` and `No` branches.
+
+</details>
 
 ## Development
 
