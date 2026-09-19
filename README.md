@@ -15,6 +15,48 @@ When you give an AI coding agent a multi-step plan, it tries to execute the whol
 
 Works in Google Antigravity, Claude Code, and OpenAI Codex.
 
+## Installation
+
+<details>
+<summary><b>Google Antigravity</b></summary>
+
+```bash
+agy plugin install https://github.com/lukstei/wf
+```
+
+</details>
+
+<details>
+<summary><b>Claude Code</b></summary>
+
+From your terminal:
+```bash
+claude plugin marketplace add lukstei/wf
+claude plugin install wf@wf-marketplace
+```
+
+Or inside an active session:
+```bash
+/plugin marketplace add lukstei/wf
+/plugin install wf@wf-marketplace
+```
+
+</details>
+
+<details>
+<summary><b>OpenAI Codex</b></summary>
+
+```bash
+codex plugin marketplace add lukstei/wf
+codex plugin install wf
+codex plugin trust wf
+```
+
+> [!NOTE]
+> Codex currently displays hook feedback in the transcript ([openai/codex#21696](https://github.com/openai/codex/issues/21696)). `wf` emits `suppressOutput: true`, which will hide these messages once upstream support is enabled.
+
+</details>
+
 ## Quickstart
 
 ### 1. Write a workflow (`weekend.md`)
@@ -36,21 +78,16 @@ Ready to notify the team that you are heading out?
 #### Announce on Slack
 Use the Slack CLI to post "Happy weekend!" to #general.
 
-### No: Dirty working tree
+#### No: Dirty working tree
 Say: "Commit your changes before going home!"
 
-## No: Still on the clock
+### No: Still on the clock
 Calculate the remaining time and say: "Sorry, you still have X days and X hours left to work."
 ```
 
-### 2. Preview the graph (`/wf-show`)
+### 2. Preview the graph
 
-Inspect the workflow structure before or during execution:
-
-| Environment | Command |
-| :--- | :--- |
-| Google Antigravity / Claude Code | `/wf-show weekend.md` |
-| OpenAI Codex | `$wf:wf-show weekend.md` |
+Run `/wf-show weekend.md` (Codex: `$wf:wf-show weekend.md`) to visualize the flow:
 
 ```mermaid
 flowchart TD
@@ -69,48 +106,15 @@ flowchart TD
 
 ### 3. Run in chat
 
-| Environment | Command |
-| :--- | :--- |
-| Google Antigravity / Claude Code | `/wf weekend.md` |
-| OpenAI Codex | `$wf:wf weekend.md` |
+Start the workflow with `/wf weekend.md` (Codex: `$wf:wf weekend.md`).
 
 ## How it works
 
 - **One step at a time:** The agent prompt only contains instructions for the active step. Future steps stay hidden.
-- **Agent does the work, runner enforces the path:** The agent inspects code, runs tools, and evaluates conditions. `wf` strictly controls step transitions, context injection, and gates.
+- **Agent does the work, runner enforces the path:** The agent inspects code, runs tools, and evaluates conditions. `wf` controls step transitions, context injection, and gates.
 - **Explicit branch decisions:** Conditional steps require `[DECISION: YES]` or `[DECISION: NO]` before the graph advances.
 - **Human approval gates:** Steps marked `## Gate:` pause execution until you confirm with `/wf-next`.
-- **Zero infrastructure:** Runs entirely local as an in-process plugin. No server, database, or background daemon.
-
-## Installation
-
-### Google Antigravity
-```bash
-agy plugin install https://github.com/lukstei/wf
-```
-
-### Claude Code
-From your terminal:
-```bash
-claude plugin marketplace add lukstei/wf
-claude plugin install wf@wf-marketplace
-```
-
-Or inside an active session:
-```bash
-/plugin marketplace add lukstei/wf
-/plugin install wf@wf-marketplace
-```
-
-### OpenAI Codex
-```bash
-codex plugin marketplace add lukstei/wf
-codex plugin install wf
-codex plugin trust wf
-```
-
-> [!NOTE]
-> Codex currently displays hook feedback in the transcript ([openai/codex#21696](https://github.com/openai/codex/issues/21696)). `wf` emits `suppressOutput: true`, which will hide these messages once upstream support is enabled.
+- **Zero infrastructure:** Runs locally as an in-process plugin. No server, database, or background daemon.
 
 ## Commands
 
@@ -126,31 +130,50 @@ codex plugin trust wf
 
 See [docs/SYNTAX.md](docs/SYNTAX.md) for the complete specification.
 
+```markdown
+## 1. Action Step          # Runs instructions, auto-advances on completion
+## 2. Gate: Human Sign-off # Halts until /wf-next
+## 3. If: Tests pass?      # Agent evaluates and returns [DECISION: YES] or [DECISION: NO]
+### Deploy                 # YES branch (nested child heading)
+### No: Rollback           # NO branch (nested child heading)
+```
+
 - `# Title`: Workflow title. Any text before the first `##` is global preamble context injected into every step.
 - `## Step name`: Linear step. Body text becomes step instructions.
 - `## If: Condition`: Branch point. Child `###` subheadings form the YES branch; `### No:` forms the NO branch. Agent decides with `[DECISION: YES]` or `[DECISION: NO]`.
+  > [!NOTE]
+  > `No:` and `Else:` branches are always nested **one level deeper** than their `If:` heading (`## If:` -> `### No:`, `### If:` -> `#### No:`). Markdown headings are container blocks, so child branches must be deeper.
 - `## Gate: Name`: Human checkpoint. Execution halts until `/wf-next`.
 
 ## FAQ
-
-### What does "deterministic workflow runner" mean?
-
-Deterministic means the **execution boundary and graph traversal are strictly controlled in code**, while the **task logic and condition evaluation remain with the agent**.
-
-- **Deterministic by the runner:** Step sequence, active step visibility, human gates, and transition states are deterministic. The agent cannot skip ahead, hallucinate upcoming steps, or bypass review points because future steps are physically absent from its prompt.
-- **Evaluated by the agent:** The agent retains full flexibility inside each step to read files, run terminal commands, write code, and evaluate conditions. When evaluating a condition, the agent inspects the system state and returns `[DECISION: YES]` or `[DECISION: NO]`.
 
 ### How is this different from giving the agent a markdown checklist in the prompt?
 
 When an agent receives a 10-step checklist in a single prompt, it tries to execute as much as possible at once. It frequently skips tests, hallucinates that future steps already succeeded, or ignores instructions to stop for human review. `wf` reveals only step $N$. Step $N+1$ does not exist in the agent's context until step $N$ completes.
 
-### Does `wf` require external services or API keys?
+### What does "deterministic workflow runner" mean?
 
-No. `wf` is a single bundled script (`dist/wf.cjs`) invoked directly by agent lifecycle hooks. It stores lightweight state in your project directory and requires no backend, database, or external network calls.
+Deterministic means the runner controls execution boundaries and graph traversal in code, while the agent handles task logic and condition evaluation.
+
+- **Enforced by the runner:** The runner controls step order, step visibility, gates, and state transitions. The agent cannot skip ahead, hallucinate upcoming steps, or bypass review points because future steps are physically absent from its prompt.
+- **Evaluated by the agent:** Inside each step, the agent reads files, runs commands, writes code, and evaluates conditions. When evaluating a condition, the agent inspects the system state and returns `[DECISION: YES]` or `[DECISION: NO]`.
 
 ### Can existing `SKILL.md` runbooks be used?
 
 Yes. Any standard Markdown document with `##` headings works immediately. You can also run the built-in `wf-convert` skill to convert procedural instructions into deterministic step graphs.
+
+### Does `wf` require external services or API keys?
+
+No. `wf` is a single bundled script (`dist/wf.cjs`) invoked directly by agent lifecycle hooks. It stores state in `.wf/` and requires no backend, database, or network calls.
+
+### Why are `Else:` and `No:` branches nested under `If:` instead of at the same heading level?
+
+In programming languages (Python, JS, Go), `if` and `else` sit at the same indentation level. In Markdown, headings are container blocks scoped by depth (`H(N)` contains all `H(>N)` until the next `H(<=N)`).
+
+Nesting `Else:` / `No:` one level deeper (`H(N+1)`):
+1. **Prevents nesting collisions:** When conditions nest inside conditions (e.g. `### If:` inside `## If:`), a same-level `### No:` would syntactically belong to the outer `## If:`, breaking the tree.
+2. **Defines clean rejoin points:** A subsequent heading at the parent depth (`## Next Step`) unambiguously signals that the condition block has ended and execution rejoins linear flow without requiring an `## EndIf` tag.
+3. **Preserves outline folding:** Collapsing `## If:` in any Markdown editor (VS Code, Obsidian) cleanly folds both the `Yes` and `No` branches.
 
 ## Development
 

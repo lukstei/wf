@@ -6,7 +6,7 @@ This document specifies the Markdown grammar, structure, and validation rules fo
 
 ## 1. Document Structure & Metadata
 
-A workflow document consists of three optional or mandatory layers: frontmatter, a workflow declaration, and step definitions.
+A workflow document contains up to three sections: optional YAML frontmatter, a title with an optional preamble, and step headings.
 
 ```markdown
 ---
@@ -46,13 +46,13 @@ Step boundaries and control flow are declared using Markdown headings.
 ### Heading Levels & Hierarchy
 The workflow structure is determined by relative heading levels:
 - **Top-Level Steps**: Main workflow steps use `##` headings (or whatever primary heading level is chosen below `# H1`).
-- **Branch Steps**: Steps inside conditional branches use deeper headings (such as `###` under a `## If:` condition, or `####` under a `### If:` condition). Sub-branches can be nested as deeply as needed.
+- **Branch Steps**: Steps inside conditional branches use deeper headings (such as `###` under a `## If:` condition, or `####` under a `### If:` condition). Sub-branches can be nested as deeply as needed. `Else:` and `No:` branches are also child headings (`H(N+1)`), not siblings to `If:`.
 - **Linear Steps Do Not Nest**: Subheadings beneath a standard action step (e.g. `###` under `## Deploy`) are treated as formatted instruction text within that step, not separate execution steps.
 
 ### Control Keywords
 A heading becomes a control step when its title begins with one of four keywords followed immediately by a colon (`:`):
 - `If:`: Declares a conditional branch point.
-- `Else:` / `No:`: Declares the negative branch of a condition. The text after the keyword is a step title, not a condition. When the condition evaluates to `NO`, this branch runs directly without checking or evaluating that text.
+- `Else:` / `No:`: Declares the negative branch of a condition. Must be nested one level deeper than its parent `If:` heading (`## If:` -> `### No:`). The text after the keyword is a step title, not a condition. When the condition evaluates to `NO`, this branch runs directly without checking or evaluating that text.
 - `Gate:`: Declares a human verification checkpoint.
 - *(No keyword or no colon)*: Standard linear action step.
 
@@ -123,11 +123,20 @@ Branching node evaluated dynamically by the model.
 
 ## 4. Branching Graph Construction
 
-All conditional branching in `wf` uses child headings indented beneath the condition step. Sibling headings at the same level (e.g., `## If:` followed by `## Else:`) are not supported.
+All conditional branching in `wf` uses child headings nested under the condition step. Sibling headings at the same level (e.g., `## If:` followed by `## Else:`) are not supported.
+
+> [!IMPORTANT]
+> **Why `Else:` / `No:` is nested (`H(N+1)`) rather than same-level (`H(N)`):**
+> Markdown lacks closing braces and semantic indentation. Headings are the **only** block-scoping mechanism: an `H(N)` heading contains all text and deeper headings until the next `H(<=N)`.
+> 
+> Nesting `Else:` / `No:` one level deeper (`H(N+1)`):
+> 1. **Prevents nesting collisions:** In nested conditions (e.g. `### If:` inside `## If:`), a same-level `### No:` would syntactically belong to the outer `## If:`, breaking the tree.
+> 2. **Defines clear rejoin points:** Any subsequent heading at `H(N)` (e.g. `## Next Step`) cleanly closes the condition and rejoins linear execution without requiring an explicit `## EndIf` tag.
+> 3. **Preserves outline folding:** Collapsing `## If:` in any Markdown editor folds both the `Yes` and `No` branches together.
 
 ### Hierarchical Branching (Child Headings)
 
-Child headings indented beneath `## If:` construct the branch pathways:
+Child headings nested under `## If:` construct the branch pathways:
 
 ```markdown
 ## If: Migrations required?
@@ -143,12 +152,12 @@ Confirm database tables match schema definitions.
 Log that database is up to date.
 ```
 
-1. **Condition Evaluation Instructions**: Any body text directly beneath the `## If:` heading before the first child heading serves as instructions for the agent when evaluating the condition.
+1. **Condition Evaluation Instructions**: Any body text between the `## If:` heading and the first child heading provides evaluation instructions for the agent.
 2. **YES Branch**: All child headings preceding the `else`/`no` heading belong to the YES branch. Must contain at least one step.
 3. **NO Branch (Optional)**: A child heading matching `else` or `no` marks the beginning of the NO branch.
    - Any child headings following the `else`/`no` heading belong to the NO branch.
    - Title of the NO heading is extracted from text after `else`/`no` (e.g., `### No: Skip Migrations` -> Title: `"Skip Migrations"`). If omitted, the title defaults to `"No"`.
-   - **Text after `Else:` / `No:` is not a condition**: When the `If:` condition is not fulfilled (evaluated as `NO`), the `Else:` branch executes directly. Any text following the keyword is solely a human-readable title for the step and is not checked or evaluated.
+   - **Text after `Else:` / `No:` is not a condition**: When the `If:` condition evaluates to `NO`, the `Else:` branch executes directly. Any text following the keyword is a step title, not an evaluated condition.
    - If no `else`/`no` heading is present, the NO branch is omitted. When evaluated as `NO`, execution jumps directly past the condition's child steps to the next top-level step.
 
 ### Nested Branching
@@ -198,7 +207,7 @@ During condition evaluation steps, the agent inspects the environment and conclu
 ### Branch Routing
 - **YES**: Execution advances to the first step of the YES branch.
 - **NO**: Execution jumps to the first step of the NO branch, or skips past the condition block if no NO branch exists.
-- Any response other than `YES` defaults safely to `NO`.
+- Any response other than `YES` defaults to `NO`.
 
 ---
 
