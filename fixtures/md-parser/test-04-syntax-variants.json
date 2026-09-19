@@ -10,7 +10,7 @@
 				"steps": [
 					{
 						"type": "step",
-						"title": "is it sunny? yes",
+						"title": "Wear sunglasses",
 						"instruction": "Wear sunglasses"
 					}
 				]
@@ -19,7 +19,7 @@
 				"steps": [
 					{
 						"type": "step",
-						"title": "is it sunny? no",
+						"title": "No",
 						"instruction": "Take umbrella"
 					}
 				]
@@ -33,7 +33,7 @@
 				"steps": [
 					{
 						"type": "step",
-						"title": "is it windy? yes",
+						"title": "Wear windbreaker",
 						"instruction": "Wear windbreaker"
 					}
 				]
@@ -42,7 +42,7 @@
 				"steps": [
 					{
 						"type": "step",
-						"title": "is it windy? no",
+						"title": "No",
 						"instruction": "Wear normal jacket"
 					}
 				]

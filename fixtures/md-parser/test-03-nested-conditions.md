@@ -20,15 +20,13 @@ Execute flyway / prisma migration.
 #### Step 2b-ii: Verify Migration
 Verify database tables.
 
-### *else:*
-#### Step 2b-alt: Skip Migration
+#### *else:* Step 2b-alt: Skip Migration
 Log migration skipped.
 
 ### Step 2c: Finalize Cloud
 Scale up pods.
 
-## *else:*
-### Local Step: Docker Compose
+### *else:* Local Step: Docker Compose
 Run docker compose up.
 
 ## Step 3: Finish

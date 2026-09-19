@@ -15,7 +15,7 @@
 				"steps": [
 					{
 						"type": "step",
-						"title": "it is friday? yes",
+						"title": "output friday",
 						"instruction": "output is friday"
 					}
 				]
@@ -24,7 +24,7 @@
 				"steps": [
 					{
 						"type": "step",
-						"title": "it is friday? no",
+						"title": "No",
 						"instruction": "echo hello monday"
 					},
 					{

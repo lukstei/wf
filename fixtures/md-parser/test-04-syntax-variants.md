@@ -3,13 +3,17 @@
 Testing flexible condition headings.
 
 ## If: is it sunny?
+
+### Wear sunglasses
 Wear sunglasses
 
-## Else:
+### Else:
 Take umbrella
 
 ## if: is it windy?
+
+### Wear windbreaker
 Wear windbreaker
 
-## else:
+### else:
 Wear normal jacket

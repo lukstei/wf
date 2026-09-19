@@ -8,9 +8,11 @@ say "Hello to workflow test"
 
 ## *if:* it is friday?
 
-  output is friday
+### output friday
 
-## *else:*
+output is friday
+
+### *else:*
 
 echo hello monday
 

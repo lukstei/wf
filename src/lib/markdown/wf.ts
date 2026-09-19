@@ -199,20 +199,9 @@ function parseSteps(
 				const preNodes = sec.bodyNodes.slice(0, directChildren[0].idx);
 				conditionInstruction = sliceNodesMarkdown(preNodes) || undefined;
 
-				let balance = 0;
-				let elseChildIdx = -1;
-				for (let j = 0; j < directChildren.length; j++) {
-					const p = parseHeading(directChildren[j].node);
-					if (p.type === "if") {
-						balance++;
-					} else if (p.type === "else") {
-						if (balance === 0) {
-							elseChildIdx = j;
-							break;
-						}
-						balance--;
-					}
-				}
+				const elseChildIdx = directChildren.findIndex(
+					(child) => parseHeading(child.node).type === "else",
+				);
 
 				if (elseChildIdx !== -1) {
 					const yesNodes = sec.bodyNodes.slice(
@@ -241,49 +230,10 @@ function parseSteps(
 						`${condition} yes`,
 						"Execute condition true branch",
 					);
-
-					if (
-						i + 1 < sections.length &&
-						parseHeading(sections[i + 1].headingNode).type === "else"
-					) {
-						i++;
-						noSteps = parseBranchSteps(
-							sections[i].bodyNodes,
-							effectiveDepth + 1,
-							parseHeading(sections[i].headingNode).title || `${condition} no`,
-							"Execute condition false branch",
-						);
-					}
 				}
 			} else {
-				if (
-					i + 1 < sections.length &&
-					parseHeading(sections[i + 1].headingNode).type === "else"
-				) {
-					const text = sliceNodesMarkdown(sec.bodyNodes);
-					yesSteps = [
-						{
-							type: "step",
-							title: `${condition} yes`,
-							instruction: text || "Execute condition true branch",
-						},
-					];
-					i++;
-					const elseHeading = parseHeading(sections[i].headingNode);
-					noSteps = parseBranchSteps(
-						sections[i].bodyNodes,
-						effectiveDepth + 1,
-						elseHeading.title &&
-							elseHeading.title !== "else" &&
-							elseHeading.title !== "no"
-							? elseHeading.title
-							: `${condition} no`,
-						"Execute condition false branch",
-					);
-				} else {
-					const text = sliceNodesMarkdown(sec.bodyNodes);
-					conditionInstruction = text || undefined;
-				}
+				const text = sliceNodesMarkdown(sec.bodyNodes);
+				conditionInstruction = text || undefined;
 			}
 
 			steps.push({

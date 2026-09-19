@@ -33,7 +33,6 @@ The workflow name is resolved in the following priority order:
 1. `name` field declared in YAML frontmatter.
 2. Plain-text content of the first Level 1 heading (`# H1`).
 3. File basename (excluding extension) if resolved from a file path.
-4. Fallback default: `"Workflow"`.
 
 ### Global Preamble
 Any markdown content between the `# H1` heading (or frontmatter end, if no `# H1` exists) and the first step heading constitutes the **global preamble**. At runtime, this content is injected into every step execution prompt under `CONTEXT:`.
@@ -64,21 +63,20 @@ Keywords are case-insensitive (`if:`, `IF:`, `If:`). The colon is **mandatory**;
 Headings can include step numbering or single-word prefix labels before the keyword. The parser distinguishes control steps from standard action steps as follows:
 
 #### Recognized as Control Steps (Colon Required)
-- `## If: tests pass?` — Condition
-- `## 1. If: tests pass?` — Numbered condition
-- `## Step 1: Gate: Approve deploy` — Labeled gate
-- `## Schritt 1: Gate: Erlaubnis einholen` — Labeled gate
-- `## Else:` or `## No: Skip migrations` — Negative branch
-- `## *if:* tests pass?` — Condition (inline markdown formatting stripped to plain text)
+- `## If: tests pass?` — Condition (`"tests pass?"`)
+- `## 1. If: tests pass?` — Condition (`"tests pass?"`)
+- `## Step 1: Gate: Approve deploy` — Gate (`"Approve deploy"`)
+- `### Else:` or `### No: Skip migrations` — Negative branch (`"Skip migrations"`, nested under condition)
+- `## *if:* tests pass?` — Condition (`"tests pass?"`)
 
 #### Treated as Normal Action Steps (No Colon or Not a Keyword)
+- `## 1. Run migrations` — Action step (`"1. Run migrations"`)
+- `## Step 1: Prepare environment` — Action step (`"Step 1: Prepare environment"`)
+- `## Deploy service` — Action step (`"Deploy service"`)
 - `## If tests pass?` — Action step (no colon after `If`)
 - `## *if* tests pass?` — Action step (no colon)
 - `## Gate release candidate` — Action step (no colon after `Gate`)
 - `## No dependencies required` — Action step (no colon after `No`)
-- `## 1. Run migrations` — Numbered action step (title preserved as `"1. Run migrations"`)
-- `## Step 1: Prepare environment` — Labeled action step
-- `## Deploy service` — Plain action step
 
 > [!NOTE]
 > For action steps, numbers and prefix labels are preserved in the step title. For control steps (`If:`, `Gate:`, `Else:`, `No:`), the prefix and keyword configure the step, and only the remaining text becomes the condition or title.
@@ -125,11 +123,11 @@ Branching node evaluated dynamically by the model.
 
 ## 4. Branching Graph Construction
 
-`wf` supports two syntax patterns for conditional branches: **Hierarchical (Child Headings)** and **Sibling (Sequential Headings)**.
+All conditional branching in `wf` uses child headings indented beneath the condition step. Sibling headings at the same level (e.g., `## If:` followed by `## Else:`) are not supported.
 
-### Pattern A: Hierarchical Branching (Child Headings)
+### Hierarchical Branching (Child Headings)
 
-Child headings indented beneath `## If:` construct the branch pathways.
+Child headings indented beneath `## If:` construct the branch pathways:
 
 ```markdown
 ## If: Migrations required?
@@ -145,28 +143,13 @@ Confirm database tables match schema definitions.
 Log that database is up to date.
 ```
 
-1. **YES Branch**: All child headings preceding the `else`/`no` heading belong to the YES branch. Must contain at least one step.
-2. **NO Branch (Optional)**: A child heading matching `else` or `no` marks the beginning of the NO branch.
+1. **Condition Evaluation Instructions**: Any body text directly beneath the `## If:` heading before the first child heading serves as instructions for the agent when evaluating the condition.
+2. **YES Branch**: All child headings preceding the `else`/`no` heading belong to the YES branch. Must contain at least one step.
+3. **NO Branch (Optional)**: A child heading matching `else` or `no` marks the beginning of the NO branch.
    - Any child headings following the `else`/`no` heading belong to the NO branch.
-   - Title of the NO heading is extracted from text after `else`/`no` (e.g., `### No: Skip Migrations` -> Title: `"Skip Migrations"`).
+   - Title of the NO heading is extracted from text after `else`/`no` (e.g., `### No: Skip Migrations` -> Title: `"Skip Migrations"`). If omitted, the title defaults to `"No"`.
    - **Text after `Else:` / `No:` is not a condition**: When the `If:` condition is not fulfilled (evaluated as `NO`), the `Else:` branch executes directly. Any text following the keyword is solely a human-readable title for the step and is not checked or evaluated.
    - If no `else`/`no` heading is present, the NO branch is omitted. When evaluated as `NO`, execution jumps directly past the condition's child steps to the next top-level step.
-
-### Pattern B: Sibling Branching (Sequential Headings)
-
-For single-step branches, an `if` heading without child headings paired with an immediate sibling `else`/`no` heading forms a binary branch:
-
-```markdown
-## If: Is today Friday?
-Output: "Happy Friday!"
-
-## Else:
-Calculate and report days remaining until Friday.
-```
-
-- When an `if` heading has no child headings and is immediately followed by an `else`/`no` heading at the same level:
-  - The body of `## If:` compiles into a single YES step titled `"<condition> yes"`.
-  - The body of `## Else:` compiles into a single NO step titled `"<condition> no"` (or the title declared after `else`). As with child branches, any text after `Else:` (e.g. `## Else: Fallback action`) is only a title; the branch executes whenever the condition is not fulfilled without checking this text.
 
 ### Nested Branching
 Branches may nest to arbitrary depths. A child step inside a YES or NO branch may itself be a condition (`### If:` or `#### If:`), human gate, or sub-step sequence:
@@ -235,17 +218,20 @@ Run `npm run build` and ensure zero diagnostic errors.
 Execute `./scripts/package.sh` to generate release tarball.
 ```
 
-### Condition with Sibling Fallback
+### Condition with Branching
 ```markdown
 # Test & Deploy
 
 ## 1. Run Verification
 Run `npm run verify`.
 
-## If: Did verification pass?
+## 2. If: Did verification pass?
+Check exit code of verification run.
+
+### Publish
 Publish package to registry.
 
-## Else:
+### No:
 Report test failures to user and exit.
 ```
 

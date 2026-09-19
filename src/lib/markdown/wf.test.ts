@@ -51,7 +51,7 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 
 	test("parses numbered condition headings correctly", () => {
 		const wf = parseWorkflowMarkdown(
-			"# Numbered Workflow\n\n## 1. Prepare\nRun setup\n\n## 2. If: tests pass?\nDeploy\n\n## 3. Else:\nFix tests",
+			"# Numbered Workflow\n\n## 1. Prepare\nRun setup\n\n## 2. If: tests pass?\n\n### Deploy\nDeploy\n\n### No: Fix\nFix tests",
 		);
 		expect(wf.steps).toHaveLength(2);
 		expect(wf.steps[0]).toEqual({
@@ -65,12 +65,12 @@ describe("Markdown Workflow Edge Cases & Lifecycle", () => {
 			condition: "tests pass?",
 			yes: {
 				steps: [
-					{ type: "step", title: "tests pass? yes", instruction: "Deploy" },
+					{ type: "step", title: "Deploy", instruction: "Deploy" },
 				],
 			},
 			no: {
 				steps: [
-					{ type: "step", title: "tests pass? no", instruction: "Fix tests" },
+					{ type: "step", title: "Fix", instruction: "Fix tests" },
 				],
 			},
 		});
@@ -502,7 +502,7 @@ Start server.
 		);
 		active = t2Stop.active;
 
-		// Turn 3 Stop: Model executes step 3 ("it is friday? no" / "echo hello monday")
+		// Turn 3 Stop: Model executes step 3 ("No" / "echo hello monday")
 		const t3Stop = handle(
 			{
 				type: "stop",
@@ -632,7 +632,7 @@ Start server.
 			  {
 			    "response": {
 			      "decision": "continue",
-			      "reason": "[wf] Executing next step: it is friday? no (Level 1)
+			      "reason": "[wf] Executing next step: No (Level 1)
 
 			CONTEXT:
 			This is a workflow to test the worfklow funcitions.
@@ -640,7 +640,7 @@ Start server.
 			INSTRUCTION:
 			echo hello monday
 
-			Start your response with: "Executing Step: it is friday? no"
+			Start your response with: "Executing Step: No"
 			Continue immediately and execute this step.",
 			    },
 			    "state": {

@@ -14,8 +14,8 @@ Ready to notify the team that you are heading out?
 #### Announce on Slack
 Use the Slack CLI to post "Happy weekend!" to #general.
 
-### No: Dirty working tree
+#### No: Dirty working tree
 Say: "Commit your changes before going home!"
 
-## No: Still on the clock
+### No: Still on the clock
 Calculate the remaining time and say: "Sorry, you still have X days and X hours left to work."
