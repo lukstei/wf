@@ -37,6 +37,9 @@ __export(cli_exports, {
 module.exports = __toCommonJS(cli_exports);
 var import_node_util = require("node:util");
 
+// src/harnesses/index.ts
+var import_strict = __toESM(require("node:assert/strict"), 1);
+
 // src/lib/getLatestMessage.ts
 var fs = __toESM(require("node:fs"), 1);
 function defaultTranscriptParser(item) {
@@ -44,9 +47,7 @@ function defaultTranscriptParser(item) {
   const isModel = (item.type === "PLANNER_RESPONSE" || item.source === "MODEL") && item.type !== "GENERIC";
   if ((isUser || isModel) && typeof item.content === "string") {
     return {
-      stepIndex: typeof item.step_index === "number" ? item.step_index : 0,
       type: isUser ? "USER_INPUT" : "PLANNER_RESPONSE",
-      source: typeof item.source === "string" ? item.source : void 0,
       content: item.content
     };
   }
@@ -144,7 +145,6 @@ var agyHarness = {
       const rawAssistant = event.rawPayload.last_assistant_message ?? event.rawPayload.lastAssistantMessage;
       if (typeof rawAssistant === "string" && rawAssistant.length > 0) {
         return {
-          stepIndex: 0,
           type: "PLANNER_RESPONSE",
           content: rawAssistant
         };
@@ -152,7 +152,6 @@ var agyHarness = {
     }
     if (event.prompt) {
       return {
-        stepIndex: 0,
         type: "USER_INPUT",
         content: event.prompt
       };
@@ -176,7 +175,7 @@ var agyHarness = {
       };
     }
     if (event.type === "pre") {
-      const ephemeralMessage = response.injectSteps?.[0]?.ephemeralMessage || response.message || "";
+      const ephemeralMessage = response.injectSteps?.[0]?.ephemeralMessage || "";
       if (!ephemeralMessage) {
         return { exitCode: 0, stdout: "{}" };
       }
@@ -209,7 +208,7 @@ var agyHarness = {
   }
 };
 
-// src/harnesses/claude.ts
+// src/harnesses/common.ts
 function parseClaudeMessage(item) {
   if (item.role === "assistant" || item.message?.role === "assistant") {
     const msg = item.message ?? item;
@@ -217,7 +216,6 @@ function parseClaudeMessage(item) {
       const textBlock = msg.content.find((c) => c.type === "text");
       if (typeof textBlock?.text === "string") {
         return {
-          stepIndex: 0,
           type: "PLANNER_RESPONSE",
           content: textBlock.text
         };
@@ -226,13 +224,37 @@ function parseClaudeMessage(item) {
   }
   if (item.role === "user" && typeof item.content === "string") {
     return {
-      stepIndex: 0,
       type: "USER_INPUT",
       content: item.content
     };
   }
   return null;
 }
+function defaultExtractLatestMessage(event) {
+  if (event.type === "stop") {
+    const raw = event.rawPayload.last_assistant_message ?? event.rawPayload.lastAssistantMessage;
+    if (typeof raw === "string" && raw.length > 0) {
+      return {
+        type: "PLANNER_RESPONSE",
+        content: raw
+      };
+    }
+    const transcript = event.rawPayload.transcript_path ?? event.rawPayload.transcriptPath;
+    if (typeof transcript === "string") {
+      return getLatestMessage(transcript, parseClaudeMessage);
+    }
+    return null;
+  }
+  if (event.prompt) {
+    return {
+      type: "USER_INPUT",
+      content: event.prompt
+    };
+  }
+  return null;
+}
+
+// src/harnesses/claude.ts
 var claudeHarness = {
   id: "claude",
   detect(payload, env) {
@@ -267,31 +289,7 @@ var claudeHarness = {
     partialEvent.latestMessage = this.extractLatestMessage(partialEvent);
     return partialEvent;
   },
-  extractLatestMessage(event) {
-    if (event.type === "stop") {
-      const raw = event.rawPayload.last_assistant_message ?? event.rawPayload.lastAssistantMessage;
-      if (typeof raw === "string" && raw.length > 0) {
-        return {
-          stepIndex: 0,
-          type: "PLANNER_RESPONSE",
-          content: raw
-        };
-      }
-      const transcript = event.rawPayload.transcript_path ?? event.rawPayload.transcriptPath;
-      if (typeof transcript === "string") {
-        return getLatestMessage(transcript, parseClaudeMessage);
-      }
-      return null;
-    }
-    if (event.prompt) {
-      return {
-        stepIndex: 0,
-        type: "USER_INPUT",
-        content: event.prompt
-      };
-    }
-    return null;
-  },
+  extractLatestMessage: defaultExtractLatestMessage,
   formatEgress(event, response) {
     if (event.type === "stop") {
       if (response.decision === "continue" && response.reason) {
@@ -306,7 +304,7 @@ var claudeHarness = {
       return { exitCode: 0, stdout: "{}" };
     }
     if (event.type === "pre") {
-      const text = response.injectSteps?.[0]?.ephemeralMessage || response.message || "";
+      const text = response.injectSteps?.[0]?.ephemeralMessage || "";
       if (!text) {
         return { exitCode: 0, stdout: "{}" };
       }
@@ -379,31 +377,7 @@ var codexHarness = {
     partialEvent.latestMessage = this.extractLatestMessage(partialEvent);
     return partialEvent;
   },
-  extractLatestMessage(event) {
-    if (event.type === "stop") {
-      const raw = event.rawPayload.last_assistant_message ?? event.rawPayload.lastAssistantMessage;
-      if (typeof raw === "string" && raw.length > 0) {
-        return {
-          stepIndex: 0,
-          type: "PLANNER_RESPONSE",
-          content: raw
-        };
-      }
-      const transcript = event.rawPayload.transcript_path ?? event.rawPayload.transcriptPath;
-      if (typeof transcript === "string") {
-        return getLatestMessage(transcript, parseClaudeMessage);
-      }
-      return null;
-    }
-    if (event.prompt) {
-      return {
-        stepIndex: 0,
-        type: "USER_INPUT",
-        content: event.prompt
-      };
-    }
-    return null;
-  },
+  extractLatestMessage: defaultExtractLatestMessage,
   formatEgress(event, response) {
     if (event.type === "stop") {
       if (response.decision === "continue" && response.reason) {
@@ -419,7 +393,7 @@ var codexHarness = {
       return { exitCode: 0, stdout: "{}" };
     }
     if (event.type === "pre") {
-      const text = response.injectSteps?.[0]?.ephemeralMessage || response.message || "";
+      const text = response.injectSteps?.[0]?.ephemeralMessage || "";
       if (!text) {
         return { exitCode: 0, stdout: "{}" };
       }
@@ -500,31 +474,7 @@ var copilotHarness = {
     partialEvent.latestMessage = this.extractLatestMessage(partialEvent);
     return partialEvent;
   },
-  extractLatestMessage(event) {
-    if (event.type === "stop") {
-      const raw = event.rawPayload.last_assistant_message ?? event.rawPayload.lastAssistantMessage;
-      if (typeof raw === "string" && raw.length > 0) {
-        return {
-          stepIndex: 0,
-          type: "PLANNER_RESPONSE",
-          content: raw
-        };
-      }
-      const transcript = event.rawPayload.transcript_path ?? event.rawPayload.transcriptPath;
-      if (typeof transcript === "string") {
-        return getLatestMessage(transcript, parseClaudeMessage);
-      }
-      return null;
-    }
-    if (event.prompt) {
-      return {
-        stepIndex: 0,
-        type: "USER_INPUT",
-        content: event.prompt
-      };
-    }
-    return null;
-  },
+  extractLatestMessage: defaultExtractLatestMessage,
   formatEgress(event, response) {
     if (event.type === "stop") {
       if (response.decision === "continue" && response.reason) {
@@ -539,7 +489,7 @@ var copilotHarness = {
       return { exitCode: 0, stdout: "{}" };
     }
     if (event.type === "pre") {
-      const ephemeralMessage = response.injectSteps?.[0]?.ephemeralMessage || response.message || "";
+      const ephemeralMessage = response.injectSteps?.[0]?.ephemeralMessage || "";
       if (!ephemeralMessage) {
         return { exitCode: 0, stdout: "{}" };
       }
@@ -586,16 +536,9 @@ function detectHarness(payload = {}, env = process.env) {
   return null;
 }
 function getHarness(type) {
-  switch (type) {
-    case "codex":
-      return codexHarness;
-    case "claude":
-      return claudeHarness;
-    case "agy":
-      return agyHarness;
-    case "copilot":
-      return copilotHarness;
-  }
+  const harness = HARNESSES.find((h) => h.id === type);
+  (0, import_strict.default)(harness, `Unknown harness type: ${type}`);
+  return harness;
 }
 function resolveConversationIdFromHarnesses(env = process.env) {
   for (const harness of HARNESSES) {
@@ -702,12 +645,6 @@ function logDebug(message, data) {
 logDebug.conversationId = void 0;
 
 // src/workflow.ts
-function isConditionalStep(step2) {
-  return step2.type === "condition";
-}
-function isGateStep(step2) {
-  return step2.type === "gate";
-}
 function compileWorkflow(ast, filePath) {
   return {
     ...ast,
@@ -726,7 +663,7 @@ function flattenWorkflow(workflowSteps) {
       const myIndex = flat.length;
       stepStartIndices[i] = myIndex;
       const afterThisStep = isLast ? exitTarget : () => stepStartIndices[i + 1];
-      if (isConditionalStep(step2)) {
+      if (step2.type === "condition") {
         const title = step2.title || step2.condition || "Condition";
         const condStep = {
           index: myIndex,
@@ -757,7 +694,7 @@ function flattenWorkflow(workflowSteps) {
           condStep.skipIndex = noSteps.length > 0 ? noStartIndex : afterCond;
         });
       } else {
-        const type = isGateStep(step2) ? "gate" : "step";
+        const type = step2.type === "gate" ? "gate" : "step";
         const title = step2.title || step2.instruction || (type === "gate" ? "Gate" : "Step");
         const flatStep = {
           index: myIndex,
@@ -839,7 +776,7 @@ function visualizePlainText(workflow, activeStepIndex) {
       const myIndex = stepIndex++;
       const isActive = activeStepIndex !== void 0 && myIndex === activeStepIndex;
       const marker = isActive ? "\u25B6 [CURRENT] " : "";
-      if (isConditionalStep(step2)) {
+      if (step2.type === "condition") {
         const label = step2.title || step2.condition || "Condition";
         lines.push(`${indent}${marker}- If: ${label}`);
         if (step2.yes && step2.yes.steps.length > 0) {
@@ -849,7 +786,7 @@ function visualizePlainText(workflow, activeStepIndex) {
           lines.push(`${indent}- Else:`);
           walk(step2.no.steps, `${indent}  `);
         }
-      } else if (isGateStep(step2)) {
+      } else if (step2.type === "gate") {
         const label = step2.title || step2.instruction || "Gate";
         lines.push(`${indent}${marker}- Gate: ${label} [Approval Required]`);
       } else {
@@ -1473,116 +1410,89 @@ function parseDecision(modelText) {
   const match = modelText.match(/\[DECISION:\s*(YES|NO)\]/i) || modelText.match(/\[(YES|NO)\]/i);
   return match && (match[1] || match[2]).toUpperCase() === "YES" ? "YES" : "NO";
 }
+function formatStepBody(step2, isPrompt, title, fileRef = "") {
+  if (step2.type === "condition") {
+    const conditionText = step2.condition || title;
+    const evalText = step2.instruction || (isPrompt ? `Evaluate whether the following condition is true or false: "${step2.condition}".
+If needed, use tools to inspect the environment, files, date/time, or git state.` : `Evaluate condition: "${step2.condition}"`);
+    const parts2 = [];
+    if (isPrompt) {
+      parts2.push("INSTRUCTION:", evalText);
+    } else {
+      parts2.push(evalText);
+    }
+    parts2.push(
+      "",
+      `Start your response with: "Checking condition: ${conditionText}"`,
+      "At the very end of your response, output strictly either:",
+      "[DECISION: YES] or [DECISION: NO]"
+    );
+    if (isPrompt) {
+      parts2.push(
+        "",
+        "RULES:",
+        `1. Do NOT read or inspect the workflow file${fileRef} or SKILL.md \u2014 steps are already loaded by the runner.`
+      );
+    }
+    return parts2;
+  }
+  const isGate = step2.type === "gate";
+  const gateNote = "NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'.";
+  const startPrefix = isGate ? `Start your response with: "Waiting at Gate: ${title}"` : `Start your response with: "Executing Step: ${title}"`;
+  const parts = ["INSTRUCTION:", step2.instruction || ""];
+  if (isPrompt) {
+    if (isGate) parts.push("", gateNote);
+    parts.push(
+      "",
+      "RULES:",
+      `1. ${startPrefix}`,
+      "2. Execute this specific step now.",
+      "3. Do NOT jump ahead to subsequent steps.",
+      "4. Conclude your response when this step is complete.",
+      `5. Do NOT read or inspect the workflow file${fileRef} or SKILL.md \u2014 steps are already loaded by the runner.`
+    );
+  } else if (isGate) {
+    parts.push("", startPrefix, gateNote);
+  } else {
+    parts.push("", startPrefix, "Continue immediately and execute this step.");
+  }
+  return parts;
+}
 function formatStepPrompt(active, currentStep, stepNum, totalSteps) {
   const wfName = active.workflow.name;
   const title = currentStep.title || `Step ${stepNum}`;
   const stepTitle = `: ${currentStep.title}`;
   const levelStr = currentStep.level > 0 ? ` (Nesting Level ${currentStep.level})` : "";
   const fileRef = active.workflow.filePath ? ` ("${active.workflow.filePath}")` : "";
-  if (currentStep.type === "condition") {
-    const conditionText = currentStep.condition || title;
-    const lines = [
-      `[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
-      `Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr} (Condition Evaluation)`,
-      `Condition: "${currentStep.condition}"`
-    ];
-    if (active.workflow.preamble) {
-      lines.push("", "CONTEXT:", active.workflow.preamble);
-    }
-    lines.push("", "INSTRUCTION:");
-    if (currentStep.instruction) {
-      lines.push(currentStep.instruction);
-    } else {
-      lines.push(
-        `Evaluate whether the following condition is true or false: "${currentStep.condition}".`,
-        "If needed, use tools to inspect the environment, files, date/time, or git state."
-      );
-    }
-    lines.push(
-      "",
-      `Start your response with: "Checking condition: ${conditionText}"`,
-      "At the very end of your response, output strictly either:",
-      "[DECISION: YES] or [DECISION: NO]",
-      "",
-      "RULES:",
-      `1. Do NOT read or inspect the workflow file${fileRef} or SKILL.md \u2014 steps are already loaded by the runner.`
-    );
-    return lines.join("\n");
-  }
-  const isGate = currentStep.type === "gate";
-  const promptParts = [
+  const lines = [
     `[WORKFLOW ${active.state.status.toUpperCase()}: ${wfName}]`,
-    `Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr}`
+    `Step ${stepNum} of ${totalSteps}${stepTitle}${levelStr}${currentStep.type === "condition" ? " (Condition Evaluation)" : ""}`
   ];
+  if (currentStep.type === "condition") {
+    lines.push(`Condition: "${currentStep.condition}"`);
+  }
   if (active.workflow.preamble) {
-    promptParts.push("", "CONTEXT:", active.workflow.preamble);
+    lines.push("", "CONTEXT:", active.workflow.preamble);
   }
-  promptParts.push("", "INSTRUCTION:", currentStep.instruction || "");
-  if (isGate) {
-    promptParts.push(
-      "",
-      "NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'."
-    );
-  }
-  promptParts.push(
-    "",
-    "RULES:",
-    isGate ? `1. Start your response with: "Waiting at Gate: ${title}"` : `1. Start your response with: "Executing Step: ${title}"`,
-    "2. Execute this specific step now.",
-    "3. Do NOT jump ahead to subsequent steps.",
-    "4. Conclude your response when this step is complete.",
-    `5. Do NOT read or inspect the workflow file${fileRef} or SKILL.md \u2014 steps are already loaded by the runner.`
-  );
-  return promptParts.join("\n");
+  lines.push("", ...formatStepBody(currentStep, true, title, fileRef));
+  return lines.join("\n");
 }
 function formatAdvanceReason(step2, preamble) {
-  const isCondition = step2.type === "condition";
-  const isGate = step2.type === "gate";
   const title = step2.title || `Step ${step2.index + 1}`;
   const levelStr = step2.level > 0 ? ` (Level ${step2.level})` : "";
-  const reasonParts = [
-    `[wf] Executing next step: ${title}${levelStr}`
-  ];
+  const lines = [`[wf] Executing next step: ${title}${levelStr}`];
   if (preamble) {
-    reasonParts.push("", "CONTEXT:", preamble);
+    lines.push("", "CONTEXT:", preamble);
   }
-  if (isCondition) {
-    const conditionText = step2.condition || title;
-    reasonParts.push(
-      "",
-      step2.instruction || `Evaluate condition: "${step2.condition}"`,
-      "",
-      `Start your response with: "Checking condition: ${conditionText}"`,
-      "At the very end of your response, output strictly either:",
-      "[DECISION: YES] or [DECISION: NO]"
-    );
-  } else {
-    reasonParts.push("", "INSTRUCTION:", step2.instruction ?? "");
-  }
-  if (isGate) {
-    reasonParts.push(
-      "",
-      `Start your response with: "Waiting at Gate: ${title}"`,
-      "NOTE: This step is a human approval gate. After completing this step's instructions, remind the user they can proceed with '/wf-next' or stop with '/wf-stop'."
-    );
-  } else if (!isCondition) {
-    reasonParts.push(
-      "",
-      `Start your response with: "Executing Step: ${title}"`,
-      "Continue immediately and execute this step."
-    );
-  }
-  return reasonParts.join("\n");
+  lines.push("", ...formatStepBody(step2, false, title));
+  return lines.join("\n");
 }
 
-// src/lib/assert.ts
-function assert(condition, message) {
-  if (!condition) {
-    throw new Error(message ?? "Assertion failed");
-  }
-}
+// src/actions/next.ts
+var import_strict4 = __toESM(require("node:assert/strict"), 1);
 
 // src/transitions.ts
+var import_strict2 = __toESM(require("node:assert/strict"), 1);
 function advanceTo(flatSteps, state, iterationCount, decision) {
   const current = flatSteps[state.step];
   const targetIndex = current?.type === "condition" ? decision === "YES" ? current.nextIndex : current.skipIndex ?? current.nextIndex : current?.nextIndex;
@@ -1618,8 +1528,14 @@ function pauseWorkflow(state) {
   }
   return state;
 }
+function applyTransition(active, nextState) {
+  if (!active) {
+    return null;
+  }
+  return nextState ? { ...active, state: nextState } : active;
+}
 function resumeWorkflow(flatSteps, state) {
-  assert(
+  (0, import_strict2.default)(
     state && (state.status === "active" || state.status === "paused"),
     "Cannot resume workflow: no active or paused workflow is loaded"
   );
@@ -1683,13 +1599,14 @@ function stopWorkflowState(state, workflowName) {
 }
 
 // src/actions/step.ts
+var import_strict3 = __toESM(require("node:assert/strict"), 1);
 function step(_info, active) {
-  assert(
+  (0, import_strict3.default)(
     active && (active.state.status === "active" || active.state.status === "paused"),
     "Cannot execute step: workflow must be active or paused"
   );
   const currentStep = active.workflow.flatSteps[active.state.step];
-  assert(currentStep, "Current step does not exist");
+  (0, import_strict3.default)(currentStep, "Current step does not exist");
   const stepNum = active.state.step + 1;
   const totalSteps = active.workflow.flatSteps.length;
   const prompt = formatStepPrompt(active, currentStep, stepNum, totalSteps);
@@ -1707,7 +1624,7 @@ function step(_info, active) {
 
 // src/actions/next.ts
 function nextPre(info, active) {
-  assert(
+  (0, import_strict4.default)(
     active && (active.state.status === "active" || active.state.status === "paused"),
     "No workflow is running"
   );
@@ -1725,12 +1642,12 @@ Workflow "${active.workflow.name}" completed successfully.`
   return step(info, nextActive);
 }
 function nextStop(_info, active) {
-  assert(
+  (0, import_strict4.default)(
     active?.state.status === "active",
     "nextStop requires an active workflow"
   );
   const nextState = advanceStep(active.workflow.flatSteps, active.state);
-  const nextActive = nextState ? { ...active, state: nextState } : null;
+  const nextActive = applyTransition(active, nextState);
   if (nextState?.status === "finished") {
     logDebug("All workflow steps complete", {
       totalSteps: active.workflow.flatSteps.length
@@ -1965,8 +1882,10 @@ function run(info, active, command) {
       )
     };
   }
-  const resolver = info.workflowResolver || defaultWorkflowResolver;
-  const resolved = resolver(targetPath, info.payload.workspacePaths);
+  const resolved = defaultWorkflowResolver(
+    targetPath,
+    info.payload.workspacePaths
+  );
   if (!resolved) {
     return {
       active,
@@ -2045,8 +1964,10 @@ Step: ${active.state.step + 1} of ${active.workflow.flatSteps.length} (Nesting L
       response: injectSystemMessage(prompt2)
     };
   }
-  const resolver = info.workflowResolver || defaultWorkflowResolver;
-  const resolved = resolver(targetPath, info.payload.workspacePaths);
+  const resolved = defaultWorkflowResolver(
+    targetPath,
+    info.payload.workspacePaths
+  );
   if (!resolved) {
     return {
       active,
@@ -2123,16 +2044,16 @@ function handleCommand(info, active, parsedCmd) {
   }
   switch (parsedCmd.command.name) {
     case "help": {
-      const paused = pauseWorkflow(active?.state ?? null);
-      const nextActive = active && paused ? { workflow: active.workflow, state: paused } : active;
       return {
-        active: nextActive,
+        active: applyTransition(active, pauseWorkflow(active?.state ?? null)),
         response: injectSystemMessage(parsedCmd.helpText || getHelpText())
       };
     }
     case "show": {
-      const paused = pauseWorkflow(active?.state ?? null);
-      const nextActive = active && paused ? { workflow: active.workflow, state: paused } : active;
+      const nextActive = applyTransition(
+        active,
+        pauseWorkflow(active?.state ?? null)
+      );
       return show(info, nextActive, parsedCmd.command);
     }
     case "next":
@@ -2160,9 +2081,8 @@ function handlePre(info, active) {
       logDebug("User message received, pausing workflow", {
         text: info.latestMessage.content.slice(0, 50)
       });
-      const paused = pauseWorkflow(active.state);
       return {
-        active: paused ? { workflow: active.workflow, state: paused } : active,
+        active: applyTransition(active, pauseWorkflow(active.state)),
         response: {}
       };
     }
@@ -2173,28 +2093,24 @@ function handlePre(info, active) {
   }
   const maxIterations = active.workflow.flatSteps.length * 5;
   if (active.state.iterationCount >= maxIterations) {
-    const errorState = failWorkflow(
-      active.state,
-      `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`
-    );
+    const errorMsg = `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`;
     return {
-      active: errorState ? { workflow: active.workflow, state: errorState } : active,
-      response: injectSystemMessage(
-        `[WORKFLOW RUNNER] Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`
-      )
+      active: applyTransition(active, failWorkflow(active.state, errorMsg)),
+      response: injectSystemMessage(`[WORKFLOW RUNNER] ${errorMsg}`)
     };
   }
   return dispatchStep(info, active);
 }
 
 // src/actions/condition.ts
+var import_strict5 = __toESM(require("node:assert/strict"), 1);
 function conditionStop(info, active) {
-  assert(
+  (0, import_strict5.default)(
     active?.state.status === "active",
     "conditionStop requires an active workflow"
   );
   const currentStep = active.workflow.flatSteps[active.state.step];
-  assert(
+  (0, import_strict5.default)(
     currentStep?.type === "condition",
     "conditionStop requires current step to be a condition"
   );
@@ -2210,7 +2126,7 @@ function conditionStop(info, active) {
     active.state,
     decision
   );
-  assert(nextState, "advanceStep must return next state for active workflow");
+  (0, import_strict5.default)(nextState, "advanceStep must return next state for active workflow");
   const nextActive = { ...active, state: nextState };
   if (nextState.status === "finished") {
     logDebug("All workflow steps complete after condition", { totalSteps });
@@ -2253,17 +2169,15 @@ function handleStop(info, active) {
   if (info.payload.error || info.payload.terminationReason && /error/i.test(info.payload.terminationReason)) {
     const errorMsg = info.payload.error || `Stopped with reason: ${info.payload.terminationReason}`;
     logDebug("Setting error state due to error termination", info.payload);
-    const errorState = failWorkflow(active.state, errorMsg);
     return {
-      active: errorState ? { workflow: active.workflow, state: errorState } : active,
+      active: applyTransition(active, failWorkflow(active.state, errorMsg)),
       response: { decision: "allow" }
     };
   }
   if (info.payload.terminationReason && /cancel|abort|interrupt/i.test(info.payload.terminationReason)) {
     logDebug("Allowing stop due to interruption", info.payload);
-    const paused = pauseWorkflow(active.state);
     return {
-      active: paused ? { workflow: active.workflow, state: paused } : active,
+      active: applyTransition(active, pauseWorkflow(active.state)),
       response: { decision: "allow" }
     };
   }
@@ -2277,7 +2191,7 @@ function handleStop(info, active) {
   return nextStop(info, active);
 }
 
-// src/wf.ts
+// src/handlers/index.ts
 function handle(info, active) {
   if (info.type === "stop") {
     return handleStop(info, active);
@@ -2340,14 +2254,12 @@ async function runShim(modeArg, rawInput, env = process.env) {
   logDebug.conversationId = event.conversationId;
   const rawTranscript = event.rawPayload.transcriptPath ?? event.rawPayload.transcript_path;
   const transcriptPath = typeof rawTranscript === "string" ? rawTranscript : void 0;
-  const artifactDirectoryPath = typeof event.rawPayload.artifactDirectoryPath === "string" ? event.rawPayload.artifactDirectoryPath : void 0;
   const hookInfo = {
     type: event.type === "stop" ? "stop" : "pre",
     payload: {
       conversationId: event.conversationId,
       workspacePaths: [event.workspacePath],
       transcriptPath,
-      artifactDirectoryPath,
       terminationReason: event.terminationReason,
       ...event.rawPayload
     },
