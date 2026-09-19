@@ -17,7 +17,6 @@ import {
 	isConditionalStep,
 	isGateStep,
 	isStep,
-	nextStep,
 	type WorkflowAst,
 	type WorkflowStep,
 } from "./workflow.ts";
@@ -227,47 +226,6 @@ describe("state.ts", () => {
           "type": "step",
         },
       ]
-    `);
-	});
-
-	test("nextStep() jumps to correct target based on decision and step type", () => {
-		const flat = flattenWorkflow([
-			{ type: "step", title: "Init", instruction: "Init" },
-			{
-				type: "condition",
-				title: "is it friday?",
-				condition: "is it friday?",
-				yes: {
-					steps: [
-						{ type: "step", title: "Yes Friday", instruction: "Yes Friday" },
-					],
-				},
-				no: {
-					steps: [
-						{ type: "step", title: "No Friday", instruction: "No Friday" },
-					],
-				},
-			},
-			{ type: "step", title: "Done", instruction: "Done" },
-		]);
-
-		const jumps = {
-			"s1 action": nextStep(flat, 0),
-			"c1 condition (YES)": nextStep(flat, 1, "YES"),
-			"c1 condition (NO)": nextStep(flat, 1, "NO"),
-			"y1 action": nextStep(flat, 2),
-			"n1 action": nextStep(flat, 3),
-			"s3 action": nextStep(flat, 4),
-		};
-		expect(jumps).toMatchInlineSnapshot(`
-      {
-        "c1 condition (NO)": 3,
-        "c1 condition (YES)": 2,
-        "n1 action": 4,
-        "s1 action": 1,
-        "s3 action": 5,
-        "y1 action": 4,
-      }
     `);
 	});
 

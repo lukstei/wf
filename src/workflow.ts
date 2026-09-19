@@ -174,24 +174,3 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 
 	return flat;
 }
-
-/**
- * Pure, deterministic O(1) jump calculation for the next step index.
- */
-export function nextStep(
-	flatSteps: FlatStep[],
-	currentIndex: number,
-	decision?: "YES" | "NO",
-): number {
-	const current = flatSteps[currentIndex];
-	if (!current) return flatSteps.length;
-
-	if (current.type === "condition") {
-		if (decision === "YES") {
-			return current.nextIndex;
-		}
-		return current.skipIndex ?? current.nextIndex;
-	}
-
-	return current.nextIndex;
-}

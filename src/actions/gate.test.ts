@@ -51,7 +51,7 @@ describe("Gate Semantics", () => {
 		const pausedAfterGate: ActiveWorkflow = {
 			state: {
 				status: "paused",
-				step: 2,
+				step: 1,
 				iterationCount: 0,
 			},
 			workflow: {
@@ -88,7 +88,7 @@ describe("Gate Semantics", () => {
 			  "advanceResult": {
 			    "iterationCount": 1,
 			    "status": "paused",
-			    "step": 2,
+			    "step": 1,
 			  },
 			  "nextPreResult": {
 			    "response": {
@@ -153,7 +153,7 @@ describe("Gate Semantics", () => {
 			    "state": {
 			      "iterationCount": 1,
 			      "status": "paused",
-			      "step": 2,
+			      "step": 1,
 			    },
 			  },
 			}

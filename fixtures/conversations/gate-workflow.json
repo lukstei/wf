@@ -73,7 +73,7 @@
 					"decision": "allow"
 				},
 				"state": {
-					"step": 2,
+					"step": 1,
 					"status": "paused",
 					"iterationCount": 2
 				}

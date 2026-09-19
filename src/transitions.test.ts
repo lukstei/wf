@@ -42,6 +42,33 @@ describe("transitions.ts", () => {
 		"/test/cond.json",
 	);
 
+	const gateWf: CompiledWorkflow = compileWorkflow(
+		{
+			name: "GateFlow",
+			steps: [
+				{ type: "step", title: "First step", instruction: "First step" },
+				{ type: "gate", title: "Gate Check", instruction: "Verify" },
+				{ type: "step", title: "Final step", instruction: "Final step" },
+			],
+		},
+		"/test/gate.json",
+	);
+
+	const gateAsLastStepWf: CompiledWorkflow = compileWorkflow(
+		{
+			name: "GateLastFlow",
+			steps: [
+				{ type: "step", title: "First step", instruction: "First step" },
+				{
+					type: "gate",
+					title: "Final Gate Check",
+					instruction: "Verify last",
+				},
+			],
+		},
+		"/test/gate-last.json",
+	);
+
 	test("startWorkflow initializes active workflow state", () => {
 		const activeState = startWorkflow(linearWf);
 
@@ -148,9 +175,28 @@ describe("transitions.ts", () => {
 			iterationCount: 1,
 		};
 
+		const pausedAtGate: WorkflowState = {
+			status: "paused",
+			step: 1,
+			iterationCount: 1,
+		};
+		const pausedAtLastGate: WorkflowState = {
+			status: "paused",
+			step: 1,
+			iterationCount: 1,
+		};
+
 		const results = {
-			fromActive: resumeWorkflow(activeState),
-			fromPaused: resumeWorkflow(pausedState),
+			fromActive: resumeWorkflow(linearWf.flatSteps, activeState),
+			fromPaused: resumeWorkflow(linearWf.flatSteps, pausedState),
+			gateResumeAdvancesToNextStep: resumeWorkflow(
+				gateWf.flatSteps,
+				pausedAtGate,
+			),
+			lastGateResumeFinishes: resumeWorkflow(
+				gateAsLastStepWf.flatSteps,
+				pausedAtLastGate,
+			),
 		};
 
 		expect(results).toMatchInlineSnapshot(`
@@ -165,16 +211,26 @@ describe("transitions.ts", () => {
 			    "status": "active",
 			    "step": 0,
 			  },
+			  "gateResumeAdvancesToNextStep": {
+			    "iterationCount": 1,
+			    "status": "active",
+			    "step": 2,
+			  },
+			  "lastGateResumeFinishes": {
+			    "iterationCount": 1,
+			    "status": "finished",
+			    "step": 2,
+			  },
 			}
 		`);
 
-		expect(() => resumeWorkflow(finishedState)).toThrow(
+		expect(() => resumeWorkflow(linearWf.flatSteps, finishedState)).toThrow(
 			"Cannot resume workflow: no active or paused workflow is loaded",
 		);
-		expect(() => resumeWorkflow(errorState)).toThrow(
+		expect(() => resumeWorkflow(linearWf.flatSteps, errorState)).toThrow(
 			"Cannot resume workflow: no active or paused workflow is loaded",
 		);
-		expect(() => resumeWorkflow(null)).toThrow(
+		expect(() => resumeWorkflow(linearWf.flatSteps, null)).toThrow(
 			"Cannot resume workflow: no active or paused workflow is loaded",
 		);
 	});
@@ -392,18 +448,6 @@ describe("transitions.ts", () => {
 	});
 
 	test("advanceStep snapshot matrix for gate step transitions", () => {
-		const gateWf: CompiledWorkflow = compileWorkflow(
-			{
-				name: "GateFlow",
-				steps: [
-					{ type: "step", title: "First step", instruction: "First step" },
-					{ type: "gate", title: "Gate Check", instruction: "Verify" },
-					{ type: "step", title: "Final step", instruction: "Final step" },
-				],
-			},
-			"/test/gate.json",
-		);
-
 		const activeAtGate: WorkflowState = {
 			status: "active",
 			step: 1,
@@ -415,21 +459,6 @@ describe("transitions.ts", () => {
 			step: 1,
 			iterationCount: 1,
 		};
-
-		const gateAsLastStepWf: CompiledWorkflow = compileWorkflow(
-			{
-				name: "GateLastFlow",
-				steps: [
-					{ type: "step", title: "First step", instruction: "First step" },
-					{
-						type: "gate",
-						title: "Final Gate Check",
-						instruction: "Verify last",
-					},
-				],
-			},
-			"/test/gate-last.json",
-		);
 
 		const activeAtLastGate: WorkflowState = {
 			status: "active",
@@ -446,7 +475,7 @@ describe("transitions.ts", () => {
 				gateWf.flatSteps,
 				pausedAtGate,
 			),
-			lastGateStepAdvancesToFinished: advanceStep(
+			lastGateStepAdvancesToPaused: advanceStep(
 				gateAsLastStepWf.flatSteps,
 				activeAtLastGate,
 			),
@@ -457,12 +486,12 @@ describe("transitions.ts", () => {
 			  "activeGateStepAdvancesToPaused": {
 			    "iterationCount": 2,
 			    "status": "paused",
-			    "step": 2,
+			    "step": 1,
 			  },
-			  "lastGateStepAdvancesToFinished": {
+			  "lastGateStepAdvancesToPaused": {
 			    "iterationCount": 2,
-			    "status": "finished",
-			    "step": 2,
+			    "status": "paused",
+			    "step": 1,
 			  },
 			  "pausedGateStepAdvancesToPaused": {
 			    "iterationCount": 1,

@@ -270,8 +270,13 @@ export async function runCli(
 				return { exitCode: 1, output: err };
 			}
 
-			const nextState = resumeWorkflow(active.state);
+			const nextState = resumeWorkflow(active.workflow.flatSteps, active.state);
 			saveState(conversationId, nextState, env);
+			if (nextState.status === "finished") {
+				const msg = `[WORKFLOW STATUS: FINISHED]\nWorkflow "${active.workflow.name}" completed successfully.`;
+				writeOut(msg);
+				return { exitCode: 0, output: msg };
+			}
 			const currentStep = active.workflow.flatSteps[nextState.step];
 			const stepNum = nextState.step + 1;
 			const total = active.workflow.flatSteps.length;

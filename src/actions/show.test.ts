@@ -447,6 +447,84 @@ describe("actions/show.ts", () => {
 		`);
 	});
 
+	test("show visualizes paused workflow at gate step with gate highlighted as current", () => {
+		const active: ActiveWorkflow = {
+			state: {
+				status: "paused",
+				step: 1,
+				iterationCount: 2,
+			},
+			workflow: {
+				name: "GateFlow",
+				filePath: "/gate.json",
+				steps: [
+					{ type: "step", title: "Step 0", instruction: "Step 0" },
+					{
+						type: "gate",
+						title: "Confirm Release",
+						instruction: "Ready to release?",
+					},
+					{ type: "step", title: "Step 2", instruction: "Step 2" },
+				],
+				flatSteps: [
+					{ index: 0, level: 0, type: "step", title: "Step 0", nextIndex: 1 },
+					{
+						index: 1,
+						level: 0,
+						type: "gate",
+						title: "Confirm Release",
+						instruction: "Ready to release?",
+						nextIndex: 2,
+					},
+					{ index: 2, level: 0, type: "step", title: "Step 2", nextIndex: 3 },
+				],
+			},
+		};
+
+		const res = show(
+			{
+				type: "pre",
+				payload: { conversationId: "c1" },
+			},
+			active,
+			{ name: "show", args: {} },
+		);
+
+		expect(
+			res.response.injectSteps?.[0]?.ephemeralMessage,
+		).toMatchInlineSnapshot(`
+				"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
+
+				[WORKFLOW STATUS: PAUSED]
+				Workflow: GateFlow
+				Step: 2 of 3 (Nesting Level 0)
+
+				[WORKFLOW VISUALIZATION: GateFlow]
+				Present the structure of workflow "GateFlow" to the user.
+
+				If your environment supports rendering Mermaid diagrams, visualize it using:
+				\`\`\`mermaid
+				flowchart TD
+				    s0["Step 0"]
+				    s1[["🛑 ▶ Confirm Release"]]
+				    s2["Step 2"]
+				    s0 --> s1
+				    s1 --> s2
+				    style s1 stroke:#3b82f6,stroke-width:4px
+				\`\`\`
+
+				If Mermaid rendering is not supported in the current interface, show the plain text representation instead:
+
+				- Step: Step 0
+				▶ [CURRENT] - Gate: Confirm Release [Approval Required]
+				- Step: Step 2
+
+				RULES:
+				1. Do NOT read or inspect the workflow file ("/gate.json") or SKILL.md — steps are already loaded by the runner.
+				2. Do NOT execute any workflow steps. This is strictly an informational visualization."
+			`);
+	});
+
 	test("show works on real sample-wf.md", () => {
 		const workspaceRoot = path.resolve(import.meta.dirname, "../..");
 		const res = show(

@@ -3,7 +3,7 @@ import { logDebug } from "../lib/logDebug.ts";
 import type { ActiveWorkflow } from "../state.ts";
 import { advanceStep, resumeWorkflow } from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
-import { formatAdvanceReason } from "./formatters.ts";
+import { formatAdvanceReason, injectSystemMessage } from "./formatters.ts";
 import { step } from "./step.ts";
 
 /**
@@ -20,8 +20,19 @@ export function nextPre(
 		"No workflow is running",
 	);
 
-	const nextState = resumeWorkflow(active.state);
-	return step(info, { ...active, state: nextState });
+	const nextState = resumeWorkflow(active.workflow.flatSteps, active.state);
+	const nextActive = { ...active, state: nextState };
+
+	if (nextState.status === "finished") {
+		return {
+			active: nextActive,
+			response: injectSystemMessage(
+				`[WORKFLOW STATUS: FINISHED]\nWorkflow "${active.workflow.name}" completed successfully.`,
+			),
+		};
+	}
+
+	return step(info, nextActive);
 }
 
 /**
