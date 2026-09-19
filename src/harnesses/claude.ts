@@ -1,39 +1,6 @@
-import { getLatestMessage } from "../lib/getLatestMessage.ts";
-import type { HookResponse, LatestMessage } from "../types.ts";
+import type { HookResponse } from "../types.ts";
+import { defaultExtractLatestMessage } from "./common.ts";
 import type { EgressOutput, HarnessAdapter, NormalizedEvent } from "./types.ts";
-
-export function parseClaudeMessage(
-	item: Record<string, unknown>,
-): LatestMessage | null {
-	if (
-		item.role === "assistant" ||
-		(item.message as Record<string, unknown>)?.role === "assistant"
-	) {
-		const msg = (item.message ?? item) as {
-			content?: Array<{ type?: string; text?: string }>;
-		};
-		if (Array.isArray(msg.content)) {
-			const textBlock = msg.content.find((c) => c.type === "text");
-			if (typeof textBlock?.text === "string") {
-				return {
-					stepIndex: 0,
-					type: "PLANNER_RESPONSE",
-					content: textBlock.text,
-				};
-			}
-		}
-	}
-
-	if (item.role === "user" && typeof item.content === "string") {
-		return {
-			stepIndex: 0,
-			type: "USER_INPUT",
-			content: item.content,
-		};
-	}
-
-	return null;
-}
 
 export const claudeHarness: HarnessAdapter = {
 	id: "claude",
@@ -98,36 +65,7 @@ export const claudeHarness: HarnessAdapter = {
 		return partialEvent;
 	},
 
-	extractLatestMessage(event: NormalizedEvent): LatestMessage | null {
-		if (event.type === "stop") {
-			const raw =
-				event.rawPayload.last_assistant_message ??
-				event.rawPayload.lastAssistantMessage;
-			if (typeof raw === "string" && raw.length > 0) {
-				return {
-					stepIndex: 0,
-					type: "PLANNER_RESPONSE",
-					content: raw,
-				};
-			}
-			const transcript =
-				event.rawPayload.transcript_path ?? event.rawPayload.transcriptPath;
-			if (typeof transcript === "string") {
-				return getLatestMessage(transcript, parseClaudeMessage);
-			}
-			return null;
-		}
-
-		if (event.prompt) {
-			return {
-				stepIndex: 0,
-				type: "USER_INPUT",
-				content: event.prompt,
-			};
-		}
-
-		return null;
-	},
+	extractLatestMessage: defaultExtractLatestMessage,
 
 	formatEgress(event: NormalizedEvent, response: HookResponse): EgressOutput {
 		if (event.type === "stop") {
@@ -144,8 +82,7 @@ export const claudeHarness: HarnessAdapter = {
 		}
 
 		if (event.type === "pre") {
-			const text =
-				response.injectSteps?.[0]?.ephemeralMessage || response.message || "";
+			const text = response.injectSteps?.[0]?.ephemeralMessage || "";
 			if (!text) {
 				return { exitCode: 0, stdout: "{}" };
 			}

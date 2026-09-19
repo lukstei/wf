@@ -9,30 +9,6 @@ export function parse(markdown: string): MarkdownNode {
 	return MarkdownParser.parse(markdown);
 }
 
-// biome-ignore lint/suspicious/noShadowRestrictedNames: upstream API compatibility
-export function unescape(input: string): string {
-	if (!input.includes("\\")) {
-		// Optimization for cases where there are no escape sequences
-		return input;
-	}
-
-	let text = "";
-
-	for (let index = 0; index < input.length; index++) {
-		const char = input[index];
-
-		if (char === "\\" && index + 1 < input.length) {
-			text += input[++index];
-
-			continue;
-		}
-
-		text += char;
-	}
-
-	return text;
-}
-
 class MismatchError extends Error {
 	public constructor() {
 		super("Mismatched token");

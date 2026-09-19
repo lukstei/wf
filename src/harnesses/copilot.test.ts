@@ -53,7 +53,6 @@ describe("copilotHarness", () => {
 				  "isStop": false,
 				  "latestMessage": {
 				    "content": "/wf next",
-				    "stepIndex": 0,
 				    "type": "USER_INPUT",
 				  },
 				  "prompt": "/wf next",
@@ -88,7 +87,6 @@ describe("copilotHarness", () => {
 			});
 			const res = copilotHarness.extractLatestMessage(event);
 			expect(res).toEqual({
-				stepIndex: 0,
 				type: "USER_INPUT",
 				content: "/wf next",
 			});
@@ -102,7 +100,6 @@ describe("copilotHarness", () => {
 			});
 			const res = copilotHarness.extractLatestMessage(event);
 			expect(res).toEqual({
-				stepIndex: 0,
 				type: "PLANNER_RESPONSE",
 				content: "Copilot response",
 			});

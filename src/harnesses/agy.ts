@@ -114,7 +114,6 @@ export const agyHarness: HarnessAdapter = {
 				event.rawPayload.lastAssistantMessage;
 			if (typeof rawAssistant === "string" && rawAssistant.length > 0) {
 				return {
-					stepIndex: 0,
 					type: "PLANNER_RESPONSE",
 					content: rawAssistant,
 				};
@@ -123,7 +122,6 @@ export const agyHarness: HarnessAdapter = {
 
 		if (event.prompt) {
 			return {
-				stepIndex: 0,
 				type: "USER_INPUT",
 				content: event.prompt,
 			};
@@ -150,7 +148,7 @@ export const agyHarness: HarnessAdapter = {
 
 		if (event.type === "pre") {
 			const ephemeralMessage =
-				response.injectSteps?.[0]?.ephemeralMessage || response.message || "";
+				response.injectSteps?.[0]?.ephemeralMessage || "";
 			if (!ephemeralMessage) {
 				return { exitCode: 0, stdout: "{}" };
 			}

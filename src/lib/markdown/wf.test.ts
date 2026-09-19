@@ -1,9 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, test } from "vitest";
+import { handle } from "../../handlers/index.ts";
 import type { ActiveWorkflow } from "../../state.ts";
 import { stripAbsolutePath } from "../../test-utils.ts";
-import { handle } from "../../handlers/index.ts";
 import { flattenWorkflow } from "../../workflow.ts";
 import { parseHeading, parseWorkflowMarkdown } from "./wf.ts";
 
@@ -459,7 +459,6 @@ Start server.
 					workspacePaths: [workspaceRoot],
 				},
 				latestMessage: {
-					stepIndex: 1,
 					type: "USER_INPUT",
 					content: "/wf fixtures/md-parser/test-01-sample-wf.md",
 				},
@@ -474,7 +473,6 @@ Start server.
 				type: "stop",
 				payload: { conversationId: "test-conv-sample-wf" },
 				latestMessage: {
-					stepIndex: 2,
 					type: "PLANNER_RESPONSE",
 					content: "Hello to workflow test!",
 				},
@@ -489,7 +487,6 @@ Start server.
 				type: "stop",
 				payload: { conversationId: "test-conv-sample-wf" },
 				latestMessage: {
-					stepIndex: 3,
 					type: "PLANNER_RESPONSE",
 					content: "Today is Wednesday. [DECISION: NO]",
 				},
@@ -504,7 +501,6 @@ Start server.
 				type: "stop",
 				payload: { conversationId: "test-conv-sample-wf" },
 				latestMessage: {
-					stepIndex: 4,
 					type: "PLANNER_RESPONSE",
 					content: "Hello Monday!",
 				},
@@ -519,7 +515,6 @@ Start server.
 				type: "stop",
 				payload: { conversationId: "test-conv-sample-wf" },
 				latestMessage: {
-					stepIndex: 5,
 					type: "PLANNER_RESPONSE",
 					content: "There are 2 days until Friday.",
 				},
@@ -534,7 +529,6 @@ Start server.
 				type: "stop",
 				payload: { conversationId: "test-conv-sample-wf" },
 				latestMessage: {
-					stepIndex: 6,
 					type: "PLANNER_RESPONSE",
 					content: "Workflow finished - have a nice day!",
 				},

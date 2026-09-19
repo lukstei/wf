@@ -26,8 +26,10 @@ export function run(
 		};
 	}
 
-	const resolver = info.workflowResolver || defaultWorkflowResolver;
-	const resolved = resolver(targetPath, info.payload.workspacePaths);
+	const resolved = defaultWorkflowResolver(
+		targetPath,
+		info.payload.workspacePaths,
+	);
 
 	if (!resolved) {
 		return {

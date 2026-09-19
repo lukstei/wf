@@ -63,7 +63,6 @@ describe("agyHarness", () => {
 				  "isStop": false,
 				  "latestMessage": {
 				    "content": "/wf next",
-				    "stepIndex": 0,
 				    "type": "USER_INPUT",
 				  },
 				  "prompt": "/wf next",
@@ -174,7 +173,6 @@ describe("agyHarness", () => {
 			});
 			const res = agyHarness.extractLatestMessage(event);
 			expect(res).toEqual({
-				stepIndex: 0,
 				type: "USER_INPUT",
 				content: "/wf next",
 			});
@@ -196,7 +194,6 @@ describe("agyHarness", () => {
 			});
 			const res = agyHarness.extractLatestMessage(event);
 			expect(res).toEqual({
-				stepIndex: 0,
 				type: "PLANNER_RESPONSE",
 				content: "AGY response",
 			});

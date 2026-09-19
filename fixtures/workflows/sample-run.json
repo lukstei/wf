@@ -1,0 +1,10 @@
+{
+	"name": "SampleRun",
+	"steps": [
+		{
+			"type": "step",
+			"title": "Step 1",
+			"instruction": "Initial step instruction"
+		}
+	]
+}

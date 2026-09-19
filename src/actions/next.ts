@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { logDebug } from "../lib/logDebug.ts";
 import type { ActiveWorkflow } from "../state.ts";
-import { advanceStep, resumeWorkflow } from "../transitions.ts";
+import {
+	advanceStep,
+	applyTransition,
+	resumeWorkflow,
+} from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 import { formatAdvanceReason, injectSystemMessage } from "./formatters.ts";
 import { step } from "./step.ts";
@@ -49,7 +53,7 @@ export function nextStop(
 	);
 
 	const nextState = advanceStep(active.workflow.flatSteps, active.state);
-	const nextActive = nextState ? { ...active, state: nextState } : null;
+	const nextActive = applyTransition(active, nextState);
 
 	if (nextState?.status === "finished") {
 		logDebug("All workflow steps complete", {

@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { describe, expect, test } from "vitest";
 import { injectSystemMessage, OVERRIDE_HEADER } from "../actions/formatters.ts";
 import { parseAgyMessage } from "../harnesses/agy.ts";
-import { parseClaudeMessage } from "../harnesses/claude.ts";
+import { parseClaudeMessage } from "../harnesses/common.ts";
 import { defaultWorkflowResolver, resolveWorkflowPath } from "../resolver.ts";
 import { getDebugLogPath } from "../state.ts";
 import { getLatestMessage } from "./getLatestMessage.ts";
@@ -47,7 +47,6 @@ describe("util library functions", () => {
 
 		const msg = getLatestMessage(transcriptPath);
 		expect(msg).toBeDefined();
-		expect(msg?.stepIndex).toBe(3);
 		expect(msg?.type).toBe("PLANNER_RESPONSE");
 		expect(msg?.content).toBe("Decision [DECISION: YES]");
 
@@ -65,7 +64,6 @@ describe("util library functions", () => {
 
 		const nextMsg = getLatestMessage(transcriptPath);
 		expect(nextMsg).toBeDefined();
-		expect(nextMsg?.stepIndex).toBe(4);
 		expect(nextMsg?.type).toBe("USER_INPUT");
 		expect(nextMsg?.content).toBe("/wf next");
 
@@ -95,9 +93,7 @@ describe("util library functions", () => {
 				content: "AGY pure",
 			}),
 		).toEqual({
-			stepIndex: 10,
 			type: "PLANNER_RESPONSE",
-			source: "MODEL",
 			content: "AGY pure",
 		});
 
@@ -109,7 +105,6 @@ describe("util library functions", () => {
 				},
 			}),
 		).toEqual({
-			stepIndex: 0,
 			type: "PLANNER_RESPONSE",
 			content: "Claude pure",
 		});
@@ -120,7 +115,6 @@ describe("util library functions", () => {
 				content: "Claude user message",
 			}),
 		).toEqual({
-			stepIndex: 0,
 			type: "USER_INPUT",
 			content: "Claude user message",
 		});

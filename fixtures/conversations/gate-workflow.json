@@ -28,13 +28,13 @@
 			"input": {
 				"step_index": 0,
 				"type": "USER_INPUT",
-				"content": "/wf gate-flow.json"
+				"content": "/wf fixtures/workflows/gate-workflow.workflow.json"
 			},
 			"expectedPre": {
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Gate Approval Flow]\nStep 1 of 3: Prepare Deployment\n\nINSTRUCTION:\nPrepare the release assets.\n\nRULES:\n1. Start your response with: \"Executing Step: Prepare Deployment\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"gate-flow.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Gate Approval Flow]\nStep 1 of 3: Prepare Deployment\n\nINSTRUCTION:\nPrepare the release assets.\n\nRULES:\n1. Start your response with: \"Executing Step: Prepare Deployment\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"fixtures/workflows/gate-workflow.workflow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
@@ -90,7 +90,7 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Gate Approval Flow]\nStep 3 of 3: Execute Release\n\nINSTRUCTION:\nDeploy the assets.\n\nRULES:\n1. Start your response with: \"Executing Step: Execute Release\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"gate-flow.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Gate Approval Flow]\nStep 3 of 3: Execute Release\n\nINSTRUCTION:\nDeploy the assets.\n\nRULES:\n1. Start your response with: \"Executing Step: Execute Release\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"fixtures/workflows/gate-workflow.workflow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},

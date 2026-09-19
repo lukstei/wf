@@ -1,0 +1,21 @@
+{
+	"name": "Gate Approval Flow",
+	"description": "Workflow testing gate pause and resume",
+	"steps": [
+		{
+			"type": "step",
+			"title": "Prepare Deployment",
+			"instruction": "Prepare the release assets."
+		},
+		{
+			"type": "gate",
+			"title": "Approve Release",
+			"instruction": "Verify the build before proceeding."
+		},
+		{
+			"type": "step",
+			"title": "Execute Release",
+			"instruction": "Deploy the assets."
+		}
+	]
+}

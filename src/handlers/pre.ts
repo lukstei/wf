@@ -11,7 +11,11 @@ import {
 	parseCommand,
 } from "../lib/parseCommand.ts";
 import type { ActiveWorkflow } from "../state.ts";
-import { failWorkflow, pauseWorkflow } from "../transitions.ts";
+import {
+	applyTransition,
+	failWorkflow,
+	pauseWorkflow,
+} from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 
 function handleCommand(
@@ -35,23 +39,17 @@ function handleCommand(
 
 	switch (parsedCmd.command.name) {
 		case "help": {
-			const paused = pauseWorkflow(active?.state ?? null);
-			const nextActive =
-				active && paused
-					? { workflow: active.workflow, state: paused }
-					: active;
 			return {
-				active: nextActive,
+				active: applyTransition(active, pauseWorkflow(active?.state ?? null)),
 				response: injectSystemMessage(parsedCmd.helpText || getHelpText()),
 			};
 		}
 
 		case "show": {
-			const paused = pauseWorkflow(active?.state ?? null);
-			const nextActive =
-				active && paused
-					? { workflow: active.workflow, state: paused }
-					: active;
+			const nextActive = applyTransition(
+				active,
+				pauseWorkflow(active?.state ?? null),
+			);
 			return show(info, nextActive, parsedCmd.command);
 		}
 
@@ -96,9 +94,8 @@ export function handlePre(
 			logDebug("User message received, pausing workflow", {
 				text: info.latestMessage.content.slice(0, 50),
 			});
-			const paused = pauseWorkflow(active.state);
 			return {
-				active: paused ? { workflow: active.workflow, state: paused } : active,
+				active: applyTransition(active, pauseWorkflow(active.state)),
 				response: {},
 			};
 		}
@@ -114,17 +111,10 @@ export function handlePre(
 	// Safeguard against runaway loops
 	const maxIterations = active.workflow.flatSteps.length * 5;
 	if (active.state.iterationCount >= maxIterations) {
-		const errorState = failWorkflow(
-			active.state,
-			`Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
-		);
+		const errorMsg = `Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`;
 		return {
-			active: errorState
-				? { workflow: active.workflow, state: errorState }
-				: active,
-			response: injectSystemMessage(
-				`[WORKFLOW RUNNER] Workflow terminated: Exceeded safety iteration limit (${maxIterations}).`,
-			),
+			active: applyTransition(active, failWorkflow(active.state, errorMsg)),
+			response: injectSystemMessage(`[WORKFLOW RUNNER] ${errorMsg}`),
 		};
 	}
 

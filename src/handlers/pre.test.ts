@@ -1,8 +1,16 @@
+import * as path from "node:path";
 import { describe, expect, test } from "vitest";
 import type { ActiveWorkflow } from "../state.ts";
+import { stripAbsolutePath } from "../test-utils.ts";
 import type { HookInfo } from "../types.ts";
 import { flattenWorkflow, type WorkflowAst } from "../workflow.ts";
 import { handlePre } from "./pre.ts";
+
+const fixturesDir = path.resolve(
+	import.meta.dirname,
+	"../../fixtures/workflows",
+);
+const sampleMdPath = path.join(fixturesDir, "sample.md");
 
 const sampleDef: WorkflowAst = {
 	name: "Sample",
@@ -20,50 +28,48 @@ const sampleDef: WorkflowAst = {
 	],
 };
 
-const mockResolver = () => ({ filePath: "/mock.json", workflow: sampleDef });
-
 describe("handlers/pre.ts", () => {
 	test("handlePre starts workflow on /wf <file>", () => {
 		const info: HookInfo = {
 			type: "pre",
 			payload: { conversationId: "c1" },
 			latestMessage: {
-				stepIndex: 1,
 				type: "USER_INPUT",
-				content: "/wf test.json",
+				content: `/wf ${sampleMdPath}`,
 			},
-			workflowResolver: mockResolver,
 		};
 		const { active: nextActive, response } = handlePre(info, null);
-		expect({ state: nextActive?.state, response }).toMatchInlineSnapshot(`
-			{
-			  "response": {
-			    "injectSteps": [
-			      {
-			        "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
+		expect(
+			stripAbsolutePath({ state: nextActive?.state, response }),
+		).toMatchInlineSnapshot(`
+				{
+				  "response": {
+				    "injectSteps": [
+				      {
+				        "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
-			[WORKFLOW ACTIVE: Sample]
-			Step 1 of 4: First Step
+				[WORKFLOW ACTIVE: Sample]
+				Step 1 of 4: First Step
 
-			INSTRUCTION:
-			Do the first thing
+				INSTRUCTION:
+				Do the first thing
 
-			RULES:
-			1. Start your response with: "Executing Step: First Step"
-			2. Execute this specific step now.
-			3. Do NOT jump ahead to subsequent steps.
-			4. Conclude your response when this step is complete.
-			5. Do NOT read or inspect the workflow file ("/mock.json") or SKILL.md — steps are already loaded by the runner.",
-			      },
-			    ],
-			  },
-			  "state": {
-			    "iterationCount": 0,
-			    "status": "active",
-			    "step": 0,
-			  },
-			}
-		`);
+				RULES:
+				1. Start your response with: "Executing Step: First Step"
+				2. Execute this specific step now.
+				3. Do NOT jump ahead to subsequent steps.
+				4. Conclude your response when this step is complete.
+				5. Do NOT read or inspect the workflow file ("fixtures/workflows/sample.md") or SKILL.md — steps are already loaded by the runner.",
+				      },
+				    ],
+				  },
+				  "state": {
+				    "iterationCount": 0,
+				    "status": "active",
+				    "step": 0,
+				  },
+				}
+			`);
 	});
 
 	test("handlePre pauses active workflow on user conversational interruption", () => {
@@ -72,7 +78,6 @@ describe("handlers/pre.ts", () => {
 			type: "pre",
 			payload: { conversationId: "c1" },
 			latestMessage: {
-				stepIndex: 2,
 				type: "USER_INPUT",
 				content: "Stop and tell me a joke",
 			},
@@ -108,7 +113,7 @@ describe("handlers/pre.ts", () => {
 		const info: HookInfo = {
 			type: "pre",
 			payload: { conversationId: "c1" },
-			latestMessage: { stepIndex: 2, type: "USER_INPUT", content: "/wf-next" },
+			latestMessage: { type: "USER_INPUT", content: "/wf-next" },
 		};
 		const active: ActiveWorkflow = {
 			state: {
@@ -165,7 +170,7 @@ describe("handlers/pre.ts", () => {
 			},
 			workflow: {
 				name: "Sample",
-				filePath: "/mock.json",
+				filePath: sampleMdPath,
 				steps: sampleDef.steps,
 				flatSteps: flat,
 			},
@@ -175,7 +180,6 @@ describe("handlers/pre.ts", () => {
 				type: "pre",
 				payload: { conversationId: "c1" },
 				latestMessage: {
-					stepIndex: 2,
 					type: "USER_INPUT",
 					content: "/wf-show",
 				},
@@ -188,7 +192,6 @@ describe("handlers/pre.ts", () => {
 				type: "pre",
 				payload: { conversationId: "c1" },
 				latestMessage: {
-					stepIndex: 3,
 					type: "USER_INPUT",
 					content: "/wf-stop",
 				},
@@ -201,7 +204,6 @@ describe("handlers/pre.ts", () => {
 				type: "pre",
 				payload: { conversationId: "c1" },
 				latestMessage: {
-					stepIndex: 4,
 					type: "USER_INPUT",
 					content: "/wf-help",
 				},
@@ -214,11 +216,9 @@ describe("handlers/pre.ts", () => {
 				type: "pre",
 				payload: { conversationId: "c1" },
 				latestMessage: {
-					stepIndex: 5,
 					type: "USER_INPUT",
-					content: "/wf-show test.json",
+					content: `/wf-show ${sampleMdPath}`,
 				},
-				workflowResolver: mockResolver,
 			},
 			initial,
 		);
@@ -232,7 +232,7 @@ describe("handlers/pre.ts", () => {
 			help: { state: helpRes.active?.state, response: helpRes.response },
 			show: { state: showRes.active?.state, response: showRes.response },
 		};
-		expect(assertions).toMatchInlineSnapshot(`
+		expect(stripAbsolutePath(assertions)).toMatchInlineSnapshot(`
 			{
 			  "help": {
 			    "response": {
@@ -288,7 +288,7 @@ describe("handlers/pre.ts", () => {
 			  - Step: Fix
 
 			RULES:
-			1. Do NOT read or inspect the workflow file ("/mock.json") or SKILL.md — steps are already loaded by the runner.
+			1. Do NOT read or inspect the workflow file ("fixtures/workflows/sample.md") or SKILL.md — steps are already loaded by the runner.
 			2. Do NOT execute any workflow steps. This is strictly an informational visualization.",
 			        },
 			      ],
@@ -334,7 +334,7 @@ describe("handlers/pre.ts", () => {
 			  - Step: Fix
 
 			RULES:
-			1. Do NOT read or inspect the workflow file ("/mock.json") or SKILL.md — steps are already loaded by the runner.
+			1. Do NOT read or inspect the workflow file ("fixtures/workflows/sample.md") or SKILL.md — steps are already loaded by the runner.
 			2. Do NOT execute any workflow steps. This is strictly an informational visualization.",
 			        },
 			      ],

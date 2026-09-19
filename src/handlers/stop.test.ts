@@ -119,7 +119,6 @@ describe("handlers/stop.ts", () => {
 				type: "stop",
 				payload: { conversationId: "c1", terminationReason: "model_stop" },
 				latestMessage: {
-					stepIndex: 2,
 					type: "PLANNER_RESPONSE",
 					content: "Just chatting with user",
 				},
@@ -209,7 +208,6 @@ describe("handlers/stop.ts", () => {
 				type: "stop",
 				payload: { conversationId: "c1", terminationReason: "model_stop" },
 				latestMessage: {
-					stepIndex: 2,
 					type: "PLANNER_RESPONSE",
 					content: "Ready! [DECISION: YES]",
 				},
@@ -222,7 +220,6 @@ describe("handlers/stop.ts", () => {
 				type: "stop",
 				payload: { conversationId: "c1", terminationReason: "model_stop" },
 				latestMessage: {
-					stepIndex: 2,
 					type: "PLANNER_RESPONSE",
 					content: "Not ready yet. [DECISION: NO]",
 				},

@@ -47,7 +47,6 @@ describe("actions/condition.ts", () => {
 				type: "stop",
 				payload: { conversationId: "c1" },
 				latestMessage: {
-					stepIndex: 1,
 					type: "PLANNER_RESPONSE",
 					content: "DB connection is good. [DECISION: YES]",
 				},
@@ -100,7 +99,6 @@ describe("actions/condition.ts", () => {
 				type: "stop",
 				payload: { conversationId: "c1" },
 				latestMessage: {
-					stepIndex: 1,
 					type: "PLANNER_RESPONSE",
 					content: "DB connection timed out. [DECISION: NO]",
 				},
@@ -165,7 +163,6 @@ describe("actions/condition.ts", () => {
 				type: "stop",
 				payload: { conversationId: "c1" },
 				latestMessage: {
-					stepIndex: 1,
 					type: "PLANNER_RESPONSE",
 					content: "[DECISION: YES]",
 				},
@@ -228,7 +225,6 @@ describe("actions/condition.ts", () => {
 				type: "stop",
 				payload: { conversationId: "c1" },
 				latestMessage: {
-					stepIndex: 1,
 					type: "PLANNER_RESPONSE",
 					content: "Ready. [DECISION: YES]",
 				},
@@ -342,7 +338,6 @@ describe("actions/condition.ts", () => {
 				type: "stop",
 				payload: { conversationId: "c1" },
 				latestMessage: {
-					stepIndex: 1,
 					type: "PLANNER_RESPONSE",
 					content: "[DECISION: YES]",
 				},

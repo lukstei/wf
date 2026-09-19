@@ -1,0 +1,18 @@
+{
+	"name": "CondRun",
+	"steps": [
+		{
+			"type": "condition",
+			"title": "is ready?",
+			"condition": "is ready?",
+			"yes": {
+				"steps": [
+					{ "type": "step", "title": "Deploy", "instruction": "Deploy" }
+				]
+			},
+			"no": {
+				"steps": [{ "type": "step", "title": "Wait", "instruction": "Wait" }]
+			}
+		}
+	]
+}

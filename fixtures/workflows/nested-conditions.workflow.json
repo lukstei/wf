@@ -1,0 +1,75 @@
+{
+	"name": "Nested Conditions Workflow",
+	"description": "Workflow testing deeply nested conditions with and without else branches",
+	"steps": [
+		{
+			"type": "condition",
+			"title": "Outer Condition with Else",
+			"condition": "is database online?",
+			"yes": {
+				"steps": [
+					{
+						"type": "condition",
+						"title": "Nested Condition without Else (evaluates NO)",
+						"condition": "is database read-only?",
+						"yes": {
+							"steps": [
+								{
+									"type": "step",
+									"title": "Read-Only Warning",
+									"instruction": "Log that the database is in read-only mode."
+								}
+							]
+						}
+					},
+					{
+						"type": "condition",
+						"title": "Nested Condition without Else (evaluates YES)",
+						"condition": "is migration needed?",
+						"yes": {
+							"steps": [
+								{
+									"type": "condition",
+									"title": "Deeply Nested Condition with Else (evaluates NO)",
+									"condition": "is dry-run mode enabled?",
+									"yes": {
+										"steps": [
+											{
+												"type": "step",
+												"title": "Dry Run Migration",
+												"instruction": "Perform a dry-run migration."
+											}
+										]
+									},
+									"no": {
+										"steps": [
+											{
+												"type": "step",
+												"title": "Execute Migration",
+												"instruction": "Run the live database migration."
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				]
+			},
+			"no": {
+				"steps": [
+					{
+						"type": "step",
+						"title": "Offline Alert",
+						"instruction": "Send alert that database is offline."
+					}
+				]
+			}
+		},
+		{
+			"type": "step",
+			"title": "Finalize",
+			"instruction": "Confirm all workflow tasks have completed successfully."
+		}
+	]
+}

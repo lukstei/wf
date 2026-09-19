@@ -63,8 +63,10 @@ export function show(
 	}
 
 	// 2. Invoked with parameter: resolve workflow file and visualize
-	const resolver = info.workflowResolver || defaultWorkflowResolver;
-	const resolved = resolver(targetPath, info.payload.workspacePaths);
+	const resolved = defaultWorkflowResolver(
+		targetPath,
+		info.payload.workspacePaths,
+	);
 
 	if (!resolved) {
 		return {

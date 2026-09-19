@@ -84,13 +84,13 @@
 				"source": "USER_EXPLICIT",
 				"type": "USER_INPUT",
 				"status": "DONE",
-				"content": "<USER_REQUEST>\n/wf nested-conditions.json\n</USER_REQUEST>"
+				"content": "<USER_REQUEST>\n/wf fixtures/workflows/nested-conditions.workflow.json\n</USER_REQUEST>"
 			},
 			"expectedPre": {
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 1 of 9: Outer Condition with Else (Condition Evaluation)\nCondition: \"is database online?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is database online?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\n\nStart your response with: \"Checking condition: is database online?\"\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 1 of 9: Outer Condition with Else (Condition Evaluation)\nCondition: \"is database online?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is database online?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\n\nStart your response with: \"Checking condition: is database online?\"\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"fixtures/workflows/nested-conditions.workflow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
@@ -126,7 +126,7 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 2 of 9: Nested Condition without Else (evaluates NO) (Nesting Level 1) (Condition Evaluation)\nCondition: \"is database read-only?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is database read-only?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\n\nStart your response with: \"Checking condition: is database read-only?\"\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 2 of 9: Nested Condition without Else (evaluates NO) (Nesting Level 1) (Condition Evaluation)\nCondition: \"is database read-only?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is database read-only?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\n\nStart your response with: \"Checking condition: is database read-only?\"\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"fixtures/workflows/nested-conditions.workflow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
@@ -162,7 +162,7 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 4 of 9: Nested Condition without Else (evaluates YES) (Nesting Level 1) (Condition Evaluation)\nCondition: \"is migration needed?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is migration needed?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\n\nStart your response with: \"Checking condition: is migration needed?\"\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 4 of 9: Nested Condition without Else (evaluates YES) (Nesting Level 1) (Condition Evaluation)\nCondition: \"is migration needed?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is migration needed?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\n\nStart your response with: \"Checking condition: is migration needed?\"\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"fixtures/workflows/nested-conditions.workflow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
@@ -198,7 +198,7 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 5 of 9: Deeply Nested Condition with Else (evaluates NO) (Nesting Level 2) (Condition Evaluation)\nCondition: \"is dry-run mode enabled?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is dry-run mode enabled?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\n\nStart your response with: \"Checking condition: is dry-run mode enabled?\"\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 5 of 9: Deeply Nested Condition with Else (evaluates NO) (Nesting Level 2) (Condition Evaluation)\nCondition: \"is dry-run mode enabled?\"\n\nINSTRUCTION:\nEvaluate whether the following condition is true or false: \"is dry-run mode enabled?\".\nIf needed, use tools to inspect the environment, files, date/time, or git state.\n\nStart your response with: \"Checking condition: is dry-run mode enabled?\"\nAt the very end of your response, output strictly either:\n[DECISION: YES] or [DECISION: NO]\n\nRULES:\n1. Do NOT read or inspect the workflow file (\"fixtures/workflows/nested-conditions.workflow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
@@ -234,7 +234,7 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 7 of 9: Execute Migration (Nesting Level 3)\n\nINSTRUCTION:\nRun the live database migration.\n\nRULES:\n1. Start your response with: \"Executing Step: Execute Migration\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 7 of 9: Execute Migration (Nesting Level 3)\n\nINSTRUCTION:\nRun the live database migration.\n\nRULES:\n1. Start your response with: \"Executing Step: Execute Migration\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"fixtures/workflows/nested-conditions.workflow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},
@@ -270,7 +270,7 @@
 				"output": {
 					"injectSteps": [
 						{
-							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 9 of 9: Finalize\n\nINSTRUCTION:\nConfirm all workflow tasks have completed successfully.\n\nRULES:\n1. Start your response with: \"Executing Step: Finalize\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"nested-conditions.json\") or SKILL.md — steps are already loaded by the runner."
+							"ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]\n\n[WORKFLOW ACTIVE: Nested Conditions Workflow]\nStep 9 of 9: Finalize\n\nINSTRUCTION:\nConfirm all workflow tasks have completed successfully.\n\nRULES:\n1. Start your response with: \"Executing Step: Finalize\"\n2. Execute this specific step now.\n3. Do NOT jump ahead to subsequent steps.\n4. Conclude your response when this step is complete.\n5. Do NOT read or inspect the workflow file (\"fixtures/workflows/nested-conditions.workflow.json\") or SKILL.md — steps are already loaded by the runner."
 						}
 					]
 				},

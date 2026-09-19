@@ -1,9 +1,11 @@
+import assert from "node:assert/strict";
 import { agyHarness } from "./agy.ts";
 import { claudeHarness } from "./claude.ts";
 import { codexHarness } from "./codex.ts";
 import { copilotHarness } from "./copilot.ts";
 import type { HarnessAdapter, HarnessType } from "./types.ts";
 
+export * from "./common.ts";
 export * from "./types.ts";
 export { agyHarness, claudeHarness, codexHarness, copilotHarness };
 
@@ -28,16 +30,9 @@ export function detectHarness(
 }
 
 export function getHarness(type: HarnessType): HarnessAdapter {
-	switch (type) {
-		case "codex":
-			return codexHarness;
-		case "claude":
-			return claudeHarness;
-		case "agy":
-			return agyHarness;
-		case "copilot":
-			return copilotHarness;
-	}
+	const harness = HARNESSES.find((h) => h.id === type);
+	assert(harness, `Unknown harness type: ${type}`);
+	return harness;
 }
 
 export function resolveConversationIdFromHarnesses(

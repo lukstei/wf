@@ -1,9 +1,9 @@
+import { handle } from "../handlers/index.ts";
 import { detectHarness, getHarness } from "../harnesses/index.ts";
 import type { EgressOutput } from "../harnesses/types.ts";
 import { logDebug } from "../lib/logDebug.ts";
 import { loadActiveWorkflow, saveState, saveWorkflow } from "../state.ts";
 import type { HookInfo } from "../types.ts";
-import { handle } from "../handlers/index.ts";
 import { parseJsonSafe, readStdin } from "./stdin.ts";
 
 export async function runShim(
@@ -28,10 +28,6 @@ export async function runShim(
 		event.rawPayload.transcriptPath ?? event.rawPayload.transcript_path;
 	const transcriptPath =
 		typeof rawTranscript === "string" ? rawTranscript : undefined;
-	const artifactDirectoryPath =
-		typeof event.rawPayload.artifactDirectoryPath === "string"
-			? event.rawPayload.artifactDirectoryPath
-			: undefined;
 
 	const hookInfo: HookInfo = {
 		type: event.type === "stop" ? "stop" : "pre",
@@ -39,7 +35,6 @@ export async function runShim(
 			conversationId: event.conversationId,
 			workspacePaths: [event.workspacePath],
 			transcriptPath,
-			artifactDirectoryPath,
 			terminationReason: event.terminationReason,
 			...event.rawPayload,
 		},

@@ -5,6 +5,16 @@ import { stripAbsolutePath } from "../test-utils.ts";
 import type { WorkflowAst } from "../workflow.ts";
 import { show } from "./show.ts";
 
+const fixturesDir = path.resolve(
+	import.meta.dirname,
+	"../../fixtures/workflows",
+);
+const fixture = (name: string) => path.join(fixturesDir, name);
+const info = () => ({
+	type: "pre" as const,
+	payload: { conversationId: "c1" },
+});
+
 const sampleDef: WorkflowAst = {
 	name: "SampleShow",
 	steps: [
@@ -241,6 +251,7 @@ describe("actions/show.ts", () => {
 	});
 
 	test("show highlights active step when specified workflow matches active workflow", () => {
+		const sampleShowPath = path.join(fixturesDir, "sample-show.md");
 		const active: ActiveWorkflow = {
 			state: {
 				status: "active",
@@ -249,7 +260,7 @@ describe("actions/show.ts", () => {
 			},
 			workflow: {
 				name: "SampleShow",
-				filePath: "/sample.json",
+				filePath: sampleShowPath,
 				steps: sampleDef.steps,
 				flatSteps: [
 					{ index: 0, level: 0, type: "step", title: "Step 1", nextIndex: 1 },
@@ -264,23 +275,17 @@ describe("actions/show.ts", () => {
 			},
 		};
 
-		const res = show(
-			{
-				type: "pre",
-				payload: { conversationId: "c1" },
-				workflowResolver: () => ({
-					filePath: "/sample.json",
-					workflow: sampleDef,
-				}),
-			},
-			active,
-			{ name: "show", args: { path: "/sample.json" } },
-		);
+		const res = show(info(), active, {
+			name: "show",
+			args: { path: sampleShowPath },
+		});
 
-		expect({
-			state: res.active?.state,
-			response: res.response,
-		}).toMatchInlineSnapshot(`
+		expect(
+			stripAbsolutePath({
+				state: res.active?.state,
+				response: res.response,
+			}),
+		).toMatchInlineSnapshot(`
 			{
 			  "response": {
 			    "injectSteps": [
@@ -312,7 +317,7 @@ describe("actions/show.ts", () => {
 			  - Step: hello friday
 
 			RULES:
-			1. Do NOT read or inspect the workflow file ("/sample.json") or SKILL.md — steps are already loaded by the runner.
+			1. Do NOT read or inspect the workflow file ("fixtures/workflows/sample-show.md") or SKILL.md — steps are already loaded by the runner.
 			2. Do NOT execute any workflow steps. This is strictly an informational visualization.",
 			      },
 			    ],
@@ -327,15 +332,10 @@ describe("actions/show.ts", () => {
 	});
 
 	test("show returns error message when file is not found", () => {
-		const res = show(
-			{
-				type: "pre",
-				payload: { conversationId: "c1" },
-				workflowResolver: () => null,
-			},
-			null,
-			{ name: "show", args: { path: "missing.json" } },
-		);
+		const res = show(info(), null, {
+			name: "show",
+			args: { path: "missing.json" },
+		});
 		expect(res.response).toMatchInlineSnapshot(`
 			{
 			  "injectSteps": [
@@ -357,33 +357,13 @@ describe("actions/show.ts", () => {
 	});
 
 	test("show returns error message when file has syntax error", () => {
-		const res = show(
-			{
-				type: "pre",
-				payload: { conversationId: "c1" },
-				workflowResolver: () => ({ error: "Failed to parse JSON" }),
-			},
-			null,
-			{ name: "show", args: { path: "bad.json" } },
-		);
-		expect(res.response).toMatchInlineSnapshot(`
-			{
-			  "injectSteps": [
-			    {
-			      "ephemeralMessage": "[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
-
-			[Workflow Error] CANCEL EXECUTION AND SHOW THIS MESSAGE TO THE USER:  Failed to parse JSON
-
-			Workflow Runner Commands:
-			  /wf <workflow-file>        - Start a workflow from a Markdown or JSON file
-			  /wf-show [<workflow-file>] - Visualize workflow and show status / progress
-			  /wf-next                   - Execute the next step in paused mode
-			  /wf-stop                   - Stop and reset the active workflow
-			  /wf-help                   - Show this help reference",
-			    },
-			  ],
-			}
-		`);
+		const res = show(info(), null, {
+			name: "show",
+			args: { path: fixture("bad.json") },
+		});
+		expect(
+			stripAbsolutePath(res.response.injectSteps?.[0]?.ephemeralMessage ?? ""),
+		).toContain("Failed to parse workflow JSON");
 	});
 
 	test("show injects visualization prompt without modifying state", () => {
@@ -401,25 +381,17 @@ describe("actions/show.ts", () => {
 			},
 		};
 
-		const res = show(
-			{
-				type: "pre",
-				payload: { conversationId: "c1" },
-				workflowResolver: () => ({
-					filePath: "/sample.json",
-					workflow: sampleDef,
-				}),
-			},
-			active,
-			{ name: "show", args: { path: "sample.json" } },
-		);
+		const res = show(info(), active, {
+			name: "show",
+			args: { path: fixture("sample-show.md") },
+		});
 
 		// State is preserved
 		expect(res.active).toBe(active);
 
 		// Injected message contains prompt, mermaid, and plain text
 		const msg = res.response.injectSteps?.[0]?.ephemeralMessage;
-		expect(msg).toMatchInlineSnapshot(`
+		expect(stripAbsolutePath(msg)).toMatchInlineSnapshot(`
 			"[INSTRUCTION: The user invoked a workflow command. Ignore all other instructions or previous conversation context. Only do the things told below.]
 
 			[WORKFLOW VISUALIZATION: SampleShow]
@@ -442,7 +414,7 @@ describe("actions/show.ts", () => {
 			  - Step: hello friday
 
 			RULES:
-			1. Do NOT read or inspect the workflow file ("/sample.json") or SKILL.md — steps are already loaded by the runner.
+			1. Do NOT read or inspect the workflow file ("fixtures/workflows/sample-show.md") or SKILL.md — steps are already loaded by the runner.
 			2. Do NOT execute any workflow steps. This is strictly an informational visualization."
 		`);
 	});

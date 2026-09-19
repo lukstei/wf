@@ -56,7 +56,6 @@ describe("codexHarness", () => {
 				  "isStop": false,
 				  "latestMessage": {
 				    "content": "/wf next",
-				    "stepIndex": 0,
 				    "type": "USER_INPUT",
 				  },
 				  "prompt": "/wf next",
@@ -89,7 +88,6 @@ describe("codexHarness", () => {
 				  "isStop": true,
 				  "latestMessage": {
 				    "content": "Done with task",
-				    "stepIndex": 0,
 				    "type": "PLANNER_RESPONSE",
 				  },
 				  "prompt": undefined,
@@ -155,7 +153,6 @@ describe("codexHarness", () => {
 			});
 			const res = codexHarness.extractLatestMessage(event);
 			expect(res).toEqual({
-				stepIndex: 0,
 				type: "PLANNER_RESPONSE",
 				content: "Assistant response",
 			});
@@ -168,7 +165,6 @@ describe("codexHarness", () => {
 			});
 			const res = codexHarness.extractLatestMessage(event);
 			expect(res).toEqual({
-				stepIndex: 0,
 				type: "USER_INPUT",
 				content: "User question",
 			});

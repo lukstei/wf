@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MarkdownNode } from "./ast";
-// biome-ignore lint/suspicious/noShadowRestrictedNames: upstream test
-import { parse, unescape } from "./parsing";
+import { parse } from "./parsing";
 
 describe("A Markdown parser function", () => {
 	type ParsingScenario = {
@@ -1459,16 +1458,5 @@ describe("A Markdown parser function", () => {
 		}),
 	)("should parse %s", (_, { input, output }) => {
 		expect(parse(input)).toEqual(output);
-	});
-
-	it.each([
-		["Hello, \\*world\\*!", "Hello, *world*!"],
-		["\\A\\B\\C", "ABC"],
-		["\\\\\\", "\\\\"],
-		["ABC\\", "ABC\\"],
-		["ABC\\D", "ABCD"],
-		["Not escaped", "Not escaped"],
-	])("should unescape %s to %s", (input, output) => {
-		expect(unescape(input)).toEqual(output);
 	});
 });

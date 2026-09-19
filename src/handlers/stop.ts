@@ -2,7 +2,11 @@ import { conditionStop } from "../actions/condition.ts";
 import { nextStop } from "../actions/next.ts";
 import { logDebug } from "../lib/logDebug.ts";
 import type { ActiveWorkflow } from "../state.ts";
-import { failWorkflow, pauseWorkflow } from "../transitions.ts";
+import {
+	applyTransition,
+	failWorkflow,
+	pauseWorkflow,
+} from "../transitions.ts";
 import type { HandleResult, HookInfo } from "../types.ts";
 
 /**
@@ -28,11 +32,8 @@ export function handleStop(
 			info.payload.error ||
 			`Stopped with reason: ${info.payload.terminationReason}`;
 		logDebug("Setting error state due to error termination", info.payload);
-		const errorState = failWorkflow(active.state, errorMsg);
 		return {
-			active: errorState
-				? { workflow: active.workflow, state: errorState }
-				: active,
+			active: applyTransition(active, failWorkflow(active.state, errorMsg)),
 			response: { decision: "allow" },
 		};
 	}
@@ -43,9 +44,8 @@ export function handleStop(
 		/cancel|abort|interrupt/i.test(info.payload.terminationReason)
 	) {
 		logDebug("Allowing stop due to interruption", info.payload);
-		const paused = pauseWorkflow(active.state);
 		return {
-			active: paused ? { workflow: active.workflow, state: paused } : active,
+			active: applyTransition(active, pauseWorkflow(active.state)),
 			response: { decision: "allow" },
 		};
 	}

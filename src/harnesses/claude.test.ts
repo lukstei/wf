@@ -56,7 +56,6 @@ describe("claudeHarness", () => {
 				  "isStop": false,
 				  "latestMessage": {
 				    "content": "/wf run deploy.md",
-				    "stepIndex": 0,
 				    "type": "USER_INPUT",
 				  },
 				  "prompt": "/wf run deploy.md",
@@ -90,7 +89,6 @@ describe("claudeHarness", () => {
 				  "isStop": true,
 				  "latestMessage": {
 				    "content": "Completed task",
-				    "stepIndex": 0,
 				    "type": "PLANNER_RESPONSE",
 				  },
 				  "prompt": undefined,
@@ -157,7 +155,6 @@ describe("claudeHarness", () => {
 			});
 			const res = claudeHarness.extractLatestMessage(event);
 			expect(res).toEqual({
-				stepIndex: 0,
 				type: "PLANNER_RESPONSE",
 				content: "Claude answer",
 			});
@@ -170,7 +167,6 @@ describe("claudeHarness", () => {
 			});
 			const res = claudeHarness.extractLatestMessage(event);
 			expect(res).toEqual({
-				stepIndex: 0,
 				type: "USER_INPUT",
 				content: "/wf next",
 			});

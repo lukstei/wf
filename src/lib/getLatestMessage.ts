@@ -15,9 +15,7 @@ export function defaultTranscriptParser(
 
 	if ((isUser || isModel) && typeof item.content === "string") {
 		return {
-			stepIndex: typeof item.step_index === "number" ? item.step_index : 0,
 			type: isUser ? "USER_INPUT" : "PLANNER_RESPONSE",
-			source: typeof item.source === "string" ? item.source : undefined,
 			content: item.content,
 		};
 	}

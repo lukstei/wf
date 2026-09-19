@@ -66,6 +66,21 @@ export function pauseWorkflow(
 }
 
 /**
+ * Applies a state transition to a loaded workflow, returning a new
+ * ActiveWorkflow with the updated state. Returns null if there was no
+ * workflow, or the workflow unchanged if the transition yielded no state.
+ */
+export function applyTransition(
+	active: ActiveWorkflow | null,
+	nextState: WorkflowState | null,
+): ActiveWorkflow | null {
+	if (!active) {
+		return null;
+	}
+	return nextState ? { ...active, state: nextState } : active;
+}
+
+/**
  * Resumes an active or paused workflow (triggered by /wf next).
  * If paused at a gate step, advances to the target step.
  * Precondition: state must be in an active or paused status.

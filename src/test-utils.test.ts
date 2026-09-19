@@ -18,6 +18,10 @@ describe("test-utils", () => {
 				"windows (C:\\Users\\developer\\project\\examples\\test.md)",
 				"C:\\Users\\developer\\project",
 			),
+			stripAbsolutePath(
+				{ nested: { path: "/Users/developer/project/file.ts" } },
+				root,
+			),
 		];
 
 		expect(assertions).toMatchInlineSnapshot(`
@@ -29,6 +33,11 @@ describe("test-utils", () => {
 			  ],
 			  "relative/path/only.md",
 			  "windows (examples\\test.md)",
+			  {
+			    "nested": {
+			      "path": "file.ts",
+			    },
+			  },
 			]
 		`);
 	});
