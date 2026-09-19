@@ -5,7 +5,7 @@ import { defaultWorkflowResolver } from "./resolver.ts";
 import type { ActiveWorkflow } from "./state.ts";
 import { stripAbsolutePath } from "./test-utils.ts";
 import type { LatestMessage } from "./types.ts";
-import { handle } from "./wf.ts";
+import { handle } from "./handlers/index.ts";
 import type { WorkflowAst } from "./workflow.ts";
 
 const workspaceRoot = path.resolve(import.meta.dirname, "..");

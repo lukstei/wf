@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { HookInfo } from "./types.ts";
-import { handle } from "./wf.ts";
+import type { HookInfo } from "../types.ts";
+import { handle } from "./index.ts";
 
-describe("wf.ts handler dispatch", () => {
+describe("handlers index dispatch", () => {
 	it("dispatches pre hooks to handlePre", () => {
 		const info: HookInfo = {
 			type: "pre",

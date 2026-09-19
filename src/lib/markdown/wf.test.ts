@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { describe, expect, test } from "vitest";
 import type { ActiveWorkflow } from "../../state.ts";
 import { stripAbsolutePath } from "../../test-utils.ts";
-import { handle } from "../../wf.ts";
+import { handle } from "../../handlers/index.ts";
 import { flattenWorkflow } from "../../workflow.ts";
 import { parseHeading, parseWorkflowMarkdown } from "./wf.ts";
 

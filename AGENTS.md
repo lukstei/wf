@@ -12,7 +12,6 @@
 
 ### Root (`src/`)
 - `cli.ts`: Entry point for the CLI, parsing subcommands and flags.
-- `wf.ts`: Deterministic hook dispatcher routing agent lifecycle events to the corresponding handler.
 - `workflow.ts`: Defines workflow step AST types and flattens nested workflow trees into indexed step sequences.
 - `transitions.ts`: Pure state transition functions and status mutations for workflow lifecycles.
 - `state.ts`: Reads, writes, and paths workflow state files on disk keyed by conversation ID.
@@ -24,6 +23,7 @@
 
 ### Subsystems
 - `actions/`: Implements runner actions and output formatters.
+- `handlers/index.ts`: Deterministic hook dispatcher routing agent lifecycle events to the corresponding handler.
 - `handlers/pre.ts`: Handles the pre-execution lifecycle hook, intercepting commands and user prompts.
 - `handlers/stop.ts`: Handles the loop-completion lifecycle hook, evaluating decisions and injecting pending steps.
 - `harnesses/`: Adapters for agent environments that detect the active agent and normalize ingress and egress.
@@ -33,5 +33,5 @@
 - `lib/markdown/`: Parses Markdown workflow files, AST structures, and frontmatter into workflow definitions.
 - `lib/parseCommand.ts`: Extracts and parses runner slash commands from text inputs.
 - `lib/visualize.ts`: Generates Mermaid diagrams and progress summaries from workflow state.
-- `shim/runtime-shim.ts`: Entry point for agent hook execution, detecting the harness and dispatching to `wf.ts`.
+- `shim/runtime-shim.ts`: Entry point for agent hook execution, detecting the harness and dispatching to `handlers/index.ts`.
 - `shim/stdin.ts`: Reads and parses JSON payloads from standard input with timeout handling.

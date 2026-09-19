@@ -112,7 +112,7 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
   - `wf start <workflow-file> [args]`: Compile and initiate a new workflow run from the command line, enabling agent-driven multi-step orchestration.
   - `wf stop`: Abort and clean up the active workflow state.
 - **Architecture & Session Resolution:**
-  - **Unified Core:** Reuses the existing TypeScript core engine (`src/wf.ts`, `src/state.ts`, `src/mermaid.ts`) rather than re-implementing workflow logic.
+  - **Unified Core:** Reuses the existing TypeScript core engine (`src/handlers/index.ts`, `src/state.ts`, `src/mermaid.ts`) rather than re-implementing workflow logic.
   - **Session Detection:** Resolves the active conversation state using environment variables (`WF_CONVERSATION_ID`, `AGY_CONVERSATION_ID`, `CLAUDE_CONVERSATION_ID`) or workspace-scoped state file fallbacks.
   - **Dual-Control Parity:** Chat slash commands and CLI invocations operate on identical persistent state files, allowing seamless handoffs between user chat triggers and agent CLI commands.
 

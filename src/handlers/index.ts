@@ -1,7 +1,10 @@
-import { handlePre } from "./handlers/pre.ts";
-import { handleStop } from "./handlers/stop.ts";
-import type { ActiveWorkflow } from "./state.ts";
-import type { HandleResult, HookInfo } from "./types.ts";
+import type { ActiveWorkflow } from "../state.ts";
+import type { HandleResult, HookInfo } from "../types.ts";
+import { handlePre } from "./pre.ts";
+import { handleStop } from "./stop.ts";
+
+export { handlePre } from "./pre.ts";
+export { handleStop } from "./stop.ts";
 
 /**
  * Deterministic handler: dispatches to handleStop or handlePre

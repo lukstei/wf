@@ -3,7 +3,7 @@ import type { EgressOutput } from "../harnesses/types.ts";
 import { logDebug } from "../lib/logDebug.ts";
 import { loadActiveWorkflow, saveState, saveWorkflow } from "../state.ts";
 import type { HookInfo } from "../types.ts";
-import { handle } from "../wf.ts";
+import { handle } from "../handlers/index.ts";
 import { parseJsonSafe, readStdin } from "./stdin.ts";
 
 export async function runShim(
