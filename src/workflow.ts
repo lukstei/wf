@@ -8,7 +8,6 @@ export type Step = BaseStep & {
 };
 
 interface Branch {
-	preamble?: string;
 	steps: WorkflowStep[];
 }
 

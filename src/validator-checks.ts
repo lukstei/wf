@@ -140,8 +140,7 @@ export function checkConditionStepNo(step: WorkflowStep): CheckProblem[] {
 		const condStep = step as ConditionalStep;
 		if (
 			condStep.no &&
-			(!condStep.no.steps || condStep.no.steps.length === 0) &&
-			!condStep.no.preamble
+			(!condStep.no.steps || condStep.no.steps.length === 0)
 		) {
 			const title = step.title?.trim() || "untitled";
 			return [

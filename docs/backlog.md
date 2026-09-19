@@ -239,6 +239,25 @@ These items expand the engine's capabilities to handle real-world, non-trivial e
   - **Multi-Harness State Discovery:** When no harness environment variable and no `-c` flag is present, inspect `/tmp/wf-state-*.json` or harness session directories (e.g. `CLAUDE_PLUGIN_DATA`) to find the most recently modified active workflow state file and adopt it automatically.
   - **Active Session List / Selector:** If multiple active state files are found, surface a selectable list or prompt in interactive terminals.
 
+### [ ] 2.13 Configurable Preamble Injection Mode (`preamble_mode: always | once`)
+- **Current State:** The global workflow preamble is injected into every step's execution prompt (`formatStepPrompt`) and continuation reason (`formatAdvanceReason`) under `CONTEXT:`. This provides maximum reliability against attention decay, instruction drift, and agent harness context compaction across long multi-turn tool sessions.
+- **Objective:** For workflows featuring very large reference preambles (e.g. extensive coding standards, architectural guidelines, or API definitions), allow workflow authors to opt into a token-saving injection strategy via frontmatter.
+- **Specification:**
+  - Support `preamble_mode` frontmatter setting:
+    ```markdown
+    ---
+    name: Heavy Workflow
+    preamble_mode: once
+    ---
+    ```
+  - Values:
+    - `always` (default): Injects global preamble into every step execution prompt and continuation reason under `CONTEXT:`.
+    - `once`: Injects global preamble only into the initial step prompt (turn 1); subsequent step continuation reasons omit `CONTEXT:`.
+- **Changes Needed:**
+  - Update `WorkflowAst` and frontmatter parser in `src/lib/markdown/wf.ts` to capture `preamble_mode`.
+  - Update `formatStepPrompt` and `formatAdvanceReason` in `src/actions/formatters.ts` to evaluate `preamble_mode` against the active step index.
+  - Add unit tests verifying prompt generation under both modes.
+
 ---
 
 
