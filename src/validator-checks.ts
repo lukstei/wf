@@ -1,4 +1,4 @@
-import type { ConditionalStep, WorkflowAst, WorkflowStep } from "./workflow.ts";
+import type { WorkflowAst, WorkflowStep } from "./workflow.ts";
 
 export type ProblemId =
 	| "workflow-missing-name"
@@ -99,8 +99,7 @@ export function checkConditionStepExpression(
 	step: WorkflowStep,
 ): CheckProblem[] {
 	if (step.type === "condition") {
-		const condStep = step as ConditionalStep;
-		if (!condStep.condition || condStep.condition.trim().length === 0) {
+		if (!step.condition || step.condition.trim().length === 0) {
 			const title = step.title?.trim() || "untitled";
 			return [
 				{
@@ -116,11 +115,10 @@ export function checkConditionStepExpression(
 
 export function checkConditionStepYes(step: WorkflowStep): CheckProblem[] {
 	if (step.type === "condition") {
-		const condStep = step as ConditionalStep;
 		if (
-			!condStep.yes ||
-			!Array.isArray(condStep.yes.steps) ||
-			condStep.yes.steps.length === 0
+			!step.yes ||
+			!Array.isArray(step.yes.steps) ||
+			step.yes.steps.length === 0
 		) {
 			const title = step.title?.trim() || "untitled";
 			return [
@@ -137,11 +135,7 @@ export function checkConditionStepYes(step: WorkflowStep): CheckProblem[] {
 
 export function checkConditionStepNo(step: WorkflowStep): CheckProblem[] {
 	if (step.type === "condition") {
-		const condStep = step as ConditionalStep;
-		if (
-			condStep.no &&
-			(!condStep.no.steps || condStep.no.steps.length === 0)
-		) {
+		if (step.no && (!step.no.steps || step.no.steps.length === 0)) {
 			const title = step.title?.trim() || "untitled";
 			return [
 				{

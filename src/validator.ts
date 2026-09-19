@@ -4,7 +4,7 @@ import {
 	STEP_CHECKS,
 	WORKFLOW_CHECKS,
 } from "./validator-checks.ts";
-import type { ConditionalStep, WorkflowAst, WorkflowStep } from "./workflow.ts";
+import type { WorkflowAst, WorkflowStep } from "./workflow.ts";
 
 export * from "./validator-checks.ts";
 
@@ -73,14 +73,13 @@ export function validateWorkflow(def: WorkflowAst): ValidationResult {
 			}
 
 			if (step.type === "condition") {
-				const condStep = step as ConditionalStep;
-				if (condStep.yes?.steps) {
-					for (const child of condStep.yes.steps) {
+				if (step.yes?.steps) {
+					for (const child of step.yes.steps) {
 						validateStep(child);
 					}
 				}
-				if (condStep.no?.steps) {
-					for (const child of condStep.no.steps) {
+				if (step.no?.steps) {
+					for (const child of step.no.steps) {
 						validateStep(child);
 					}
 				}

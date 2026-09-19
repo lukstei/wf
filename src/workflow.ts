@@ -131,28 +131,15 @@ export function flattenWorkflow(workflowSteps: WorkflowStep[]): FlatStep[] {
 					condStep.nextIndex = yesSteps.length > 0 ? yesStartIndex : afterCond;
 					condStep.skipIndex = noSteps.length > 0 ? noStartIndex : afterCond;
 				});
-			} else if (isGateStep(step)) {
-				const title = step.title || step.instruction || "Gate";
-				const flatStep: FlatStep = {
-					index: myIndex,
-					level,
-					title,
-					type: "gate",
-					instruction: step.instruction,
-					nextIndex: 0,
-				};
-				flat.push(flatStep);
-
-				fixups.push(() => {
-					flatStep.nextIndex = afterThisStep();
-				});
 			} else {
-				const title = step.title || step.instruction || "Step";
+				const type = isGateStep(step) ? "gate" : "step";
+				const title =
+					step.title || step.instruction || (type === "gate" ? "Gate" : "Step");
 				const flatStep: FlatStep = {
 					index: myIndex,
 					level,
 					title,
-					type: "step",
+					type,
 					instruction: step.instruction,
 					nextIndex: 0,
 				};

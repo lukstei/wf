@@ -101,29 +101,13 @@ function parseBranchSteps(
 	fallback: string,
 ): WorkflowStep[] {
 	if (!nodes.length) return [];
-	const candidateHeadings = nodes.filter(
-		(n) =>
-			n.type === "heading" &&
-			typeof n.depth === "number" &&
-			n.depth >= targetDepth,
-	);
-	if (candidateHeadings.length === 0) {
-		const text = sliceNodesMarkdown(nodes);
-		return [
-			{
-				type: "step",
-				title: defaultTitle,
-				instruction: text || fallback,
-			},
-		];
-	}
 	const result = parseSteps(nodes, targetDepth);
 	const steps = [...result.steps];
-	if (result.preamble) {
+	if (result.preamble || !steps.length) {
 		steps.unshift({
 			type: "step",
 			title: defaultTitle,
-			instruction: result.preamble,
+			instruction: result.preamble || fallback,
 		});
 	}
 	return steps;
@@ -168,10 +152,8 @@ function parseSteps(
 	}));
 
 	const steps: WorkflowStep[] = [];
-	let i = 0;
 
-	while (i < sections.length) {
-		const sec = sections[i];
+	for (const sec of sections) {
 		const parsed = parseHeading(sec.headingNode);
 
 		if (parsed.type === "if") {
@@ -203,37 +185,25 @@ function parseSteps(
 					(child) => parseHeading(child.node).type === "else",
 				);
 
-				if (elseChildIdx !== -1) {
-					const yesNodes = sec.bodyNodes.slice(
-						directChildren[0].idx,
-						directChildren[elseChildIdx].idx,
-					);
-					const noNodes = sec.bodyNodes.slice(directChildren[elseChildIdx].idx);
+				const yesEnd =
+					elseChildIdx !== -1 ? directChildren[elseChildIdx].idx : undefined;
+				yesSteps = parseBranchSteps(
+					sec.bodyNodes.slice(directChildren[0].idx, yesEnd),
+					childDepth,
+					`${condition} yes`,
+					"Execute condition true branch",
+				);
 
-					yesSteps = parseBranchSteps(
-						yesNodes,
-						childDepth,
-						`${condition} yes`,
-						"Execute condition true branch",
-					);
+				if (elseChildIdx !== -1) {
 					noSteps = parseBranchSteps(
-						noNodes,
+						sec.bodyNodes.slice(directChildren[elseChildIdx].idx),
 						childDepth,
 						`${condition} no`,
 						"Execute condition false branch",
 					);
-				} else {
-					const yesNodes = sec.bodyNodes.slice(directChildren[0].idx);
-					yesSteps = parseBranchSteps(
-						yesNodes,
-						childDepth,
-						`${condition} yes`,
-						"Execute condition true branch",
-					);
 				}
 			} else {
-				const text = sliceNodesMarkdown(sec.bodyNodes);
-				conditionInstruction = text || undefined;
+				conditionInstruction = sliceNodesMarkdown(sec.bodyNodes) || undefined;
 			}
 
 			steps.push({
@@ -244,32 +214,19 @@ function parseSteps(
 				yes: { steps: yesSteps },
 				...(noSteps ? { no: { steps: noSteps } } : {}),
 			});
-		} else if (parsed.type === "else") {
-			const instruction = sliceNodesMarkdown(sec.bodyNodes);
-			steps.push({
-				type: "step",
-				title:
-					parsed.title && parsed.title !== "else" && parsed.title !== "no"
-						? parsed.title
-						: "No",
-				instruction: instruction || parsed.title,
-			});
-		} else if (parsed.type === "gate") {
-			const instruction = sliceNodesMarkdown(sec.bodyNodes);
-			steps.push({
-				type: "gate",
-				title: parsed.title,
-				instruction: instruction || parsed.title,
-			});
 		} else {
-			const instruction = sliceNodesMarkdown(sec.bodyNodes);
-			steps.push({
-				type: "step",
-				title: parsed.title,
-				instruction: instruction || parsed.title,
-			});
+			const instruction = sliceNodesMarkdown(sec.bodyNodes) || parsed.title;
+			if (parsed.type === "gate") {
+				steps.push({ type: "gate", title: parsed.title, instruction });
+			} else {
+				const title =
+					parsed.type === "else" &&
+					(!parsed.title || parsed.title === "else" || parsed.title === "no")
+						? "No"
+						: parsed.title;
+				steps.push({ type: "step", title, instruction });
+			}
 		}
-		i++;
 	}
 
 	return { preamble, steps };
